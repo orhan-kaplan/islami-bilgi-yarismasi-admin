@@ -5,13 +5,16 @@
 `AppShell` (`lib/presentation/router/app_router.dart`) uygulamanın ana iskeletidir. Sol tarafta `NavigationRail`, sağ tarafta aktif ekran gösterilir.
 
 ```
-AppShell (Scaffold + Row)
+AppShell (Scaffold + Row) — ConsumerWidget
 ├── NavigationRail (sol panel)
 │   ├── Tab 0: Dashboard     (Home)
 │   ├── Tab 1: Explorer      (Content Explorer)
 │   ├── Tab 2: Rewards       (Ödüller)
 │   ├── Tab 3: Hadiths       (Hadisler)
-│   └── Tab 4: Validation    (Validasyon Raporu)
+│   ├── Tab 4: Validation    (Validasyon Raporu)
+│   └── trailing: Unsaved changes indicator (turuncu nokta, tüm sayfalarda görünür)
+├── BeforeUnloadGuard (tarayıcı kapatma koruması)
+├── AppShortcuts (global klavye kısayolları)
 └── Expanded (sağ panel — aktif ekran)
 ```
 
@@ -19,16 +22,37 @@ AppShell (Scaffold + Row)
 
 ```dart
 StatefulShellRoute.indexedStack(
-  builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
-  branches: [
-    StatefulShellBranch(routes: [GoRoute(path: '/')]),           // Dashboard
-    StatefulShellBranch(routes: [GoRoute(path: '/explorer')]),   // Explorer
-    StatefulShellBranch(routes: [GoRoute(path: '/rewards')]),    // Rewards
-    StatefulShellBranch(routes: [GoRoute(path: '/hadiths')]),    // Hadiths
-    StatefulShellBranch(routes: [GoRoute(path: '/validation')]), // Validation
-  ],
+  builder: (context, state, navigationShell) {
+    return Consumer(builder: (context, ref, _) {
+      return BeforeUnloadGuard(
+        child: AppShortcuts(
+          onUndo: ..., onRedo: ..., onExport: ...,
+          onFocusSearch: ..., onShowHelp: ...,
+          child: AppShell(navigationShell: navigationShell),
+        ),
+      );
+    });
+  },
+  branches: [...],
 )
 ```
+
+### Klavye Kısayolları (AppShortcuts)
+
+| Kısayol | Aksiyon |
+|---------|---------|
+| `Ctrl/Cmd + Z` | Undo (metin alanı dışında) |
+| `Ctrl/Cmd + Shift + Z` | Redo (metin alanı dışında) |
+| `Ctrl/Cmd + S` | Export ZIP |
+| `Ctrl/Cmd + E` | Export ZIP |
+| `Ctrl/Cmd + F` | Arama alanına focus |
+| `?` | Kısayollar yardım dialogu (metin alanı dışında) |
+
+Metin alanı aktifken undo/redo/? kısayolları bastırılır (native text editing korunur).
+
+### BeforeUnloadGuard
+
+Unsaved changes varken tarayıcı sekmesini kapatmaya çalışıldığında native `beforeunload` dialogu gösterilir.
 
 - `StatefulShellRoute.indexedStack` ile her branch kendi state'ini korur
 - `NavigationRail.onDestinationSelected` → `navigationShell.goBranch(index)`
@@ -65,20 +89,39 @@ Master-detail layout ile içerik ağacını görüntüler ve düzenler.
 
 **Layout:**
 ```
-Row
-├── TreePanel (sol, 300px) — Hiyerarşik ağaç: Series → Books → Levels → Questions
-├── VerticalDivider
-└── EditPanel (sağ, Expanded) — Seçili öğenin düzenleme formu
+Column
+├── Toolbar (undo, redo, unsaved indicator, bulk add, JSON preview toggle)
+└── Row
+    ├── TreePanel (sol, resizable 200-600px) — Hiyerarşik ağaç + arama + drag-drop
+    ├── Resizable Divider (sürüklenebilir)
+    ├── EditPanel (orta, Expanded) — Seçili öğenin düzenleme formu
+    └── JsonPreviewPanel (sağ, 300px, opsiyonel) — Seçili öğenin JSON çıktısı
 ```
 
-**Gösterilen bilgiler:**
-- Sol panel: Genişletilebilir ağaç yapısı (series > books > levels > questions)
-- Sağ panel: Seçili öğeye göre düzenleme formu
+**Toolbar özellikleri:**
+- Undo/Redo butonları (canUndo/canRedo durumuna göre aktif/pasif)
+- Unsaved changes göstergesi (turuncu nokta + metin)
+- "Bulk Add Questions" butonu (sadece level seçiliyken görünür)
+- JSON Preview toggle butonu
+
+**Arama:**
+- TreePanel üstünde arama alanı (Ctrl+F ile focus)
+- Türkçe-duyarlı case-insensitive arama
+- Sadece eşleşen öğeler ve ataları gösterilir
+- Eşleşen öğeler highlight edilir (bold + primary color)
+
+**Drag & Drop:**
+- Arama kapalıyken seri, kitap ve level'lar sürüklenebilir
+- Drag handle (≡) ile sıralama değiştirme
+- Arama aktifken drag devre dışı
 
 **Kullanıcı etkileşimleri:**
 - Ağaçta öğe seçimi → sağ panelde form açılır
-- Form üzerinden CRUD işlemleri
-- Sıralama değiştirme (reorder)
+- Form üzerinden CRUD işlemleri (history push ile undo desteği)
+- Sıralama değiştirme (drag-drop)
+- Toplu soru ekleme (Bulk Add)
+- JSON preview görüntüleme
+- Panel genişliği ayarlama (divider sürükleme)
 
 **SelectedItem sealed class:**
 ```dart
@@ -91,6 +134,12 @@ class SelectedQuestion extends SelectedItem { final String contentFile; final in
 
 **Kullandığı provider'lar:**
 - `contentStateProvider` — CRUD işlemleri
+- `historyProvider` — Undo/redo
+- `canUndoProvider`, `canRedoProvider` — Buton durumları
+- `isDirtyProvider` — Unsaved indicator
+- `jsonPreviewVisibleProvider` — JSON panel toggle
+- `searchQueryProvider`, `searchResultProvider` — Arama
+- `searchFocusNodeProvider` — Ctrl+F focus
 - `allSeriesProvider` — Sıralı seri listesi
 - `booksForSeriesProvider(seriesId)` — Seri bazlı kitaplar
 - `levelsForBookProvider(contentFile)` — Kitap bazlı level'lar

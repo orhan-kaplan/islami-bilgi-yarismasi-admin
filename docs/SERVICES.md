@@ -216,3 +216,122 @@ void downloadFile(Uint8List bytes, String filename)
 3. Gizli `<a>` elementi oluşturulur (`download` attribute ile)
 4. `anchor.click()` tetiklenir → tarayıcı indirme başlar
 5. Element kaldırılır ve URL revoke edilir (bellek temizliği)
+
+
+---
+
+## SearchEngine
+
+**Dosya**: `search_engine.dart`
+**Pattern**: Pure-function stateless sınıf
+
+İçerik ağacında Türkçe-duyarlı metin araması yapar.
+
+### Metotlar
+
+| Metot | Girdi | Çıktı |
+|-------|-------|-------|
+| `normalize(String)` | Ham metin | Türkçe-aware lowercase metin |
+| `filter(ContentState, String)` | State + query | `SearchResult` |
+
+### Normalizasyon Kuralları
+
+Türkçe büyük/küçük harf dönüşümü yapar. `ı` ve `i` farklı harfler olarak korunur:
+
+| Girdi | Çıktı | Açıklama |
+|-------|-------|----------|
+| `İ` | `i` | Büyük İ → küçük i |
+| `I` | `ı` | Büyük I → küçük ı (Türkçe kuralı) |
+| `ı` | `ı` | Olduğu gibi kalır |
+| `Ö` | `ö` | Büyük → küçük |
+| `Ü` | `ü` | Büyük → küçük |
+| `Ş` | `ş` | Büyük → küçük |
+| `Ç` | `ç` | Büyük → küçük |
+| `Ğ` | `ğ` | Büyük → küçük |
+| Diğer | `toLowerCase()` | Standart lowercase |
+
+### SearchResult Yapısı
+
+```dart
+class SearchResult {
+  final Set<int> matchingSeriesIds;      // Doğrudan eşleşen seriler
+  final Set<int> matchingBookIds;        // Doğrudan eşleşen kitaplar
+  final Set<int> matchingLevelIds;       // Doğrudan eşleşen level'lar
+  final Set<int> matchingQuestionIndices; // levelId * 1000 + questionIndex
+  final Set<int> visibleSeriesIds;       // Eşleşen + ata seriler
+  final Set<int> visibleBookIds;         // Eşleşen + ata kitaplar
+  final Set<int> visibleLevelIds;        // Eşleşen + ata level'lar
+}
+```
+
+### Arama Kapsamı
+
+Aşağıdaki alanlarda substring eşleşmesi yapılır:
+- Series: `name`
+- Book: `title`
+- Level: `title`
+- Question: `questionText`
+
+---
+
+## BulkImporter
+
+**Dosya**: `bulk_importer.dart`
+**Pattern**: Stateless sınıf
+
+Çoklu soru girişini JSON array veya satır bazlı formattan parse eder.
+
+### Metot
+
+```dart
+BulkImportResult parse(String input)
+```
+
+### Parse Stratejisi
+
+1. Input `[` ile başlıyorsa → JSON array olarak parse dener
+2. JSON parse başarısız olursa → satır bazlı format olarak parse eder
+3. Her iki format da başarısız → hata döndürür
+
+### Satır Bazlı Format
+
+```
+soru_metni
+seçenek_a
+seçenek_b
+seçenek_c
+seçenek_d
+doğru_cevap (A/B/C/D)
+açıklama (opsiyonel)
+tip (opsiyonel, varsayılan: multiple_choice)
+
+(boş satır ile ayır)
+
+sonraki_soru_metni
+...
+```
+
+### Tip-Spesifik Normalizasyon
+
+| Tip | Normalizasyon |
+|-----|---------------|
+| `true_false` | option_a → "Doğru", option_b → "Yanlış", option_c/d → "", correctOption A veya B olmalı |
+| `sorting` | correctOption her zaman "A" yapılır |
+| `matching` | Her option'da `\|` separator zorunlu, yoksa invalid |
+| Geçersiz tip | Soru invalid olarak işaretlenir |
+
+### BulkImportResult Yapısı
+
+```dart
+class BulkImportResult {
+  final List<QuestionModel> validQuestions;
+  final List<BulkImportError> errors;
+  bool get hasErrors => errors.isNotEmpty;
+  bool get hasValidQuestions => validQuestions.isNotEmpty;
+}
+
+class BulkImportError {
+  final int questionIndex;  // 0-based
+  final String reason;
+}
+```

@@ -33,7 +33,7 @@ Veri modelleri ve iş mantığı servislerini barındırır.
 | Dizin | İçerik |
 |-------|--------|
 | `models/` | İmmutable veri modelleri: `SeriesModel`, `BookModel`, `LevelModel`, `QuestionModel`, `RewardModel`, `HadithModel`, `ContentState` |
-| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `ZipImporter`, `ZipExporter`, `downloadFile` |
+| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `downloadFile` |
 
 ### 3. Presentation Katmanı (`lib/presentation/`)
 
@@ -41,8 +41,9 @@ Kullanıcı arayüzü, state yönetimi ve navigasyon.
 
 | Dizin | İçerik |
 |-------|--------|
-| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart` |
+| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart` |
 | `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `validation/` |
+| `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/`, `shared/`, `shortcuts/` |
 | `router/` | `go_router` yapılandırması ve `AppShell` (NavigationRail) |
 
 ## Bağımlılık Yönü
@@ -63,17 +64,20 @@ core ← data ← presentation
 2. ZipImporter → ZIP'i açar, dosyaları normalize eder
 3. JsonParser → Her JSON dosyasını ilgili modele parse eder
 4. ContentNotifier.importContent() → ContentState güncellenir
-5. Tüm derived provider'lar otomatik yeniden hesaplanır
+5. savedBaselineProvider → Import edilen state baseline olarak kaydedilir
+6. HistoryNotifier.clear() → Undo/redo geçmişi temizlenir
+7. Tüm derived provider'lar otomatik yeniden hesaplanır
 ```
 
 ### Export Akışı
 ```
-1. Kullanıcı "Export ZIP" butonuna tıklar
+1. Kullanıcı "Export ZIP" butonuna tıklar (veya Ctrl/Cmd+S kısayolu)
 2. ZipExporter → ContentValidator.validateAll() çalıştırır
 3. Error varsa → ValidationBlockedExportException fırlatılır
 4. Error yoksa → JsonSerializer ile tüm modeller JSON'a dönüştürülür
 5. Archive paketi ile ZIP oluşturulur
 6. downloadFile() → Tarayıcı indirme tetiklenir
+7. savedBaselineProvider → Export edilen state baseline olarak kaydedilir
 ```
 
 ### State Yönetimi Akışı

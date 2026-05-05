@@ -13,6 +13,8 @@
 ```
 lib/presentation/providers/
 ├── content_providers.dart      ← Core state + derived content providers
+├── history_providers.dart      ← Undo/redo, saved baseline, dirty state
+├── search_providers.dart       ← Arama query, sonuçlar, focus node
 ├── validation_providers.dart   ← Validasyon sonuçları + health score
 └── dashboard_providers.dart    ← Aggregate sayılar
 ```
@@ -25,10 +27,21 @@ contentStateProvider (StateNotifierProvider)
     ├── booksForSeriesProvider(seriesId)
     ├── levelsForBookProvider(contentFile)
     ├── totalCountsProvider
+    ├── isDirtyProvider (← savedBaselineProvider)
+    ├── searchResultProvider (← searchQueryProvider)
     └── validationResultsProvider
             ├── validationErrorsProvider
             ├── validationWarningsProvider
             └── healthScoreProvider
+
+historyProvider (StateNotifierProvider)
+    ├── canUndoProvider
+    └── canRedoProvider
+
+savedBaselineProvider (StateProvider)
+searchQueryProvider (StateProvider)
+searchFocusNodeProvider (Provider)
+jsonPreviewVisibleProvider (StateProvider)
 
 (Bağımsız)
 └── routerProvider
@@ -172,4 +185,82 @@ notifier.addSeries(SeriesModel(id: newId, name: 'Yeni Seri', ...));
 ```dart
 // Belirli bir serinin kitaplarını getir
 final books = ref.watch(booksForSeriesProvider(seriesId));
+```
+
+---
+
+## History & Dirty State Provider'ları
+
+### `historyProvider`
+- **Tip**: `StateNotifierProvider<HistoryNotifier, HistoryState>`
+- **Dosya**: `history_providers.dart`
+- **Açıklama**: Undo/redo stack'lerini yönetir. Maksimum 50 state snapshot tutar.
+
+**HistoryNotifier Metotları:**
+
+| Metot | Açıklama |
+|-------|----------|
+| `pushState(ContentState)` | Mevcut state'i undo stack'e ekler, redo stack'i temizler |
+| `undo(ContentState)` → `ContentState?` | Undo stack'ten geri alır, mevcut state'i redo'ya ekler |
+| `redo(ContentState)` → `ContentState?` | Redo stack'ten ileri alır, mevcut state'i undo'ya ekler |
+| `clear()` | Her iki stack'i temizler (import sonrası) |
+
+### `canUndoProvider`
+- **Tip**: `Provider<bool>`
+- **Bağımlılık**: `historyProvider`
+- **Açıklama**: Undo stack boş değilse `true`
+
+### `canRedoProvider`
+- **Tip**: `Provider<bool>`
+- **Bağımlılık**: `historyProvider`
+- **Açıklama**: Redo stack boş değilse `true`
+
+### `savedBaselineProvider`
+- **Tip**: `StateProvider<ContentState?>`
+- **Dosya**: `history_providers.dart`
+- **Açıklama**: Son import/export edilen state. Dirty karşılaştırması için kullanılır.
+
+### `isDirtyProvider`
+- **Tip**: `Provider<bool>`
+- **Bağımlılık**: `contentStateProvider`, `savedBaselineProvider`
+- **Açıklama**: `current != baseline` ise `true`. Baseline null ise `false`.
+
+### `jsonPreviewVisibleProvider`
+- **Tip**: `StateProvider<bool>`
+- **Dosya**: `history_providers.dart`
+- **Açıklama**: JSON preview panelinin görünürlük durumu.
+
+---
+
+## Search Provider'ları
+
+### `searchQueryProvider`
+- **Tip**: `StateProvider<String>`
+- **Dosya**: `search_providers.dart`
+- **Açıklama**: Kullanıcının girdiği arama metni.
+
+### `searchResultProvider`
+- **Tip**: `Provider<SearchResult?>`
+- **Bağımlılık**: `searchQueryProvider`, `contentStateProvider`
+- **Açıklama**: Query boş değilse `SearchEngine.filter()` sonucunu döndürür, boşsa `null`.
+
+### `searchFocusNodeProvider`
+- **Tip**: `Provider<FocusNode>`
+- **Dosya**: `search_providers.dart`
+- **Açıklama**: Arama alanının FocusNode'u. Ctrl+F kısayolu ile focus verilir.
+
+---
+
+## Undo/Redo Kullanım Kalıbı
+
+```dart
+// Committed işlem öncesi history push
+ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
+ref.read(contentStateProvider.notifier).updateSeries(updatedSeries);
+
+// Undo tetikleme
+final restored = ref.read(historyProvider.notifier).undo(ref.read(contentStateProvider));
+if (restored != null) {
+  ref.read(contentStateProvider.notifier).importContent(restored);
+}
 ```
