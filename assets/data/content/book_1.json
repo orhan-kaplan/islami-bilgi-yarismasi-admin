@@ -1,0 +1,920 @@
+{
+  "levels": [
+    {
+      "id": 1,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 1,
+      "title": "Doğuş ve Çocukluk",
+      "unlock_score": 0,
+      "asset_image": "assets/images/book_1/level_1.webp",
+      "questions": [
+        {
+          "question_text": "Peygamberimiz (s.a.v) nerede doğmuştur?",
+          "option_a": "Mekke",
+          "option_b": "Medine",
+          "option_c": "Taif",
+          "option_d": "Şam",
+          "correct_option": "A",
+          "explanation": "Peygamberimiz (s.a.v) 571 yılında Mekke'de doğmuştur.",
+          "type": "multiple_choice"
+        },
+        {
+          "question_text": "Peygamberimizin (s.a.v) süt annesinin adı Halime'dir.",
+          "option_a": "Doğru",
+          "option_b": "Yanlış",
+          "option_c": "",
+          "option_d": "",
+          "correct_option": "A",
+          "explanation": "Evet, Peygamberimizin süt annesi Halime'dir.",
+          "type": "true_false"
+        },
+        {
+          "question_text": "Aşağıdaki olayları ve yaşları eşleştiriniz.",
+          "option_a": "Doğumu | 571",
+          "option_b": "Annesinin Vefatı | 6 Yaş",
+          "option_c": "Dedesinin Vefatı | 8 Yaş",
+          "option_d": "Evliliği | 25 Yaş",
+          "correct_option": "A",
+          "explanation": "Doğumu 571, Annesinin vefatı 6 yaşında, Dedesinin vefatı 8 yaşında, Evliliği 25 yaşında gerçekleşmiştir.",
+          "type": "matching"
+        },
+        {
+          "question_text": "Peygamberimizin soy ağacını geçmişten günümüze sıralayınız.",
+          "option_a": "Hz. İbrahim",
+          "option_b": "Hz. İsmail",
+          "option_c": "Adnan",
+          "option_d": "Hz. Muhammed (s.a.v)",
+          "correct_option": "A",
+          "explanation": "Soyu Hz. İbrahim'in oğlu Hz. İsmail'e ve onun torunlarından Adnan'a dayanır.",
+          "type": "sorting"
+        },
+        {
+          "question_text": "Peygamberimizin dedesinin adı nedir?",
+          "option_a": "Abdülmuttalip",
+          "option_b": "Ebu Talib",
+          "option_c": "Abdullah",
+          "option_d": "Hamza",
+          "correct_option": "A",
+          "explanation": "Peygamberimizin dedesi Abdülmuttalip'tir.",
+          "type": "multiple_choice"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 2,
+      "title": "Gençlik Yılları ve Evlilik",
+      "unlock_score": 50,
+      "asset_image": "assets/images/book_1/level_2.webp",
+      "questions": [
+        {
+          "question_text": "Peygamberimiz gençliğinde amcasıyla ticaret için nereye gitmiştir?",
+          "option_a": "Şam (Busra)",
+          "option_b": "Yemen",
+          "option_c": "Mısır",
+          "option_d": "Bağdat",
+          "correct_option": "A",
+          "explanation": "Amcası Ebu Talib ile birlikte Şam (Busra) tarafına ticaret kervanına katılmıştır."
+        },
+        {
+          "question_text": "Busra'da Peygamberimizin son peygamber olacağını anlayan rahip kimdir?",
+          "option_a": "Nastura",
+          "option_b": "Bahira",
+          "option_c": "Varaka",
+          "option_d": "Cureyc",
+          "correct_option": "B",
+          "explanation": "Rahip Bahira, Peygamberimizdeki alametleri görerek O'nun son peygamber olacağını anlamıştır."
+        },
+        {
+          "question_text": "Peygamberimiz (s.a.v) Hz. Hatice ile kaç yaşında evlenmiştir?",
+          "option_a": "20",
+          "option_b": "25",
+          "option_c": "30",
+          "option_d": "40",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz 25 yaşındayken, 40 yaşındaki Hz. Hatice validemizle evlenmiştir."
+        },
+        {
+          "question_text": "Peygamberimizin 'Hacerü'l-Esved'i yerine koyma' hakemliği olayı kaç yaşında gerçekleşmiştir?",
+          "option_a": "25",
+          "option_b": "35",
+          "option_c": "40",
+          "option_d": "20",
+          "correct_option": "B",
+          "explanation": "Kabe hakemliği olayı Peygamberimiz 35 yaşındayken gerçekleşmiştir."
+        },
+        {
+          "question_text": "Mekke'de haksızlığa uğrayanları korumak için kurulan cemiyetin adı nedir?",
+          "option_a": "Dar'un Nedve",
+          "option_b": "Hilf'ul Fudul",
+          "option_c": "Dar'ul Erkam",
+          "option_d": "Akabe",
+          "correct_option": "B",
+          "explanation": "Erdemliler Birliği anlamına gelen Hilf'ul Fudul, haksızlığa karşı kurulmuştur."
+        },
+        {
+          "question_text": "Peygamberimize gençliğinde güvenilirliğinden dolayı ne lakap verilmiştir?",
+          "option_a": "Muhammedü'l Emin",
+          "option_b": "Halilullah",
+          "option_c": "Kelîmullah",
+          "option_d": "Seyyid",
+          "correct_option": "A",
+          "explanation": "Mekkeliler O'na 'Güvenilir Muhammed' anlamına gelen Muhammedü'l Emin demişlerdir."
+        },
+        {
+          "question_text": "Peygamberimizin Hz. Hatice'den doğan son çocuğu kimdir?",
+          "option_a": "Zeynep",
+          "option_b": "Rukiye",
+          "option_c": "Ümmü Gülsüm",
+          "option_d": "Fatıma",
+          "correct_option": "D",
+          "explanation": "Hz. Fatıma, Peygamberimizin en küçük kızıdır."
+        },
+        {
+          "question_text": "Peygamberimizin Hz. Hatice'den kaç çocuğu olmuştur?",
+          "option_a": "4",
+          "option_b": "5",
+          "option_c": "6",
+          "option_d": "7",
+          "correct_option": "C",
+          "explanation": "Hz. Hatice'den 2 erkek (Kasım, Abdullah) ve 4 kız (Zeynep, Rukiye, Ümmü Gülsüm, Fatıma) olmak üzere 6 çocuğu olmuştur."
+        },
+        {
+          "question_text": "Ficar Savaşları sırasında Peygamberimiz ne yapmıştır?",
+          "option_a": "Savaşmamış, amcalarına ok toplamıştır",
+          "option_b": "Komutanlık yapmıştır",
+          "option_c": "Şehri terk etmiştir",
+          "option_d": "Karşı tarafa geçmiştir",
+          "correct_option": "A",
+          "explanation": "Peygamberimiz bu savaşta fiili olarak çarpışmamış, amcalarına gelen okları toplayarak yardım etmiştir."
+        },
+        {
+          "question_text": "Hz. Hatice'nin ticaret kervanını yönetirken Peygamberimize eşlik eden kölenin adı nedir?",
+          "option_a": "Zeyd",
+          "option_b": "Meysere",
+          "option_c": "Bilal",
+          "option_d": "Enes",
+          "correct_option": "B",
+          "explanation": "Hz. Hatice, güvenilir kölesi Meysere'yi Peygamberimize yardımcı olması için göndermiştir."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 3,
+      "title": "İlk Vahiy ve Nübüvvet",
+      "unlock_score": 100,
+      "asset_image": "assets/images/book_1/level_3.webp",
+      "questions": [
+        {
+          "question_text": "Peygamberimize ilk vahiy kaç yılında gelmiştir?",
+          "option_a": "571",
+          "option_b": "610",
+          "option_c": "622",
+          "option_d": "632",
+          "correct_option": "B",
+          "explanation": "İlk vahiy 610 yılı Ramazan ayında gelmiştir."
+        },
+        {
+          "question_text": "İlk vahiy hangi sure ile başlamıştır?",
+          "option_a": "Fatiha Suresi",
+          "option_b": "Alak Suresi",
+          "option_c": "Müddessir Suresi",
+          "option_d": "Bakara Suresi",
+          "correct_option": "B",
+          "explanation": "İlk inen ayetler Alak Suresi'nin ilk 5 ayetidir ('Oku' emri)."
+        },
+        {
+          "question_text": "İlk vahyi getiren melek hangisidir?",
+          "option_a": "Mikail",
+          "option_b": "İsrafil",
+          "option_c": "Cebrail",
+          "option_d": "Azrail",
+          "correct_option": "C",
+          "explanation": "Vahiy meleği Hz. Cebrail (a.s)'dır."
+        },
+        {
+          "question_text": "Peygamberimiz ilk vahiyden sonra endişelenerek kime gitmiştir?",
+          "option_a": "Hz. Ebubekir",
+          "option_b": "Hz. Hatice",
+          "option_c": "Ebu Talib",
+          "option_d": "Hz. Ali",
+          "correct_option": "B",
+          "explanation": "Hemen evine gidip eşi Hz. Hatice validemize durumunu anlatmış ve 'Beni örtünüz' demiştir."
+        },
+        {
+          "question_text": "Hz. Hatice, Peygamberimizi durumu danışmak için hangi bilgin kişiye götürmüştür?",
+          "option_a": "Bahira",
+          "option_b": "Varaka bin Nevfel",
+          "option_c": "Ümeyye bin Halef",
+          "option_d": "Velid bin Muğire",
+          "correct_option": "B",
+          "explanation": "Hz. Hatice'nin amcasının oğlu olan Hristiyan alimi Varaka bin Nevfel'e götürmüştür."
+        },
+        {
+          "question_text": "Vahyin bir süre kesildiği döneme ne ad verilir?",
+          "option_a": "Fetretü'l Vahiy",
+          "option_b": "Hüzün Yılı",
+          "option_c": "Cahiliye",
+          "option_d": "Asr-ı Saadet",
+          "correct_option": "A",
+          "explanation": "İlk vahiyden sonra vahyin bir müddet kesilmesine Fetretü'l Vahiy denir."
+        },
+        {
+          "question_text": "Fetret devrinden sonra inen ve Peygamberimizi tebliğle görevlendiren sure hangisidir?",
+          "option_a": "Fatiha",
+          "option_b": "Müddessir",
+          "option_c": "Yasin",
+          "option_d": "Rahman",
+          "correct_option": "B",
+          "explanation": "'Ey örtüsüne bürünen (Peygamber)! Kalk ve uyar' ayetleriyle Müddessir suresi inmiştir."
+        },
+        {
+          "question_text": "İlk vahiy geldiğinde Peygamberimiz kaç yaşındaydı?",
+          "option_a": "25",
+          "option_b": "35",
+          "option_c": "40",
+          "option_d": "63",
+          "correct_option": "C",
+          "explanation": "Peygamberlik görevi 40 yaşında (kameri takvime göre 40 yıl 6 ay) verilmiştir."
+        },
+        {
+          "question_text": "Melek Cebrail (a.s) ilk vahiyde Peygamberimize ne yapmasını söylemiştir?",
+          "option_a": "Namaz kıl",
+          "option_b": "Oku",
+          "option_c": "Yaz",
+          "option_d": "Konuş",
+          "correct_option": "B",
+          "explanation": "İlk emir 'İkra' yani 'Oku' olmuştur."
+        },
+        {
+          "question_text": "İlk vahyin geldiği dağın adı nedir?",
+          "option_a": "Sevr Dağı",
+          "option_b": "Nur Dağı",
+          "option_c": "Uhud Dağı",
+          "option_d": "Arafat Dağı",
+          "correct_option": "B",
+          "explanation": "Hira Mağarası, Nur Dağı (Cebel-i Nur) üzerindedir."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 4,
+      "title": "Gizli ve Açık Davet",
+      "unlock_score": 150,
+      "asset_image": "assets/images/book_1/level_4.webp",
+      "questions": [
+        {
+          "question_text": "İslam'a ilk inanan kadın kimdir?",
+          "option_a": "Hz. Aişe",
+          "option_b": "Hz. Fatıma",
+          "option_c": "Hz. Hatice",
+          "option_d": "Hz. Sümeyye",
+          "correct_option": "C",
+          "explanation": "İlk Müslüman kadın, Peygamberimizin eşi Hz. Hatice'dir."
+        },
+        {
+          "question_text": "İslam'a ilk inanan hür erkek kimdir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Hz. Ömer",
+          "option_d": "Hz. Osman",
+          "correct_option": "B",
+          "explanation": "Yetişkin hür erkeklerden ilk Müslüman Hz. Ebubekir'dir."
+        },
+        {
+          "question_text": "Çocuklardan ilk Müslüman kimdir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Hz. Zeyd",
+          "option_c": "Hz. Enes",
+          "option_d": "Hz. Hasan",
+          "correct_option": "A",
+          "explanation": "Çocuk yaşta ilk Müslüman olan Peygamberimizin amcasının oğlu Hz. Ali'dir."
+        },
+        {
+          "question_text": "Gizli davet dönemi kaç yıl sürmüştür?",
+          "option_a": "1 yıl",
+          "option_b": "3 yıl",
+          "option_c": "5 yıl",
+          "option_d": "10 yıl",
+          "correct_option": "B",
+          "explanation": "İslam'ın gizli davet süreci yaklaşık 3 yıl sürmüştür."
+        },
+        {
+          "question_text": "Peygamberimiz açık daveti ilk olarak hangi tepede yapmıştır?",
+          "option_a": "Merve",
+          "option_b": "Safa",
+          "option_c": "Arafat",
+          "option_d": "Mina",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz Safa tepesine çıkarak Mekkelileri İslam'a açıkça davet etmiştir."
+        },
+        {
+          "question_text": "Safa tepesindeki davette Peygamberimize 'Elin kurusun' diyen amcası kimdir?",
+          "option_a": "Ebu Talib",
+          "option_b": "Ebu Leheb",
+          "option_c": "Abbas",
+          "option_d": "Ebu Cehil",
+          "correct_option": "B",
+          "explanation": "Bu hakareti üzerine Tebbet suresi inen kişi Ebu Leheb'dir."
+        },
+        {
+          "question_text": "Açık davet emri hangi ayetle gelmiştir?",
+          "option_a": "'Yakın akrabanı uyar'",
+          "option_b": "'Oku'",
+          "option_c": "'Namaz kıl'",
+          "option_d": "'Oruç tut'",
+          "correct_option": "A",
+          "explanation": "Şuara suresi 214. ayet ('Önce en yakın akrabanı uyar') ile açık davet başlamıştır."
+        },
+        {
+          "question_text": "Gizli davet döneminde Müslümanların toplandığı evin sahibi kimdir?",
+          "option_a": "Hz. Ebubekir",
+          "option_b": "Erkam bin Ebi'l Erkam",
+          "option_c": "Ammar",
+          "option_d": "Musab bin Umeyr",
+          "correct_option": "B",
+          "explanation": "Müslümanlar, Erkam'ın evi olan Dar'ul Erkam'da gizlice toplanırdı."
+        },
+        {
+          "question_text": "Azatlı kölelerden ilk Müslüman kimdir?",
+          "option_a": "Bilal-i Habeşi",
+          "option_b": "Zeyd bin Harise",
+          "option_c": "Selman-ı Farisi",
+          "option_d": "Suheyb",
+          "correct_option": "B",
+          "explanation": "Peygamberimizin azatlısı ve evlatlığı olan Zeyd bin Harise'dir."
+        },
+        {
+          "question_text": "Mekkeli müşrikler Peygamberimizi davasından vazgeçirmek için kime şikayet ettiler?",
+          "option_a": "Ebu Talib",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Hz. Hamza",
+          "option_d": "Varaka",
+          "correct_option": "A",
+          "explanation": "Onu koruyan amcası Ebu Talib'e giderek baskı yapmışlardır."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 5,
+      "title": "İşkenceler ve İlk Şehitler",
+      "unlock_score": 200,
+      "asset_image": "assets/images/book_1/level_5.webp",
+      "questions": [
+        {
+          "question_text": "Mekke'de ağır işkenceler altında 'Ehad, Ehad' (Allah birdir) diyen sahabi kimdir?",
+          "option_a": "Ammar",
+          "option_b": "Bilal-i Habeşi",
+          "option_c": "Yasir",
+          "option_d": "Habbab",
+          "correct_option": "B",
+          "explanation": "Ümeyye bin Halef'in işkencelerine karşı Bilal-i Habeşi bu cevabı vermiştir."
+        },
+        {
+          "question_text": "İslam'ın ilk şehidi kimdir?",
+          "option_a": "Hz. Sümeyye",
+          "option_b": "Hz. Yasir",
+          "option_c": "Hz. Ammar",
+          "option_d": "Hz. Musab",
+          "correct_option": "A",
+          "explanation": "Ebu Cehil tarafından şehit edilen Ammar'ın annesi Hz. Sümeyye ilk şehittir."
+        },
+        {
+          "question_text": "İşkence gören köleleri satın alıp azat eden sahabi kimdir?",
+          "option_a": "Hz. Osman",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Hz. Ömer",
+          "option_d": "Hz. Ali",
+          "correct_option": "B",
+          "explanation": "Hz. Ebubekir, Bilal-i Habeşi dahil birçok köleyi satın alıp özgürlüğüne kavuşturmuştur."
+        },
+        {
+          "question_text": "Müşriklerin 'Büyücü, şair, kâhin' iftiralarını attığı sure hangisidir?",
+          "option_a": "Yasin",
+          "option_b": "Kalem",
+          "option_c": "Hicr",
+          "option_d": "Mülk",
+          "correct_option": "B",
+          "explanation": "Kalem suresinde bu iftiralara cevap verilmiş ve Peygamberin üstün ahlakı övülmüştür."
+        },
+        {
+          "question_text": "Demirci olduğu için kor halindeki kömürlerin üzerine yatırılarak işkence edilen sahabi kimdir?",
+          "option_a": "Bilal",
+          "option_b": "Habbab bin Eret",
+          "option_c": "Suheyb",
+          "option_d": "Ammar",
+          "correct_option": "B",
+          "explanation": "Habbab bin Eret, mesleği demircilik olduğu için ateşle işkence görmüştür."
+        },
+        {
+          "question_text": "Peygamberimiz Kabe'de namaz kılarken üzerine deve işkembesi koyan müşrik kimdir?",
+          "option_a": "Ebu Leheb",
+          "option_b": "Ukbe bin Ebi Muayt",
+          "option_c": "Velid bin Muğire",
+          "option_d": "Ümeyye",
+          "correct_option": "B",
+          "explanation": "Ebu Cehil'in kışkırtmasıyla Ukbe bin Ebi Muayt bu çirkin hareketi yapmıştır."
+        },
+        {
+          "question_text": "İşkenceler artınca Peygamberimiz Müslümanlara nereye hicret izni verdi?",
+          "option_a": "Medine",
+          "option_b": "Habeşistan",
+          "option_c": "Yemen",
+          "option_d": "Taif",
+          "correct_option": "B",
+          "explanation": "İlk hicret, adaletli bir kralı olduğu için Habeşistan'a yapılmıştır."
+        },
+        {
+          "question_text": "Ailesinin tamamı (anne ve babası) işkenceyle şehit edilen sahabi kimdir?",
+          "option_a": "Ammar bin Yasir",
+          "option_b": "Bilal",
+          "option_c": "Musab",
+          "option_d": "Talha",
+          "correct_option": "A",
+          "explanation": "Yasir ailesi ağır işkenceler görmüş, Ammar (r.a) hayatta kalmıştır."
+        },
+        {
+          "question_text": "Peygamberimizin evinin önüne dikenler döken Ebu Leheb'in karısı kimdir?",
+          "option_a": "Hind",
+          "option_b": "Ümmü Cemil",
+          "option_c": "Ümmü Habibe",
+          "option_d": "Esma",
+          "correct_option": "B",
+          "explanation": "Tebbet suresinde 'odun taşıyıcısı' olarak geçen Ümmü Cemil'dir."
+        },
+        {
+          "question_text": "Müşrikler, Peygamberimizle alay etmek için O'na hangi lakabı taktılar?",
+          "option_a": "Müzemmil",
+          "option_b": "Müzzemmem (Yerilmiş)",
+          "option_c": "Emin",
+          "option_d": "Sıddık",
+          "correct_option": "B",
+          "explanation": "Muhammed (Övülmüş) isminin zıddı olarak Müzzemmem (Yerilmiş) demişlerdir."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 6,
+      "title": "Habeşistan Hicretleri",
+      "unlock_score": 250,
+      "asset_image": "assets/images/book_1/level_6.webp",
+      "questions": [
+        {
+          "question_text": "Müslümanlar Habeşistan'a kaç defa hicret etmiştir?",
+          "option_a": "1",
+          "option_b": "2",
+          "option_c": "3",
+          "option_d": "4",
+          "correct_option": "B",
+          "explanation": "Biri küçük, diğeri daha kalabalık bir grup olmak üzere iki defa hicret edilmiştir."
+        },
+        {
+          "question_text": "Habeşistan kralının unvanı nedir?",
+          "option_a": "Firavun",
+          "option_b": "Necaşi",
+          "option_c": "Kayser",
+          "option_d": "Kisra",
+          "correct_option": "B",
+          "explanation": "Habeşistan krallarına Necaşi (Negus) denirdi. Dönemin kralı Ashame'dir."
+        },
+        {
+          "question_text": "İkinci Habeşistan hicretinde Müslümanların sözcülüğünü kim yapmıştır?",
+          "option_a": "Hz. Osman",
+          "option_b": "Cafer bin Ebi Talib",
+          "option_c": "Musab bin Umeyr",
+          "option_d": "Zübeyr bin Avvam",
+          "correct_option": "B",
+          "explanation": "Kralın huzurunda Cafer-i Tayyar (Cafer bin Ebi Talib) konuşmuştur."
+        },
+        {
+          "question_text": "Hz. Cafer, Necaşi'nin huzurunda hangi sureden ayetler okumuştur?",
+          "option_a": "Yusuf Suresi",
+          "option_b": "Meryem Suresi",
+          "option_c": "Bakara Suresi",
+          "option_d": "İbrahim Suresi",
+          "correct_option": "B",
+          "explanation": "Hz. İsa ve Hz. Meryem'den bahseden Meryem Suresi'ni okumuştur."
+        },
+        {
+          "question_text": "Mekkeli müşrikler mültecileri geri almak için kimi elçi göndermiştir?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Amr bin As",
+          "option_c": "Ebu Süfyan",
+          "option_d": "Halid bin Velid",
+          "correct_option": "B",
+          "explanation": "Henüz Müslüman olmamış olan Amr bin As elçi olarak gitmiştir."
+        },
+        {
+          "question_text": "İlk Habeşistan kafilesinde Peygamberimizin kızı Rukiye ile birlikte kim vardı?",
+          "option_a": "Hz. Ali",
+          "option_b": "Hz. Osman",
+          "option_c": "Hz. Ebubekir",
+          "option_d": "Hz. Ömer",
+          "correct_option": "B",
+          "explanation": "Hz. Osman eşi Hz. Rukiye ile birlikte ilk hicret edenlerdendir."
+        },
+        {
+          "question_text": "Habeşistan bugünkü hangi ülkenin topraklarındadır?",
+          "option_a": "Mısır",
+          "option_b": "Etiyopya",
+          "option_c": "Yemen",
+          "option_d": "Sudan",
+          "correct_option": "B",
+          "explanation": "Eski adı Habeşistan olan bölge bugünkü Etiyopya'dır."
+        },
+        {
+          "question_text": "Müslümanların Habeşistan'dan geri dönmesine sebep olan asılsız haber neydi?",
+          "option_a": "Mekkelilerin Müslüman olduğu",
+          "option_b": "Peygamberin Medine'ye gittiği",
+          "option_c": "Ebu Cehil'in öldüğü",
+          "option_d": "Kıtlık çıktığı",
+          "correct_option": "A",
+          "explanation": "Necm suresi okunduğunda müşriklerin de secde ettiği haberi 'Mekkeliler Müslüman oldu' diye yayılmıştır."
+        },
+        {
+          "question_text": "Necaşi'nin Müslümanları teslim etmemesinin temel sebebi nedir?",
+          "option_a": "Akraba olmaları",
+          "option_b": "Adaletli olması ve Hz. Cafer'in savunması",
+          "option_c": "Rüşvet alması",
+          "option_d": "Savaş istememesi",
+          "correct_option": "B",
+          "explanation": "Adaletiyle tanınan Necaşi, İslam'ın hak din olduğuna kanaat getirmiştir."
+        },
+        {
+          "question_text": "Garanik olayı hangi olayla ilişkilendirilir?",
+          "option_a": "Taif",
+          "option_b": "Habeşistan dönüşü",
+          "option_c": "Akabe biatı",
+          "option_d": "Uhud savaşı",
+          "correct_option": "B",
+          "explanation": "Şeytanın ayetlere söz karıştırdığı iddiası (Garanik), Habeşistan'dan dönüş rivayetiyle ilgilidir."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 7,
+      "title": "İki Ömer ve Güçlenme",
+      "unlock_score": 300,
+      "asset_image": "assets/images/book_1/level_7.webp",
+      "questions": [
+        {
+          "question_text": "Hz. Hamza, hangi olaydan sonra Müslüman olmuştur?",
+          "option_a": "Kabe hakemliği",
+          "option_b": "Ebu Cehil'in Peygamberimize hakaret etmesi",
+          "option_c": "Habeşistan hicreti",
+          "option_d": "Bedir savaşı",
+          "correct_option": "B",
+          "explanation": "Ebu Cehil'in Peygamberimize hakaret ettiğini duyunca onu yaralamış ve İslam'ı seçmiştir."
+        },
+        {
+          "question_text": "Hz. Ömer, Peygamberimizi öldürmeye giderken kimin evinde Kuran dinleyip etkilenmiştir?",
+          "option_a": "Kız kardeşi Fatıma",
+          "option_b": "Amcası Abbas",
+          "option_c": "Ebu Bekir",
+          "option_d": "Osman",
+          "correct_option": "A",
+          "explanation": "Kız kardeşi Fatıma binti Hattab'ın evinde Taha suresini dinleyip yumuşamıştır."
+        },
+        {
+          "question_text": "Hz. Ömer'in Müslüman oluşuyla Müslümanlar ilk defa neyi açıkça yapmışlardır?",
+          "option_a": "Oruç tutmayı",
+          "option_b": "Kabe'de topluca namaz kılmayı",
+          "option_c": "Zekat vermeyi",
+          "option_d": "Kurban kesmeyi",
+          "correct_option": "B",
+          "explanation": "Hz. Ömer ve Hz. Hamza'nın desteğiyle Müslümanlar Kabe'de açıktan namaz kılmışlardır."
+        },
+        {
+          "question_text": "Peygamberimizin 'Allah'ım, İslam'ı şu iki adamdan biriyle güçlendir' dediği duadaki diğer kişi kimdi?",
+          "option_a": "Ebu Leheb",
+          "option_b": "Ebu Cehil (Amr bin Hişam)",
+          "option_c": "Velid bin Muğire",
+          "option_d": "Ümeyye bin Halef",
+          "correct_option": "B",
+          "explanation": "Dua 'Ebu Cehil veya Ömer bin Hattab ile güçlendir' şeklindeydi, nasip Hz. Ömer'e oldu."
+        },
+        {
+          "question_text": "Hz. Ömer'in okuyup etkilendiği sure hangisidir?",
+          "option_a": "Yasin",
+          "option_b": "Taha",
+          "option_c": "Rahman",
+          "option_d": "Fetih",
+          "correct_option": "B",
+          "explanation": "Kız kardeşinin evinde Taha Suresi'nin ilk ayetlerini dinlemiştir."
+        },
+        {
+          "question_text": "Hz. Hamza'nın lakabı nedir?",
+          "option_a": "Sıddık",
+          "option_b": "Esedullah (Allah'ın Aslanı)",
+          "option_c": "Faruk",
+          "option_d": "Zinnureyn",
+          "correct_option": "B",
+          "explanation": "Cesaretinden dolayı kendisine Allah'ın Aslanı denilmiştir."
+        },
+        {
+          "question_text": "Hz. Ömer'e, hak ile batılı ayırdığı için Peygamberimiz hangi lakabı vermiştir?",
+          "option_a": "Sıddık",
+          "option_b": "Faruk",
+          "option_c": "Haydar",
+          "option_d": "Seyfullah",
+          "correct_option": "B",
+          "explanation": "Hz. Ömer 'El-Faruk' lakabıyla anılır."
+        },
+        {
+          "question_text": "Bu iki sahabinin Müslüman olması nübüvvetin kaçıncı yılında gerçekleşmiştir?",
+          "option_a": "1. yıl",
+          "option_b": "6. yıl",
+          "option_c": "10. yıl",
+          "option_d": "12. yıl",
+          "correct_option": "B",
+          "explanation": "Nübüvvetin 6. yılında, kısa aralıklarla Müslüman olmuşlardır."
+        },
+        {
+          "question_text": "Hz. Hamza Peygamberimizin neyidir?",
+          "option_a": "Dayısı",
+          "option_b": "Amcası ve sütkardeşi",
+          "option_c": "Kuzeni",
+          "option_d": "Yeğeni",
+          "correct_option": "B",
+          "explanation": "Hz. Hamza hem Peygamberimizin amcası hem de Süveybe'den süt emdikleri için sütkardeşidir."
+        },
+        {
+          "question_text": "Müşrikler, Hz. Ömer'in Müslüman olmasına nasıl tepki verdiler?",
+          "option_a": "Sevindiler",
+          "option_b": "Şok oldular ve moralleri bozuldu",
+          "option_c": "Umursamadılar",
+          "option_d": "Tebrik ettiler",
+          "correct_option": "B",
+          "explanation": "Müşrikler için bu büyük bir yıkım olmuş, 'Ömer Müslüman olduysa işimiz bitti' demişlerdir."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 8,
+      "title": "Boykot Yılları",
+      "unlock_score": 350,
+      "asset_image": "assets/images/book_1/level_8.webp",
+      "questions": [
+        {
+          "question_text": "Müşrikler Müslümanlara kaç yıl boykot uygulamıştır?",
+          "option_a": "1",
+          "option_b": "3",
+          "option_c": "5",
+          "option_d": "7",
+          "correct_option": "B",
+          "explanation": "Boykot yılları 3 sene sürmüştür."
+        },
+        {
+          "question_text": "Boykot sırasında Müslümanlar nerede toplanmıştır?",
+          "option_a": "Dar'ul Erkam",
+          "option_b": "Şi'b-i Ebi Talib (Ebu Talib Mahallesi)",
+          "option_c": "Sevr Mağarası",
+          "option_d": "Taif",
+          "correct_option": "B",
+          "explanation": "Müslümanlar ve Haşimoğulları Ebu Talib Mahallesi'nde (Şi'b) kuşatılmıştır."
+        },
+        {
+          "question_text": "Boykot anlaşmasının metni nereye asılmıştır?",
+          "option_a": "Dar'un Nedve",
+          "option_b": "Kabe duvarına",
+          "option_c": "Ebu Süfyan'ın evine",
+          "option_d": "Şam kervanına",
+          "correct_option": "B",
+          "explanation": "Anlaşma metni yazılarak Kabe'nin içine veya duvarına asılmıştır."
+        },
+        {
+          "question_text": "Boykot maddelerinden biri hangisidir?",
+          "option_a": "Kız alıp verilmeyecek",
+          "option_b": "Ticaret serbest olacak",
+          "option_c": "Sadece geceleri görüşülecek",
+          "option_d": "Herkes istediği dine inanacak",
+          "correct_option": "A",
+          "explanation": "Kız alıp vermemek, alışveriş yapmamak, konuşmamak gibi maddeler vardı."
+        },
+        {
+          "question_text": "Boykot anlaşmasını kim yemiştir?",
+          "option_a": "Fareler",
+          "option_b": "Güveler (Ağaç kurtları)",
+          "option_c": "Kuşlar",
+          "option_d": "Kediler",
+          "correct_option": "B",
+          "explanation": "Allah'ın izniyle güveler, 'Allah' ismi hariç tüm anlaşma metnini yemiştir."
+        },
+        {
+          "question_text": "Boykotun kaldırılmasına öncülük eden müşrik kimdir?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Hişam bin Amr ve Mut'im bin Adiy",
+          "option_c": "Ebu Leheb",
+          "option_d": "Ümeyye",
+          "correct_option": "B",
+          "explanation": "Akrabalık bağları ve vicdanen rahatsız olan Hişam bin Amr gibi bazı müşrikler boykotu delmiştir."
+        },
+        {
+          "question_text": "Boykot sırasında Müslümanların en büyük sıkıntısı neydi?",
+          "option_a": "Susuzluk",
+          "option_b": "Açlık",
+          "option_c": "Soğuk",
+          "option_d": "Hastalık",
+          "correct_option": "B",
+          "explanation": "Müşrikler mahalleye yiyecek girmesini engellediği için açlık had safhadaydı."
+        },
+        {
+          "question_text": "Boykot hangi yıllar arasında gerçekleşmiştir?",
+          "option_a": "Nübüvvetin 1-3. yılları",
+          "option_b": "Nübüvvetin 7-10. yılları",
+          "option_c": "Nübüvvetin 10-13. yılları",
+          "option_d": "Hicretin 1. yılı",
+          "correct_option": "B",
+          "explanation": "Nübüvvetin 7. yılında başlayıp 10. yılında sona ermiştir."
+        },
+        {
+          "question_text": "Boykot döneminde Müslümanlara gizlice yardım edenlerden biri kimdir?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Hakim bin Hizam",
+          "option_c": "Ebu Leheb",
+          "option_d": "Abdullah bin Übey",
+          "correct_option": "B",
+          "explanation": "Hz. Hatice'nin yeğeni Hakim bin Hizam bazen gizlice yiyecek göndermiştir."
+        },
+        {
+          "question_text": "Peygamberimiz boykotun bittiğini kime haber vermiştir?",
+          "option_a": "Ebu Talib",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Ebu Cehil",
+          "option_d": "Abbas",
+          "correct_option": "A",
+          "explanation": "Anlaşmayı güvelerin yediğini amcası Ebu Talib'e söylemiş, Ebu Talib de bunu müşriklere iletmiştir."
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 9,
+      "title": "Hüzün Yılı ve Taif",
+      "unlock_score": 400,
+      "asset_image": "assets/images/book_1/level_9.webp",
+      "questions": [
+        {
+          "question_text": "Hüzün Yılı'nda Peygamberimiz (s.a.v) kimi kaybetmiştir?",
+          "option_a": "Hz. Hamza",
+          "option_b": "Hz. Hatice ve Ebu Talib",
+          "option_c": "Hz. Aişe",
+          "option_d": "Abdülmuttalip",
+          "correct_option": "B",
+          "explanation": "Hüzün Yılı'nda hem sevgili eşi Hz. Hatice'yi hem de koruyucu amcası Ebu Talib'i kaybetmiştir."
+        },
+        {
+          "question_text": "Hüzün Yılı nübüvvetin kaçıncı senesidir?",
+          "option_a": "5",
+          "option_b": "10",
+          "option_c": "12",
+          "option_d": "8",
+          "correct_option": "B",
+          "explanation": "Boykotun bitiminden hemen sonra, nübüvvetin 10. yılında gerçekleşmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Taif'e kiminle gitmiştir?",
+          "option_a": "Hz. Ebubekir",
+          "option_b": "Zeyd bin Harise",
+          "option_c": "Hz. Ali",
+          "option_d": "Bilal",
+          "correct_option": "B",
+          "explanation": "Yanına evlatlığı Zeyd bin Harise'yi alarak Taif'e gitmiştir."
+        },
+        {
+          "question_text": "Taifliler Peygamberimize nasıl davrandı?",
+          "option_a": "Güzel karşıladılar",
+          "option_b": "Taşlayarak şehirden kovdular",
+          "option_c": "Anlaşma imzaladılar",
+          "option_d": "Yemek ikram ettiler",
+          "correct_option": "B",
+          "explanation": "İslam'ı kabul etmedikleri gibi ayak takımına Peygamberimizi taşlattılar."
+        },
+        {
+          "question_text": "Peygamberimiz Taif dönüşü hangi bahçede dinlenmiştir?",
+          "option_a": "Utbe ve Şeybe'nin bağı",
+          "option_b": "Medine hurmalığı",
+          "option_c": "Ebu Talib'in bağı",
+          "option_d": "Sevr mağarası önü",
+          "correct_option": "A",
+          "explanation": "Mekke'nin ileri gelenlerinden Utbe ve Şeybe'nin bağında mola vermiştir."
+        },
+        {
+          "question_text": "Bağda Peygamberimize üzüm ikram eden kölenin adı nedir?",
+          "option_a": "Zeyd",
+          "option_b": "Addas",
+          "option_c": "Selman",
+          "option_d": "Bilal",
+          "correct_option": "B",
+          "explanation": "Hristiyan bir köle olan Addas, üzüm ikram etmiş ve Peygamberimizle konuşup Müslüman olmuştur."
+        },
+        {
+          "question_text": "Addas nerelidir?",
+          "option_a": "Mekke",
+          "option_b": "Ninova",
+          "option_c": "Habeşistan",
+          "option_d": "Yemen",
+          "correct_option": "B",
+          "explanation": "Hz. Yunus'un şehri olan Ninovalıdır."
+        },
+        {
+          "question_text": "Taif dönüşü Peygamberimize dağlar meleği gelip ne teklif etmiştir?",
+          "option_a": "Seni Medine'ye götüreyim",
+          "option_b": "Taif halkının üzerine dağları kapatayım",
+          "option_c": "Sana hazine vereyim",
+          "option_d": "Düşmanlarını öldüreyim",
+          "correct_option": "B",
+          "explanation": "Melek, helak etmeyi teklif etmiş ama Peygamberimiz onların soylarından inananlar gelmesi için dua etmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Taif dönüşü Mekke'ye kimin himayesinde girmiştir?",
+          "option_a": "Ebu Süfyan",
+          "option_b": "Mut'im bin Adiy",
+          "option_c": "Ebu Cehil",
+          "option_d": "Ebu Leheb",
+          "correct_option": "B",
+          "explanation": "Müşrik olmasına rağmen kabile geleneği gereği Mut'im bin Adiy himayesini kabul etmiştir."
+        },
+        {
+          "question_text": "Cinlerin Peygamberimizi dinleyip iman ettiği yer neresidir?",
+          "option_a": "Hira",
+          "option_b": "Batn-ı Nahle (Cin Mescidi)",
+          "option_c": "Kabe",
+          "option_d": "Taif kalesi",
+          "correct_option": "B",
+          "explanation": "Taif dönüşü Batn-ı Nahle denilen yerde Cin suresinin inmesine vesile olan olay yaşanmıştır."
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "book_id": 1,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 10,
+      "title": "İsra, Miraç ve Akabe",
+      "unlock_score": 450,
+      "asset_image": "assets/images/book_1/level_10.webp",
+      "questions": [
+        {
+          "question_text": "İsra olayı neyi ifade eder?",
+          "option_a": "Göğe yükselme",
+          "option_b": "Mekke'den Kudüs'e gece yürüyüşü",
+          "option_c": "Hicret",
+          "option_d": "Doğum",
+          "correct_option": "B",
+          "explanation": "İsra, Mescid-i Haram'dan Mescid-i Aksa'ya yapılan gece yolculuğudur."
+        },
+        {
+          "question_text": "Miraç olayı neyi ifade eder?",
+          "option_a": "Mekke'den Medine'ye göç",
+          "option_b": "Kudüs'ten göklere yükselme",
+          "option_c": "Taif yolculuğu",
+          "option_d": "Habeşistan hicreti",
+          "correct_option": "B",
+          "explanation": "Miraç, Mescid-i Aksa'dan göklere yükselmeyi ifade eder."
+        },
+        {
+          "question_text": "Miraç'ta Müslümanlara hangi ibadet farz kılınmıştır?",
+          "option_a": "Oruç",
+          "option_b": "Zekat",
+          "option_c": "Beş vakit namaz",
+          "option_d": "Hac",
+          "correct_option": "C",
+          "explanation": "Miraç'ta beş vakit namaz farz kılınmıştır. Başta 50 vakit iken 5'e indirilmiştir."
+        },
+        {
+          "question_text": "İsra ve Miraç olayını duyunca 'Sen söylediysen doğrudur' diyen sahabi kimdir?",
+          "option_a": "Hz. Ömer",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Hz. Ali",
+          "option_d": "Hz. Osman",
+          "correct_option": "B",
+          "explanation": "Hz. Ebubekir bu sözleriyle 'Sıddık' (en doğru tasdik eden) lakabını almıştır."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,509 @@
+{
+  "levels": [
+    {
+      "id": 11,
+      "book_id": 2,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 1,
+      "title": "Hicret ve Medine'nin İnşası",
+      "unlock_score": 50,
+      "asset_image": "assets/images/book_2/level_1.webp",
+      "questions": [
+        {
+          "question_text": "Peygamberimiz ve Hz. Ebubekir hicret sırasında hangi mağarada saklanmışlardır?",
+          "option_a": "Hira Mağarası",
+          "option_b": "Sevr Mağarası",
+          "option_c": "Uhud Mağarası",
+          "option_d": "Kehf Mağarası",
+          "correct_option": "B",
+          "explanation": "Müşriklerden gizlenmek için Sevr Mağarası'nda 3 gün kalmışlardır."
+        },
+        {
+          "question_text": "İslam tarihinde inşa edilen ilk mescit hangisidir?",
+          "option_a": "Mescid-i Nebevi",
+          "option_b": "Kuba Mescidi",
+          "option_c": "Mescid-i Aksa",
+          "option_d": "Mescid-i Kıbleteyn",
+          "correct_option": "B",
+          "explanation": "Hicret yolculuğu sırasında Medine'ye varmadan önce Kuba'da inşa edilmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Medine'ye ilk geldiğinde kimin evinde misafir olmuştur?",
+          "option_a": "Hz. Ebubekir",
+          "option_b": "Musab bin Umeyr",
+          "option_c": "Ebu Eyyub el-Ensari",
+          "option_d": "Sa'd bin Muaz",
+          "correct_option": "C",
+          "explanation": "Devesi Kasva'nın çöktüğü yere en yakın ev olan Ebu Eyyub el-Ensari'nin evinde 7 ay kalmıştır."
+        },
+        {
+          "question_text": "Medine'de muhacir ve ensarın kardeş ilan edilmesine ne ad verilir?",
+          "option_a": "Muahat",
+          "option_b": "Biat",
+          "option_c": "Hicret",
+          "option_d": "İsar",
+          "correct_option": "A",
+          "explanation": "Muahat 'Kardeşleştirme' anlamına gelir ve toplumsal bütünleşmeyi sağlamıştır."
+        },
+        {
+          "question_text": "İlk ezanı okuyan sahabi kimdir?",
+          "option_a": "Abdullah bin Zeyd",
+          "option_b": "Bilal-i Habeşi",
+          "option_c": "Hz. Ömer",
+          "option_d": "Selman",
+          "correct_option": "B",
+          "explanation": "Güzel sesiyle bilinen Bilal-i Habeşi, İslam'ın ilk müezzini olmuştur."
+        },
+        {
+          "question_text": "Medine'nin hicretten önceki adı nedir?",
+          "option_a": "Yesrib",
+          "option_b": "Taif",
+          "option_c": "Yemen",
+          "option_d": "Hicaz",
+          "correct_option": "A",
+          "explanation": "Peygamberimiz, 'kınama/fesat' anlamına gelen Yesrib ismini 'Medine-i Münevvere' (Nurlanmış Şehir) olarak değiştirmiştir."
+        },
+        {
+          "question_text": "İlk Cuma namazı nerede kılınmıştır?",
+          "option_a": "Kabe",
+          "option_b": "Mescid-i Nebevi",
+          "option_c": "Ranuna Vadisi",
+          "option_d": "Sevr",
+          "correct_option": "C",
+          "explanation": "Kuba'dan Medine'ye giderken Ranuna Vadisi'nde ilk Cuma namazı kılınmıştır."
+        },
+        {
+          "question_text": "Mescid-i Nebevi inşa edilirken Peygamberimiz ne yapmıştır?",
+          "option_a": "Sadece izlemiştir",
+          "option_b": "Taş taşıyarak bizzat çalışmıştır",
+          "option_c": "Komutanlık yapmıştır",
+          "option_d": "Şehri gezmiştir",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz sırtında kerpiç ve taş taşıyarak sahabelerle birlikte çalışmıştır."
+        },
+        {
+          "question_text": "Peygamberimizi yakalayıp ödülü almak için peşine düşen ancak atı kuma batan kişi kimdir?",
+          "option_a": "Süraka",
+          "option_b": "Ebu Cehil",
+          "option_c": "Vahşi",
+          "option_d": "Ebu Süfyan",
+          "correct_option": "A",
+          "explanation": "Süraka bin Malik, mucizevi şekilde atının ayaklarının kuma battığını görünce aman dilemiştir."
+        },
+        {
+          "question_text": "Peygamberimizin hicret arkadaşı kimdir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Hz. Ebubekir",
+          "option_c": "Hz. Osman",
+          "option_d": "Hz. Ömer",
+          "correct_option": "B",
+          "explanation": "Kuran'da 'İkinin ikincisi' olarak övülen yol arkadaşı Hz. Ebubekir'dir."
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "book_id": 2,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 2,
+      "title": "Bedir Savaşı",
+      "unlock_score": 100,
+      "asset_image": "assets/images/book_2/level_2.webp",
+      "questions": [
+        {
+          "question_text": "Müslümanların müşriklere karşı kazandığı ilk büyük zafer hangisidir?",
+          "option_a": "Uhud Savaşı",
+          "option_b": "Hendek Savaşı",
+          "option_c": "Bedir Savaşı",
+          "option_d": "Mute Savaşı",
+          "correct_option": "C",
+          "explanation": "Bedir Savaşı (624), İslam ordusunun sayıca az olmasına rağmen kazandığı ilk ve en büyük zaferdir."
+        },
+        {
+          "question_text": "Bedir Savaşı hangi tarihte yapılmıştır?",
+          "option_a": "622",
+          "option_b": "624",
+          "option_c": "625",
+          "option_d": "630",
+          "correct_option": "B",
+          "explanation": "Hicretin 2. yılında, 624 senesinde gerçekleşmiştir."
+        },
+        {
+          "question_text": "Bedir Savaşı'nda Müslümanların sayısı kaçtır?",
+          "option_a": "1000",
+          "option_b": "313",
+          "option_c": "700",
+          "option_d": "100",
+          "correct_option": "B",
+          "explanation": "Müslüman ordusu yaklaşık 313 kişiyken, müşrik ordusu 1000 kişi civarındaydı."
+        },
+        {
+          "question_text": "Bedir'de öldürülen 'Ümmetin Firavunu' lakaplı müşrik lideri kimdir?",
+          "option_a": "Ebu Süfyan",
+          "option_b": "Ebu Leheb",
+          "option_c": "Ebu Cehil",
+          "option_d": "Ümeyye bin Halef",
+          "correct_option": "C",
+          "explanation": "İslam'ın en büyük düşmanlarından Ebu Cehil, Bedir'de öldürülmüştür."
+        },
+        {
+          "question_text": "Bedir Savaşı'nda Allah Müslümanları ne ile desteklemiştir?",
+          "option_a": "Gökten inen meleklerle",
+          "option_b": "Depremle",
+          "option_c": "Sel felaketiyle",
+          "option_d": "Ateşle",
+          "correct_option": "A",
+          "explanation": "Ayetlerde belirtildiği üzere Allah (c.c) melekler göndererek müminlere yardım etmiştir."
+        },
+        {
+          "question_text": "Bedir'de ordunun kuyuların yakınına konuşlanmasını öneren sahabi kimdir?",
+          "option_a": "Hubab bin Münzir",
+          "option_b": "Hz. Hamza",
+          "option_c": "Hz. Ömer",
+          "option_d": "Selman-ı Farisi",
+          "correct_option": "A",
+          "explanation": "Hubab bin Münzir, su kuyularını tutarak stratejik üstünlük sağlanmasını önermiştir."
+        },
+        {
+          "question_text": "Bedir esirlerine uygulanan şartlardan biri hangisidir?",
+          "option_a": "Ömür boyu hapis",
+          "option_b": "10 Müslümana okuma yazma öğretmek",
+          "option_c": "Müslüman olmak zorunda tutulmak",
+          "option_d": "Sürgün edilmek",
+          "correct_option": "B",
+          "explanation": "Fidye veremeyen esirler, 10 Müslüman çocuğa okuma yazma öğretme karşılığında serbest bırakılmıştır."
+        },
+        {
+          "question_text": "Bedir Savaşı'nın asıl çıkış sebebi neydi?",
+          "option_a": "Medine'ye saldırı",
+          "option_b": "Ebu Süfyan'ın ticaret kervanı",
+          "option_c": "Arazi anlaşmazlığı",
+          "option_d": "Esir takası",
+          "correct_option": "B",
+          "explanation": "Müslümanların mallarına el koyan müşriklerin Şam'dan dönen büyük kervanını ele geçirmek amacıyla yola çıkılmıştı."
+        },
+        {
+          "question_text": "Bedir'de şehit düşen Müslüman sayısı kaçtır?",
+          "option_a": "14",
+          "option_b": "70",
+          "option_c": "300",
+          "option_d": "50",
+          "correct_option": "A",
+          "explanation": "Bedir zaferinde Müslümanlar 14 şehit vermiştir."
+        },
+        {
+          "question_text": "Peygamberimizin Bedir'de kaldığı gölgeliğe/çadıra ne ad verilir?",
+          "option_a": "Mihrap",
+          "option_b": "Ariş",
+          "option_c": "Minber",
+          "option_d": "Suffe",
+          "correct_option": "B",
+          "explanation": "Savaşın idare edildiği ve Peygamberimizin dua ettiği gölgeliğe Ariş denilmiştir."
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "book_id": 2,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 3,
+      "title": "Uhud Savaşı",
+      "unlock_score": 150,
+      "asset_image": "assets/images/book_2/level_3.webp",
+      "questions": [
+        {
+          "question_text": "Uhud Savaşı'nda okçuların yerleştirildiği tepenin adı nedir?",
+          "option_a": "Safa Tepesi",
+          "option_b": "Ayneyn Tepesi (Okçular Tepesi)",
+          "option_c": "Merve Tepesi",
+          "option_d": "Arafat",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz okçuları Ayneyn geçidine yerleştirmiş ve 'yerinizi terk etmeyin' emrini vermiştir."
+        },
+        {
+          "question_text": "Uhud'da şehitlerin efendisi (Seyyidü'ş Şüheda) seçilen sahabi kimdir?",
+          "option_a": "Musab bin Umeyr",
+          "option_b": "Hz. Hamza",
+          "option_c": "Abdullah bin Cübeyr",
+          "option_d": "Cafer",
+          "correct_option": "B",
+          "explanation": "Peygamberimizin amcası Hz. Hamza, Uhud'da Vahşi tarafından şehit edilmiştir."
+        },
+        {
+          "question_text": "Uhud Savaşı'nda Müslümanların zor duruma düşmesinin sebebi nedir?",
+          "option_a": "Düşmanın çok güçlü olması",
+          "option_b": "Okçuların yerlerini terk etmesi",
+          "option_c": "Havanın sıcak olması",
+          "option_d": "Mühimmatın bitmesi",
+          "correct_option": "B",
+          "explanation": "Savaş kazanıldı zannedilerek okçuların tepeyi terk etmesi, Halid bin Velid'in arkadan saldırmasına fırsat vermiştir."
+        },
+        {
+          "question_text": "Uhud'da müşrik ordusunun süvari komutanı olup arkadan saldıran kimdi?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Halid bin Velid",
+          "option_c": "Amr bin As",
+          "option_d": "İkrimen",
+          "correct_option": "B",
+          "explanation": "O sırada henüz Müslüman olmayan Halid bin Velid, askeri dehasıyla savaşın seyrini değiştirmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Uhud Savaşı'nda nasıl bir yara almıştır?",
+          "option_a": "Ayağından vurulmuştur",
+          "option_b": "Dişi kırılmış ve yanağı yaralanmıştır",
+          "option_c": "Kolundan ok yemiştir",
+          "option_d": "Hiç yara almamıştır",
+          "correct_option": "B",
+          "explanation": "Miğferinin parçası yanağına batmış ve ön dişlerinden biri kırılmıştır."
+        },
+        {
+          "question_text": "Uhud'da Peygamberimize çok benzediği için şehit edildiğinde 'Peygamber öldü' sanılan sahabi kimdir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Musab bin Umeyr",
+          "option_c": "Zeyd",
+          "option_d": "Bilal",
+          "correct_option": "B",
+          "explanation": "Sancağı taşıyan Musab bin Umeyr şehit edilince bu söylenti yayılmıştır."
+        },
+        {
+          "question_text": "Uhud Savaşı hangi yılda gerçekleşmiştir?",
+          "option_a": "624",
+          "option_b": "625",
+          "option_c": "627",
+          "option_d": "630",
+          "correct_option": "B",
+          "explanation": "Bedir'den bir yıl sonra, Hicretin 3. yılında (625) yapılmıştır."
+        },
+        {
+          "question_text": "Uhud Savaşı'nda şehit sayısı kaçtır?",
+          "option_a": "14",
+          "option_b": "70",
+          "option_c": "100",
+          "option_d": "300",
+          "correct_option": "B",
+          "explanation": "Müslümanlar bu savaşta 70 şehit vermiştir."
+        },
+        {
+          "question_text": "Peygamberimizi korumak için vücudunu siper edip 'Anam babam sana feda olsun' diyen sahabi kimdir?",
+          "option_a": "Talha bin Ubeydullah",
+          "option_b": "Hz. Osman",
+          "option_c": "Hassan",
+          "option_d": "Abbas",
+          "correct_option": "A",
+          "explanation": "Hz. Talha, Peygamberimize gelen oklara ellerini ve vücudunu siper ederek O'nu korumuştur."
+        },
+        {
+          "question_text": "Okçular tepesinin komutanı kimdir?",
+          "option_a": "Abdullah bin Cübeyr",
+          "option_b": "Zübeyr bin Avvam",
+          "option_c": "Sad bin Ebi Vakkas",
+          "option_d": "Hamza",
+          "correct_option": "A",
+          "explanation": "Abdullah bin Cübeyr, yanındaki az sayıda okçuyla tepeyi sonuna kadar terk etmeyerek şehit olmuştur."
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "book_id": 2,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 4,
+      "title": "Hendek ve Hudeybiye",
+      "unlock_score": 200,
+      "asset_image": "assets/images/book_2/level_4.webp",
+      "questions": [
+        {
+          "question_text": "Medine'nin etrafına hendek kazılması fikrini veren sahabi kimdir?",
+          "option_a": "Hz. Ömer",
+          "option_b": "Selman-ı Farisi",
+          "option_c": "Hz. Ali",
+          "option_d": "Mikdad",
+          "correct_option": "B",
+          "explanation": "İranlı sahabi Selman-ı Farisi, kendi ülkesindeki savunma taktiğini önermiştir."
+        },
+        {
+          "question_text": "Hendek Savaşı'nın diğer adı nedir?",
+          "option_a": "Ahzab Savaşı",
+          "option_b": "Ficar Savaşı",
+          "option_c": "Mute Savaşı",
+          "option_d": "Tebük Seferi",
+          "correct_option": "A",
+          "explanation": "Müşrikler ve Yahudiler birleşip gruplar (hizipler) halinde geldiği için Ahzab Savaşı da denir."
+        },
+        {
+          "question_text": "Hendek Savaşı'nı sona erdiren ilahi yardım neydi?",
+          "option_a": "Deprem",
+          "option_b": "Şiddetli fırtına ve soğuk",
+          "option_c": "Sel",
+          "option_d": "Yangın",
+          "correct_option": "B",
+          "explanation": "Allah'ın gönderdiği şiddetli bir rüzgar çadırlarını sökmüş, ateşlerini söndürmüş ve orduyu dağıtmıştır."
+        },
+        {
+          "question_text": "Müslümanların siyasi bir güç olarak resmen tanındığı anlaşma hangisidir?",
+          "option_a": "Akabe Biatı",
+          "option_b": "Hudeybiye Barış Antlaşması",
+          "option_c": "Medine Sözleşmesi",
+          "option_d": "Veda Hutbesi",
+          "correct_option": "B",
+          "explanation": "Mekkeliler bu anlaşmayı imzalayarak Müslümanları resmen muhatap kabul etmişlerdir."
+        },
+        {
+          "question_text": "Hudeybiye'de ağaç altında yapılan ve Allah'ın razı olduğunu bildirdiği biat hangisidir?",
+          "option_a": "Rıdvan Biatı",
+          "option_b": "Akabe Biatı",
+          "option_c": "Nisa Biatı",
+          "option_d": "Kabe Biatı",
+          "correct_option": "A",
+          "explanation": "Hz. Osman'ın şehit edildiği haberi üzerine yapılan ölümüne sadakat yeminine Rıdvan Biatı denir."
+        },
+        {
+          "question_text": "Hendek Savaşı'nda hendekleri aşmaya çalışan ünlü müşrik savaşçı Amr bin Abdüvud'u kim yenmiştir?",
+          "option_a": "Hz. Hamza",
+          "option_b": "Hz. Ali",
+          "option_c": "Hz. Ömer",
+          "option_d": "Zübeyr",
+          "correct_option": "B",
+          "explanation": "Hz. Ali, kendisinden çok daha tecrübeli olan bu savaşçıyı teke tek mücadelede yenmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz hangi olaydan sonra İslam'a davet mektuplarını hükümdarlara göndermiştir?",
+          "option_a": "Bedir",
+          "option_b": "Hudeybiye Antlaşması",
+          "option_c": "Mekke Fethi",
+          "option_d": "Veda Haccı",
+          "correct_option": "B",
+          "explanation": "Hudeybiye ile sağlanan barış ortamında, Bizans, İran, Mısır gibi devlet liderlerine elçiler gönderilmiştir."
+        },
+        {
+          "question_text": "Hudeybiye Antlaşması'nı müşrikler adına kim imzalamıştır?",
+          "option_a": "Ebu Süfyan",
+          "option_b": "Süheyl bin Amr",
+          "option_c": "İkrimen",
+          "option_d": "Halid",
+          "correct_option": "B",
+          "explanation": "Mekke tarafını temsilen Süheyl bin Amr anlaşmayı imzalamıştır."
+        },
+        {
+          "question_text": "Yahudilerin en büyük kalesi olan ve Hz. Ali'nin kapısını kalkan yaptığı yer neresidir?",
+          "option_a": "Hayber",
+          "option_b": "Taif",
+          "option_c": "Beni Kureyza",
+          "option_d": "Fedek",
+          "correct_option": "A",
+          "explanation": "Hayber kalesi fethinde Hz. Ali büyük kahramanlık göstermiştir."
+        },
+        {
+          "question_text": "Hudeybiye dönüşü inen ve 'Sana apaçık bir fetih verdik' müjdesiyle başlayan sure hangisidir?",
+          "option_a": "Nasr",
+          "option_b": "Fetih",
+          "option_c": "Muhammed",
+          "option_d": "Yasin",
+          "correct_option": "B",
+          "explanation": "Müslümanlar üzgün dönerken Allah, Fetih suresi ile bu barışın aslında büyük bir zafer olduğunu müjdelemiştir."
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "book_id": 2,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 5,
+      "title": "Mekke'nin Fethi ve Veda",
+      "unlock_score": 250,
+      "asset_image": "assets/images/book_2/level_5.webp",
+      "questions": [
+        {
+          "question_text": "Mekke'nin Fethi hangi yılda gerçekleşmiştir?",
+          "option_a": "622",
+          "option_b": "628",
+          "option_c": "630",
+          "option_d": "632",
+          "correct_option": "C",
+          "explanation": "Hicretin 8. yılı olan 630 senesinde Mekke fethedilmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Mekke'ye girerken hangi sureyi okuyordu?",
+          "option_a": "Yasin",
+          "option_b": "Fetih",
+          "option_c": "Kevser",
+          "option_d": "İhlas",
+          "correct_option": "B",
+          "explanation": "Zaferin şükrü olarak Fetih suresini okuyarak şehre girmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz Kabe'deki putları kırarken hangi ayeti okumuştur?",
+          "option_a": "Hak geldi, batıl yok oldu",
+          "option_b": "Allah'ın yardımı geldi",
+          "option_c": "Sizin dininiz size",
+          "option_d": "O ne güzel vekildir",
+          "correct_option": "A",
+          "explanation": "İsra Suresi 81. ayet: 'De ki: Hak geldi, batıl zail oldu (yok oldu).'"
+        },
+        {
+          "question_text": "Mekke fethinde Peygamberimiz korku içindeki Mekkelilere ne demiştir?",
+          "option_a": "Hepiniz esirsiniz",
+          "option_b": "Bugün size kınama yoktur, hepiniz serbestsiniz",
+          "option_c": "Mallarınız ganimettir",
+          "option_d": "Şehri terk edin",
+          "correct_option": "B",
+          "explanation": "Hz. Yusuf'un kardeşlerine dediği gibi diyerek genel af ilan etmiştir."
+        },
+        {
+          "question_text": "Peygamberimizin insanlığa son seslenişi olan konuşmasına ne ad verilir?",
+          "option_a": "Medine Hutbesi",
+          "option_b": "Veda Hutbesi",
+          "option_c": "Cuma Hutbesi",
+          "option_d": "Fetih Hutbesi",
+          "correct_option": "B",
+          "explanation": "Veda Haccı sırasında Arafat'ta okuduğu tarihi konuşmaya Veda Hutbesi denir."
+        },
+        {
+          "question_text": "Peygamber Efendimiz (s.a.v) hangi tarihte vefat etmiştir?",
+          "option_a": "630",
+          "option_b": "632",
+          "option_c": "634",
+          "option_d": "640",
+          "correct_option": "B",
+          "explanation": "Hicretin 11. yılı, Miladi 8 Haziran 632 tarihinde vefat etmiştir."
+        },
+        {
+          "question_text": "Peygamberimizin kabrinin bulunduğu yerin adı nedir?",
+          "option_a": "Ravza-i Mutahhara",
+          "option_b": "Cennetü'l Baki",
+          "option_c": "Kabe",
+          "option_d": "Kuba",
+          "correct_option": "A",
+          "explanation": "Mescid-i Nebevi'nin içindeki kabri ile minberi arasına 'Tertemiz Bahçe' anlamında Ravza-i Mutahhara denir."
+        },
+        {
+          "question_text": "Veda Hutbesi'nde Peygamberimizin ayaklar altına aldığını söylediği şey nedir?",
+          "option_a": "Ticaret",
+          "option_b": "Kan davası ve faiz",
+          "option_c": "Kölelik",
+          "option_d": "Zekat",
+          "correct_option": "B",
+          "explanation": "Cahiliye devrinden kalma kan davalarını ve faizi kaldırdığını ilan etmiştir."
+        },
+        {
+          "question_text": "Peygamberimizin vefatından önceki son sözleri ne olmuştur?",
+          "option_a": "Namaz, namaz",
+          "option_b": "Allahü Ekber",
+          "option_c": "Maa'r-Refik-i A'la (En Yüce Dost'a)",
+          "option_d": "Ümmetim, ümmetim",
+          "correct_option": "C",
+          "explanation": "Parmağını yukarı kaldırarak 'Yüce Dost'a' diyerek ruhunu teslim etmiştir."
+        },
+        {
+          "question_text": "Peygamberimiz vefat ettiğinde kaç yaşındaydı?",
+          "option_a": "53",
+          "option_b": "61",
+          "option_c": "63",
+          "option_d": "65",
+          "correct_option": "C",
+          "explanation": "Miladi takvime göre 61, Kameri takvime göre 63 yaşında vefat etmiştir."
+        }
+      ]
+    }
+  ]
+}

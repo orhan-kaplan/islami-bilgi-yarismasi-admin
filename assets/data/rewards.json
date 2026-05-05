@@ -1,0 +1,20 @@
+[
+  {
+    "title": "İlim Talebesi",
+    "description": "Tebrikler! Mekke Dönemi kitabını başarıyla tamamladın.",
+    "asset_image": "assets/images/rewards/book_1_reward.webp",
+    "unlock_book_id": 1
+  },
+  {
+    "title": "Sabır Kahramanı",
+    "description": "Muazzam! Medine Dönemi kitabını bitirdin.",
+    "asset_image": "assets/images/rewards/book_2_reward.webp",
+    "unlock_book_id": 2
+  },
+  {
+    "title": "Bedir Aslanı",
+    "description": "Bedir Savaşı bölümünü bitirerek büyük bir zafer kazandın.",
+    "asset_image": "assets/images/rewards/book_3_reward.webp",
+    "unlock_book_id": 3
+  }
+]

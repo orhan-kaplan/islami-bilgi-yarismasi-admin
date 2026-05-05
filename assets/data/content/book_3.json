@@ -1,0 +1,509 @@
+{
+  "levels": [
+    {
+      "id": 16,
+      "book_id": 3,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 1,
+      "title": "Bedir: Sebepler ve Hazırlık",
+      "unlock_score": 60,
+      "asset_image": "assets/images/book_3/level_1.webp",
+      "questions": [
+        {
+          "question_text": "Bedir Savaşı hangi yıl gerçekleşmiştir?",
+          "option_a": "622",
+          "option_b": "624",
+          "option_c": "625",
+          "option_d": "630",
+          "correct_option": "B",
+          "explanation": "Bedir Savaşı, Hicretin 2. yılında, Miladi 624 senesinde gerçekleşmiştir."
+        },
+        {
+          "question_text": "Müslümanların Medine'den çıkışındaki asıl amaç neydi?",
+          "option_a": "Mekke'yi fethetmek",
+          "option_b": "Ebu Süfyan'ın ticaret kervanını ele geçirmek",
+          "option_c": "Şam'ı fethetmek",
+          "option_d": "Müşrik ordusuyla savaşmak",
+          "correct_option": "B",
+          "explanation": "Müslümanlar, kendilerinden gasp edilen mallara karşılık Ebu Süfyan liderliğindeki kervanı durdurmak için yola çıkmıştı."
+        },
+        {
+          "question_text": "İslam ordusunun Bedir'deki sayısı kaçtır?",
+          "option_a": "1000",
+          "option_b": "313",
+          "option_c": "500",
+          "option_d": "700",
+          "correct_option": "B",
+          "explanation": "İslam ordusu yaklaşık 313 kişiden (305-315 arası rivayetler vardır) oluşuyordu."
+        },
+        {
+          "question_text": "Müşrik ordusunun komutanı kimdi?",
+          "option_a": "Ebu Süfyan",
+          "option_b": "Ebu Cehil",
+          "option_c": "Ebu Leheb",
+          "option_d": "Velid",
+          "correct_option": "B",
+          "explanation": "Orduyu savaşa zorlayan ve komuta eden kişi Ebu Cehil (Amr bin Hişam) idi."
+        },
+        {
+          "question_text": "Ticaret kervanını yöneten ve Müslümanların yolunu değiştirdiğini haber alan müşrik lider kimdir?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Ebu Süfyan",
+          "option_c": "Ümeyye",
+          "option_d": "Utbe",
+          "correct_option": "B",
+          "explanation": "Kervanın başında Ebu Süfyan vardı ve sahil yolunu takiperek kervanı kurtarmayı başardı."
+        },
+        {
+          "question_text": "Bedir Savaşı'nda İslam ordusunun sancağını kim taşımıştır?",
+          "option_a": "Hz. Ali",
+          "option_b": "Musab bin Umeyr",
+          "option_c": "Hz. Hamza",
+          "option_d": "Bilal-i Habeşi",
+          "correct_option": "B",
+          "explanation": "Muhacirlerin sancağını Musab bin Umeyr (r.a) taşımıştır."
+        },
+        {
+          "question_text": "Peygamberimiz Bedir'e çıkarken Medine'de yerine vekil olarak kimi bırakmıştır?",
+          "option_a": "Hz. Osman",
+          "option_b": "Abdullah ibn Ümmü Mektum",
+          "option_c": "Hz. Ömer",
+          "option_d": "Zeyd bin Sabit",
+          "correct_option": "B",
+          "explanation": "Ama sahabi Abdullah ibn Ümmü Mektum, namaz kıldırması ve şehri idare etmesi için vekil bırakılmıştır."
+        },
+        {
+          "question_text": "Müşrik ordusunun sayısı yaklaşık ne kadardı?",
+          "option_a": "300",
+          "option_b": "950-1000",
+          "option_c": "3000",
+          "option_d": "5000",
+          "correct_option": "B",
+          "explanation": "Müşrikler tam teçhizatlı yaklaşık 1000 kişilik bir orduyla gelmişlerdi."
+        },
+        {
+          "question_text": "Müslümanların Bedir'de kaç atı vardı?",
+          "option_a": "100",
+          "option_b": "2",
+          "option_c": "50",
+          "option_d": "300",
+          "correct_option": "B",
+          "explanation": "Müslümanlar imkansızlıklar içindeydi, orduda sadece 2 at bulunuyordu."
+        },
+        {
+          "question_text": "Savaş öncesi yağan yağmurun Müslümanlara etkisi ne olmuştur?",
+          "option_a": "Sel baskınına uğradılar",
+          "option_b": "Zemin sertleşti, yürümeleri kolaylaştı ve temizlendiler",
+          "option_c": "Silahları ıslandı",
+          "option_d": "Hastalandılar",
+          "correct_option": "B",
+          "explanation": "Allah'ın bir lütfu olarak yağmur kumlu zemini sertleştirip Müslümanların hareketini kolaylaştırmış, müşriklerin tarafını ise çamur yapmıştır."
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "book_id": 3,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 2,
+      "title": "Strateji ve Mevzilenme",
+      "unlock_score": 120,
+      "asset_image": "assets/images/book_3/level_2.webp",
+      "questions": [
+        {
+          "question_text": "Bedir'de su kuyularının tutulmasını ve diğerlerinin kapatılmasını öneren sahabi kimdir?",
+          "option_a": "Hz. Hamza",
+          "option_b": "Hubab bin Münzir",
+          "option_c": "Sad bin Muaz",
+          "option_d": "Hz. Ömer",
+          "correct_option": "B",
+          "explanation": "Hubab bin Münzir, savaş stratejisi olarak su kaynaklarının kontrol altına alınmasını önermiştir."
+        },
+        {
+          "question_text": "Peygamberimiz (s.a.v) için savaş alanına hakim bir tepeye kurulan gölgeliğe ne ad verilir?",
+          "option_a": "Otağ",
+          "option_b": "Ariş",
+          "option_c": "Suffe",
+          "option_d": "Kubbe",
+          "correct_option": "B",
+          "explanation": "Savaşın idare merkezi olan bu gölgeliğe 'Ariş' denilmiştir."
+        },
+        {
+          "question_text": "Ariş'te Peygamberimizin güvenliğini sağlamak için nöbet tutan sahabi kimdir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Sad bin Muaz",
+          "option_c": "Zübeyr bin Avvam",
+          "option_d": "Bilal",
+          "correct_option": "B",
+          "explanation": "Ensar'ın liderlerinden Sad bin Muaz, kılıcını çekerek gölgeliğin kapısında nöbet tutmuştur."
+        },
+        {
+          "question_text": "Peygamberimiz savaş öncesi ellerini açarak ettiği duada ne demiştir?",
+          "option_a": "Bize ganimet ver",
+          "option_b": "Allah'ım! Şu bir avuç Müslümanı helak edersen, yeryüzünde sana ibadet edecek kimse kalmaz.",
+          "option_c": "Onları korkut",
+          "option_d": "Bizi zengin et",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz, İslam'ın geleceği için bu tarihi ve ısrarlı duayı yapmıştır."
+        },
+        {
+          "question_text": "Peygamberimiz savaş öncesi savaş alanını gezerken ne yapmıştır?",
+          "option_a": "Hendek kazdırmıştır",
+          "option_b": "Müşriklerin ölecekleri yerleri tek tek göstermiştir",
+          "option_c": "Ateş yaktırmıştır",
+          "option_d": "Ok talimi yaptırmıştır",
+          "correct_option": "B",
+          "explanation": "Mucizevi bir şekilde 'Şurası Ebu Cehil'in, şurası Utbe'nin düşeceği yer' diyerek göstermiştir."
+        },
+        {
+          "question_text": "Peygamberimiz savaş düzeninde askerlerin safını ne ile düzeltmiştir?",
+          "option_a": "Kılıçla",
+          "option_b": "Ok miliyle (çubukla)",
+          "option_c": "Eliyle",
+          "option_d": "Bayrakla",
+          "correct_option": "B",
+          "explanation": "Elindeki ok miliyle safları ip gibi düzgün hale getirmiştir."
+        },
+        {
+          "question_text": "Savaştan önceki gece Müslümanların durumu nasıldı?",
+          "option_a": "Korku içindeydiler",
+          "option_b": "Allah onlara bir güven ve hafif bir uyku (şekerleme) verdi",
+          "option_c": "Tartışıyorlardı",
+          "option_d": "Kaçmaya çalışıyorlardı",
+          "correct_option": "B",
+          "explanation": "Enfal Suresi'nde belirtildiği gibi, Allah kalplerini yatıştırmak için onlara güven verici bir uyku hali vermiştir."
+        },
+        {
+          "question_text": "Peygamberimiz savaş stratejisi hakkında ashabıyla ne yapmıştır?",
+          "option_a": "Kendi kararını dayatmıştır",
+          "option_b": "İstişare etmiştir",
+          "option_c": "Kura çekmiştir",
+          "option_d": "Vahiy beklemiştir",
+          "correct_option": "B",
+          "explanation": "Ensar ve Muhacirlerle istişare ederek onların savaşa hazır ve istekli olduklarını teyit etmiştir."
+        },
+        {
+          "question_text": "Ensar adına konuşup 'Sen denize dalsan biz de seninle dalarız' diyen sahabi kimdir?",
+          "option_a": "Sad bin Ubade",
+          "option_b": "Sad bin Muaz",
+          "option_c": "Esad bin Zürare",
+          "option_d": "Muaz bin Cebel",
+          "correct_option": "B",
+          "explanation": "Sad bin Muaz bu sözleriyle Peygamberimize ve orduya büyük moral vermiştir."
+        },
+        {
+          "question_text": "Müşrik ordusunda savaşı istemeyen ve geri dönmeyi teklif eden kimdi?",
+          "option_a": "Ebu Cehil",
+          "option_b": "Utbe bin Rebia ve Hakim bin Hizam",
+          "option_c": "Ümeyye bin Halef",
+          "option_d": "Nadr bin Haris",
+          "correct_option": "B",
+          "explanation": "Utbe, akrabalık bağlarını öne sürerek savaşmadan dönmeyi teklif etse de Ebu Cehil onu korkaklıkla suçlayıp savaşı başlatmıştır."
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "book_id": 3,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 3,
+      "title": "Mübareze ve İlk Çarpışma",
+      "unlock_score": 180,
+      "asset_image": "assets/images/book_3/level_3.webp",
+      "questions": [
+        {
+          "question_text": "Savaşın başında teke tek vuruşmak (mübareze) için müşriklerden kimler öne çıkmıştır?",
+          "option_a": "Ebu Cehil, Ebu Leheb, Ümeyye",
+          "option_b": "Utbe, Şeybe ve Velid",
+          "option_c": "Halid, Amr, İkrimen",
+          "option_d": "Ebu Süfyan, Hakim, Nadr",
+          "correct_option": "B",
+          "explanation": "Rabia'nın oğulları Utbe ve Şeybe ile Utbe'nin oğlu Velid meydana çıkmıştır."
+        },
+        {
+          "question_text": "Müşriklerin karşısına çıkan üç Müslüman kahraman kimdir?",
+          "option_a": "Ebubekir, Ömer, Osman",
+          "option_b": "Hz. Hamza, Hz. Ali, Ubeyde bin Haris",
+          "option_c": "Sad, Said, Talha",
+          "option_d": "Musab, Bilal, Ammar",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz kendi ailesinden bu üç cengaveri (Hamza, Ali, Ubeyde) çıkarmıştır."
+        },
+        {
+          "question_text": "Hz. Hamza rakibi Şeybe'yi, Hz. Ali rakibi Velid'i ne yapmıştır?",
+          "option_a": "Esir almışlardır",
+          "option_b": "Tek hamlede öldürmüşlerdir",
+          "option_c": "Yaralamışlardır",
+          "option_d": "Geri çekilmişlerdir",
+          "correct_option": "B",
+          "explanation": "Her ikisi de rakiplerini kısa sürede etkisiz hale getirip öldürmüşlerdir."
+        },
+        {
+          "question_text": "Mübareze sırasında ağır yaralanan ve savaş sonunda şehit düşen sahabi kimdir?",
+          "option_a": "Hz. Hamza",
+          "option_b": "Ubeyde bin Haris",
+          "option_c": "Hz. Ali",
+          "option_d": "Mihca",
+          "correct_option": "B",
+          "explanation": "Ubeyde bin Haris ayağından ağır yaralanmış, Hz. Hamza ve Hz. Ali yardıma giderek rakibi Utbe'yi öldürmüşlerdir."
+        },
+        {
+          "question_text": "Bedir Savaşı'nın ilk şehidi kimdir?",
+          "option_a": "Harise bin Süraka",
+          "option_b": "Mihca (Hz. Ömer'in azatlısı)",
+          "option_c": "Ubeyde",
+          "option_d": "Sad",
+          "correct_option": "B",
+          "explanation": "Müşriklerin attığı bir okla şehit olan Mihca (r.a), Bedir'in ilk şehididir."
+        },
+        {
+          "question_text": "Elindeki hurmaları yiyip 'Bunları bitirmeyi beklersem yaşantım çok uzun olur' diyerek savaşa dalıp şehit olan sahabi kimdir?",
+          "option_a": "Umeyr bin Humam",
+          "option_b": "Sad bin Muaz",
+          "option_c": "Abdullah bin Revaha",
+          "option_d": "Ukbe",
+          "correct_option": "A",
+          "explanation": "Cennet kokusunu duyduğunu söyleyerek şehadete koşmuştur."
+        },
+        {
+          "question_text": "Peygamberimiz yerden bir avuç toprak alıp 'Yüzleri kara olsun' diyerek ne yapmıştır?",
+          "option_a": "Toprağa gömmüştür",
+          "option_b": "Müşrik ordusuna doğru fırlatmıştır",
+          "option_c": "Suya atmıştır",
+          "option_d": "Havaya üflemiştir",
+          "correct_option": "B",
+          "explanation": "Bu mucizeyle o toprak tanecikleri Allah'ın izniyle müşriklerin gözlerine dolmuş ve onları bozguna uğratmıştır."
+        },
+        {
+          "question_text": "Mübareze geleneği hangi amaçla yapılırdı?",
+          "option_a": "Barış yapmak için",
+          "option_b": "Askerlerin moralini yükseltmek ve rakibi korkutmak için",
+          "option_c": "Vakit kazanmak için",
+          "option_d": "Komutanları korumak için",
+          "correct_option": "B",
+          "explanation": "Topyekün savaştan önce en iyi savaşçılar dövüşerek ordularını cesaretlendirirdi."
+        },
+        {
+          "question_text": "Bedir'de meleklerin yardıma geldiğini bildiren ayetler hangi surededir?",
+          "option_a": "Yasin",
+          "option_b": "Enfal ve Ali İmran",
+          "option_c": "Mülk",
+          "option_d": "Fetih",
+          "correct_option": "B",
+          "explanation": "Enfal 9. ve Ali İmran 123-125. ayetlerde meleklerin yardımı anlatılır."
+        },
+        {
+          "question_text": "Meleklerin savaşta nasıl bir rolü olmuştur?",
+          "option_a": "Sadece izlemişlerdir",
+          "option_b": "Müminlerin kalbine cesaret, kâfirlerin kalbine korku salmış ve fiilen vuruşmuşlardır",
+          "option_c": "Müşrikleri barışa ikna etmişlerdir",
+          "option_d": "Yaralıları tedavi etmişlerdir",
+          "correct_option": "B",
+          "explanation": "Ayetlerde 'vurun boyunlarına' emriyle meleklerin fiilen savaşa katıldığı belirtilir."
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "book_id": 3,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 4,
+      "title": "Zafer ve Liderlerin Sonu",
+      "unlock_score": 240,
+      "asset_image": "assets/images/book_3/level_4.webp",
+      "questions": [
+        {
+          "question_text": "Bedir'de 'Bu ümmetin Firavunu' olarak adlandırılan ve öldürülen kişi kimdir?",
+          "option_a": "Ümeyye bin Halef",
+          "option_b": "Ebu Cehil",
+          "option_c": "Utbe",
+          "option_d": "Nadr bin Haris",
+          "correct_option": "B",
+          "explanation": "İslam'ın en azılı düşmanı Ebu Cehil, Bedir'de öldürülmüştür."
+        },
+        {
+          "question_text": "Ebu Cehil'i yaralayan ve yere düşüren iki genç kardeş kimdir?",
+          "option_a": "Hasan ve Hüseyin",
+          "option_b": "Muaz ve Muavviz (Afra'nın oğulları)",
+          "option_c": "Talha ve Zübeyr",
+          "option_d": "Sad ve Said",
+          "correct_option": "B",
+          "explanation": "Ensarlı iki genç olan Muaz ve Muavviz, Ebu Cehil'i hedef alıp onu etkisiz hale getirmişlerdir."
+        },
+        {
+          "question_text": "Yaralı Ebu Cehil'in başını keserek son nefesini verdiren sahabi kimdir?",
+          "option_a": "Hz. Hamza",
+          "option_b": "Abdullah bin Mesud",
+          "option_c": "Hz. Ali",
+          "option_d": "Bilal",
+          "correct_option": "B",
+          "explanation": "Abdullah bin Mesud, Ebu Cehil'i bulmuş ve işini bitirmiştir."
+        },
+        {
+          "question_text": "Eski efendisi Ümeyye bin Halef'i görerek 'O kurtulursa ben kurtulmam' deyip öldürülmesini sağlayan sahabi kimdir?",
+          "option_a": "Ammar",
+          "option_b": "Bilal-i Habeşi",
+          "option_c": "Habbab",
+          "option_d": "Süheyb",
+          "correct_option": "B",
+          "explanation": "Bilal-i Habeşi, kendisine Mekke'de ağır işkenceler yapan Ümeyye'yi affetmemiştir."
+        },
+        {
+          "question_text": "Şeytan (İblis) hangi surette müşriklere katılmış, ancak melekleri görünce kaçmıştır?",
+          "option_a": "Ebu Süfyan",
+          "option_b": "Süraka bin Malik",
+          "option_c": "Vahşi",
+          "option_d": "Yabancı bir tüccar",
+          "correct_option": "B",
+          "explanation": "Kinane kabilesinden Süraka kılığında gelip 'Bugün size galip gelecek yok' demiş, ama melekleri görünce topuklayıp kaçmıştır."
+        },
+        {
+          "question_text": "Bedir'de kaç müşrik öldürülmüştür?",
+          "option_a": "30",
+          "option_b": "70",
+          "option_c": "150",
+          "option_d": "300",
+          "correct_option": "B",
+          "explanation": "Müşriklerden 70 kişi öldürülmüş, 70 kişi de esir alınmıştır."
+        },
+        {
+          "question_text": "Bedir'de esir alınan Peygamberimizin amcası kimdir?",
+          "option_a": "Ebu Talib",
+          "option_b": "Abbas",
+          "option_c": "Hamza",
+          "option_d": "Ebu Leheb",
+          "correct_option": "B",
+          "explanation": "O sırada henüz Müslüman olduğunu açıklamayan Hz. Abbas esirler arasındaydı."
+        },
+        {
+          "question_text": "Peygamberimiz savaş sonunda öldürülen müşrikleri nereye attırmıştır?",
+          "option_a": "Denize",
+          "option_b": "Kalib denilen kör bir kuyuya",
+          "option_c": "Yakmıştır",
+          "option_d": "Mekke'ye göndermiştir",
+          "correct_option": "B",
+          "explanation": "Cesetler Kalib-i Bedir denilen çukura/kuyuya atılarak gömülmüştür."
+        },
+        {
+          "question_text": "Peygamberimiz kuyudaki ölülere seslenerek ne demiştir?",
+          "option_a": "Şimdi gördünüz mü?",
+          "option_b": "Rabbinizin vaad ettiğini gerçek buldunuz mu? Ben buldum.",
+          "option_c": "Lanet olsun size",
+          "option_d": "Keşke inansaydınız",
+          "correct_option": "B",
+          "explanation": "Sahabeler 'Ölülere mi konuşuyorsun?' deyince, 'Onlar şu an beni sizden daha iyi duyarlar' buyurmuştur."
+        },
+        {
+          "question_text": "Ebu Cehil'in kılıcı kime verilmiştir?",
+          "option_a": "Hz. Ali",
+          "option_b": "Hz. Peygamber'e (s.a.v)",
+          "option_c": "Hz. Ömer",
+          "option_d": "Muaz",
+          "correct_option": "B",
+          "explanation": "Ganimet olarak Peygamberimize getirilmiş, O da daha sonra Hz. Ali'ye vermiştir (Zülfikar farklı bir kılıçtır, karıştırılmamalıdır)."
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "book_id": 3,
+      "category_name": "Siyer-i Nebi",
+      "level_order": 5,
+      "title": "Savaş Sonrası ve Esirler",
+      "unlock_score": 300,
+      "asset_image": "assets/images/book_3/level_5.webp",
+      "questions": [
+        {
+          "question_text": "Bedir Savaşı'nda toplam kaç Müslüman şehit olmuştur?",
+          "option_a": "6",
+          "option_b": "14",
+          "option_c": "40",
+          "option_d": "70",
+          "correct_option": "B",
+          "explanation": "6'sı Muhacir, 8'i Ensar olmak üzere toplam 14 şehit verilmiştir."
+        },
+        {
+          "question_text": "Bedir şehitlerinin namazını kim kıldırmıştır?",
+          "option_a": "Hz. Ebubekir",
+          "option_b": "Hz. Peygamber (s.a.v)",
+          "option_c": "Hz. Ömer",
+          "option_d": "Şehitlerin namazı kılınmaz",
+          "correct_option": "B",
+          "explanation": "Peygamberimiz şehitlerin namazını kıldırmış ve onları defnetmiştir."
+        },
+        {
+          "question_text": "Savaş ganimetlerinin paylaşımı hakkında inen sure hangisidir?",
+          "option_a": "Tevbe",
+          "option_b": "Enfal",
+          "option_c": "Haşr",
+          "option_d": "Muhammed",
+          "correct_option": "B",
+          "explanation": "Enfal Suresi, savaş ganimetlerinin Allah ve Resulüne ait olduğunu ve nasıl paylaştırılacağını açıklar."
+        },
+        {
+          "question_text": "Okuma yazma bilen esirlerin serbest kalma şartı neydi?",
+          "option_a": "1000 dinar ödemek",
+          "option_b": "10 Müslüman çocuğa okuma yazma öğretmek",
+          "option_c": "Müslüman olmak",
+          "option_d": "Medine'de hizmetçilik yapmak",
+          "correct_option": "B",
+          "explanation": "Bu uygulama, Peygamberimizin ilme verdiği önemin en büyük göstergesidir."
+        },
+        {
+          "question_text": "Hz. Ömer esirler hakkında nasıl bir görüş bildirmiştir?",
+          "option_a": "Fidye karşılığı serbest bırakalım",
+          "option_b": "Hepsini idam edelim",
+          "option_c": "Köle yapalım",
+          "option_d": "Affedelim",
+          "correct_option": "B",
+          "explanation": "Hz. Ömer küfrün kökünün kazınması için hepsinin öldürülmesini, Hz. Ebubekir ise fidye alınmasını önermiştir."
+        },
+        {
+          "question_text": "Peygamberimizin damadı olup esir düşen ve fidye olarak Hz. Hatice'nin gerdanlığı gönderilen kişi kimdir?",
+          "option_a": "Osman",
+          "option_b": "Ebu'l As bin Rebi",
+          "option_c": "Ali",
+          "option_d": "Utbe",
+          "correct_option": "B",
+          "explanation": "Hz. Zeynep, eşi Ebu'l As'ı kurtarmak için annesi Hz. Hatice'nin düğün hediyesi olan gerdanlığı göndermiş, Peygamberimiz bunu görünce ağlamıştır."
+        },
+        {
+          "question_text": "Bedir zaferinin müjdesini Medine'ye kimler götürmüştür?",
+          "option_a": "Hz. Ali ve Hz. Hamza",
+          "option_b": "Abdullah bin Revaha ve Zeyd bin Harise",
+          "option_c": "Ömer ve Ebubekir",
+          "option_d": "Bilal ve Ammar",
+          "correct_option": "B",
+          "explanation": "Abdullah bin Revaha ve Zeyd bin Harise farklı yollardan giderek zaferi müjdelemişlerdir."
+        },
+        {
+          "question_text": "Bedir zaferi Medine'deki hangi grubu rahatsız etmiştir?",
+          "option_a": "Ensar",
+          "option_b": "Yahudiler ve Münafıklar",
+          "option_c": "Muhacirler",
+          "option_d": "Habeşliler",
+          "correct_option": "B",
+          "explanation": "Müslümanların güçlenmesi, Yahudileri (özellikle Kaynuka oğulları) ve münafıkları endişelendirmiştir."
+        },
+        {
+          "question_text": "Mekkeliler yenilgi haberini alınca ne yaptılar?",
+          "option_a": "Hemen barış istediler",
+          "option_b": "Yas tutmayı yasaklayıp intikam yemini ettiler",
+          "option_c": "Medine'ye elçi gönderdiler",
+          "option_d": "Müslüman oldular",
+          "correct_option": "B",
+          "explanation": "Ebu Süfyan, intikam alana kadar yıkanmayı ve koku sürünmeyi kendine yasaklamıştır."
+        },
+        {
+          "question_text": "Kuran-ı Kerim'de Bedir günü ne olarak isimlendirilir?",
+          "option_a": "Yevmü'l-Feth",
+          "option_b": "Yevmü'l-Furkan (Hak ile batılın ayrıldığı gün)",
+          "option_c": "Yevmü'l-Hüzün",
+          "option_d": "Yevmü'l-Cem",
+          "correct_option": "B",
+          "explanation": "Enfal Suresi 41. ayette 'Furkan Günü' olarak geçer."
+        }
+      ]
+    }
+  ]
+}

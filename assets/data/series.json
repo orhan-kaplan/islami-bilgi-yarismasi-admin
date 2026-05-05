@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "name": "Siyer-i Nebi",
+    "sort_order": 1,
+    "is_locked": false,
+    "icon_emoji": "🕌",
+    "description": "Peygamber Efendimiz Hz. Muhammed (s.a.v)'in hayatı"
+  },
+  {
+    "id": 2,
+    "name": "Kısas-ı Enbiya",
+    "sort_order": 2,
+    "is_locked": false,
+    "icon_emoji": "📖",
+    "description": "Peygamberler tarihi ve kıssaları"
+  },
+  {
+    "id": 3,
+    "name": "Hulefa-i Raşidin",
+    "sort_order": 3,
+    "is_locked": true,
+    "icon_emoji": "👑",
+    "description": "Dört büyük halife dönemi"
+  },
+  {
+    "id": 4,
+    "name": "İslami İlimler",
+    "sort_order": 4,
+    "is_locked": true,
+    "icon_emoji": "🎓",
+    "description": "Temel İslami bilgiler ve ilimler"
+  }
+]

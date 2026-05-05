@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "Mekke Dönemi",
+    "description": "İslam güneşinin doğuşu ve ilk mücadeleler.",
+    "asset_image": "assets/images/book_1/book_1.png",
+    "book_order": 1,
+    "series_id": 1,
+    "content_file": "book_1.json"
+  },
+  {
+    "id": 2,
+    "title": "Medine Dönemi",
+    "description": "Hicret, devletleşme ve büyük savaşlar.",
+    "asset_image": "assets/images/book_2/book_2.png",
+    "book_order": 2,
+    "series_id": 1,
+    "content_file": "book_2.json"
+  },
+  {
+    "id": 3,
+    "title": "Bedir Savaşı",
+    "description": "İslam'ın ilk büyük zaferi ve dönüm noktası.",
+    "asset_image": "assets/images/book_3/book_3.png",
+    "book_order": 3,
+    "series_id": 1,
+    "content_file": "book_3.json"
+  }
+]
