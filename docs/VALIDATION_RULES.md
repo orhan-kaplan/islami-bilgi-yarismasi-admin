@@ -1,0 +1,86 @@
+# Validasyon Kuralları (Validation Rules)
+
+`ContentValidator` sınıfı (`lib/data/services/content_validator.dart`) tüm yapısal ve semantik kuralları kontrol eder.
+
+## Error-Level Kurallar
+
+Error-level kurallar **export'u bloklar**. Bu hatalar düzeltilmeden ZIP export yapılamaz.
+
+| # | Kural Adı | Açıklama | sourceFile | jsonPath Örneği |
+|---|-----------|----------|------------|-----------------|
+| 1 | Series ID unique | Seri ID'leri pozitif tamsayı ve benzersiz olmalı | `series.json` | `$[0].id` |
+| 2 | Book ID unique | Kitap ID'leri pozitif tamsayı ve benzersiz olmalı | `books.json` | `$[1].id` |
+| 3 | Level ID unique (global) | Level ID'leri tüm kitaplar genelinde benzersiz olmalı | `content/book_1.json` | `$.levels[0].id` |
+| 4 | Book → Series FK | Kitabın `series_id`'si mevcut bir seriye işaret etmeli | `books.json` | `$[0].series_id` |
+| 5 | Level → Book FK | Level'ın `book_id`'si mevcut bir kitaba işaret etmeli | `content/book_1.json` | `$.levels[0].book_id` |
+| 6 | Reward → Book FK | Ödülün `unlock_book_id`'si mevcut bir kitaba işaret etmeli | `rewards.json` | `$[0].unlock_book_id` |
+| 7 | Content-file book_id consistency | Content file içindeki tüm level'ların book_id'si, o dosyayı referans eden kitabın ID'si ile eşleşmeli | `content/book_1.json` | `$.levels[0].book_id` |
+| 8 | Series sort_order sequential | `sort_order` değerleri 1'den başlayarak ardışık olmalı | `series.json` | `$[2].sort_order` |
+| 9 | Book order sequential | Her seri içinde `book_order` değerleri 1'den başlayarak ardışık olmalı | `books.json` | `$[1].book_order` |
+| 10 | Level order sequential | Her content file içinde `level_order` değerleri 1'den başlayarak ardışık olmalı | `content/book_1.json` | `$.levels` |
+| 11 | correct_option valid | `correct_option` sadece "A", "B", "C", "D" değerlerinden biri olabilir | `content/book_1.json` | `$.levels[0].questions[2].correct_option` |
+| 12 | true_false: option_c/d empty | `true_false` tipindeki sorularda `option_c` ve `option_d` boş string olmalı | `content/book_1.json` | `$.levels[0].questions[0].option_c` |
+| 13 | matching: pipe separator | `matching` tipindeki sorularda her option `\|` karakteri içermeli | `content/book_2.json` | `$.levels[1].questions[3].option_a` |
+| 14 | sorting: correct_option = "A" | `sorting` tipindeki sorularda `correct_option` her zaman "A" olmalı | `content/book_1.json` | `$.levels[2].questions[0].correct_option` |
+| 15 | content_file existence | Kitabın `content_file` alanı sadece dosya adı olmalı (path prefix yok) ve contentFiles map'inde bulunmalı | `books.json` | `$[0].content_file` |
+| 16 | asset_image prefix | `asset_image` yolları "assets/" ile başlamalı (books, levels, rewards) | `books.json` | `$[0].asset_image` |
+| 17 | Required fields non-empty | Zorunlu alanlar boş string olmamalı (series.name, book.title/description/content_file, level.title/category_name, question.question_text/option_a/option_b/correct_option, reward.title/description/asset_image, hadith.text/source) | çeşitli | `$[0].title` |
+
+## Warning-Level Kurallar
+
+Warning-level kurallar **export'u bloklamaz**. Tavsiye niteliğindedir.
+
+| # | Kural Adı | Açıklama | sourceFile | jsonPath Örneği |
+|---|-----------|----------|------------|-----------------|
+| 1 | Empty explanation | Sorunun `explanation` alanı null veya boş string | `content/book_1.json` | `$.levels[0].questions[1].explanation` |
+| 2 | Duplicate question_text | Whitespace normalize edildikten sonra (trim + collapse) aynı soru metni birden fazla yerde bulunuyor | `content/book_2.json` | `$.levels[1].questions[0].question_text` |
+
+## Health Score Formülü
+
+```
+healthScore = max(0, 100 - (errorCount × 10 + warningCount × 2))
+```
+
+| Durum | Sonuç |
+|-------|-------|
+| 0 error, 0 warning | 100 |
+| 1 error, 0 warning | 90 |
+| 0 error, 5 warning | 90 |
+| 5 error, 0 warning | 50 |
+| 10 error, 0 warning | 0 |
+| 3 error, 10 warning | max(0, 100 - 50) = 50 |
+
+Score her zaman 0–100 arasında clamp edilir.
+
+## Export Davranışı
+
+| Durum | Export |
+|-------|--------|
+| 0 error, 0 warning | ✅ Başarılı |
+| 0 error, N warning | ✅ Başarılı (warning'ler göz ardı edilir) |
+| N error, M warning | ❌ Bloklanır (`ValidationBlockedExportException`) |
+
+### ValidationBlockedExportException
+
+Export bloklandığında fırlatılan exception, sadece ERROR-level issue'ları içerir:
+
+```dart
+class ValidationBlockedExportException implements Exception {
+  final List<ValidationIssue> errors;
+}
+```
+
+## Validasyon Sabitleri
+
+`lib/core/constants/validation_rules.dart` dosyasında merkezi olarak tanımlıdır:
+
+```dart
+class ValidationRules {
+  static const validCorrectOptions = {'A', 'B', 'C', 'D'};
+  static const validTrueFalseCorrectOptions = {'A', 'B'};
+  static const validQuestionTypes = {'multiple_choice', 'true_false', 'matching', 'sorting'};
+  static const matchingSeparator = '|';
+  static const sortingCorrectOption = 'A';
+  static const assetImagePrefix = 'assets/';
+}
+```

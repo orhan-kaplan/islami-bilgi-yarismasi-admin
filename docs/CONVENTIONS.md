@@ -1,0 +1,104 @@
+# Kurallar ve Konvansiyonlar (Conventions)
+
+## Dosya İsimlendirme
+
+| Tip | Format | Örnek |
+|-----|--------|-------|
+| Model | `{entity}_model.dart` | `series_model.dart` |
+| Servis | `{feature}_service.dart` veya `{action}er.dart` | `json_parser.dart`, `zip_exporter.dart` |
+| Provider | `{scope}_providers.dart` | `content_providers.dart` |
+| Ekran | `{feature}_screen.dart` | `dashboard_screen.dart` |
+| Widget | `{role}_panel.dart` veya `{role}_card.dart` | `tree_panel.dart`, `edit_panel.dart` |
+| Form | `{entity}_form.dart` | `question_form.dart` |
+| Sabitler | `{scope}_rules.dart` | `validation_rules.dart` |
+
+## Dizin Yapısı
+
+```
+lib/
+├── core/
+│   ├── constants/          ← Sabitler
+│   └── theme/              ← Tema tanımları
+├── data/
+│   ├── models/             ← İmmutable veri modelleri
+│   └── services/           ← Stateless iş mantığı servisleri
+└── presentation/
+    ├── providers/          ← Riverpod provider tanımları
+    ├── router/             ← go_router yapılandırması
+    └── screens/
+        ├── dashboard/      ← Dashboard ekranı
+        ├── explorer/       ← Content Explorer (master-detail)
+        ├── rewards/        ← Ödül yönetimi
+        ├── hadiths/        ← Hadis yönetimi
+        └── validation/     ← Validasyon raporu
+```
+
+## Kod Dili
+
+- **Kod yorumları**: Türkçe (/// doc comments İngilizce)
+- **UI metinleri**: İngilizce (admin aracı)
+- **Değişken/fonksiyon adları**: İngilizce (Dart konvansiyonu)
+- **Sınıf adları**: İngilizce, PascalCase
+- **Dosya adları**: İngilizce, snake_case
+
+## Riverpod Konvansiyonları
+
+| Pattern | Kullanım | Örnek |
+|---------|----------|-------|
+| `StateNotifierProvider` | Mutable CRUD state | `contentStateProvider` |
+| `Provider` | Derived/computed değerler | `allSeriesProvider`, `healthScoreProvider` |
+| `Provider.family` | Parametrik derived | `booksForSeriesProvider(seriesId)` |
+
+### İsimlendirme
+
+- Provider isimleri: `{feature}Provider` (camelCase)
+- Notifier isimleri: `{Feature}Notifier` (PascalCase)
+- State sınıfları: `{Feature}State` veya `{Entity}Model` (PascalCase)
+
+### Kullanım Kuralları
+
+- `ref.watch()` → build metodu içinde (reaktif dinleme)
+- `ref.read()` → callback'ler ve event handler'lar içinde (tek seferlik okuma)
+- Derived provider'lar `contentStateProvider`'ı watch eder → otomatik güncelleme
+
+## JSON Key Format
+
+| Bağlam | Format | Örnek |
+|--------|--------|-------|
+| JSON dosyaları | snake_case | `sort_order`, `book_id`, `content_file` |
+| Dart model alanları | camelCase | `sortOrder`, `bookId`, `contentFile` |
+| `fromJson` / `toJson` | Dönüşüm model içinde | `json['sort_order'] as int` → `sortOrder` |
+
+## Validasyon Kuralları
+
+- **Error-level**: Export'u bloklar. Yapısal bütünlük hataları (FK ihlali, duplicate ID, vb.)
+- **Warning-level**: Export'u bloklamaz. Tavsiye niteliğinde (boş açıklama, tekrar soru)
+- Health score: `max(0, 100 - (errorCount * 10 + warningCount * 2))`
+
+## Dart/Flutter Konvansiyonları
+
+- `const` constructor'lar mümkün olduğunca kullanılır
+- Widget'lar `ConsumerWidget` veya `ConsumerStatefulWidget` extend eder
+- Modeller immutable — `copyWith` ile güncelleme
+- Servisler stateless — constructor injection ile bağımlılık
+- `sealed class` ile tip-güvenli union tipler (`SelectedItem`)
+- `==` ve `hashCode` override ile değer eşitliği
+
+## Genel Komutlar
+
+```bash
+# Bağımlılıkları yükle
+flutter pub get
+
+# Uygulamayı çalıştır (Chrome)
+flutter run -d chrome
+
+# Testleri çalıştır
+flutter test
+
+# Web build
+flutter build web
+
+# Kod analizi
+flutter analyze
+```
