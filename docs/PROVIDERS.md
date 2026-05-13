@@ -15,8 +15,13 @@ lib/presentation/providers/
 ├── content_providers.dart      ← Core state + derived content providers
 ├── history_providers.dart      ← Undo/redo, saved baseline, dirty state
 ├── search_providers.dart       ← Arama query, sonuçlar, focus node
-├── validation_providers.dart   ← Validasyon sonuçları + health score
-└── dashboard_providers.dart    ← Aggregate sayılar
+├── validation_providers.dart   ← Validasyon sonuçları + health score + missing asset check
+├── dashboard_providers.dart    ← Aggregate sayılar
+├── asset_server_providers.dart ← AssetServerClient instance
+├── connectivity_providers.dart ← Server bağlantı durumu (polling)
+├── auto_load_providers.dart    ← Startup auto-load yönetimi
+├── auto_save_providers.dart    ← Debounced auto-save controller
+└── asset_providers.dart        ← Asset dizin listeleme
 ```
 
 ## Bağımlılık Grafiği
@@ -264,3 +269,87 @@ if (restored != null) {
   ref.read(contentStateProvider.notifier).importContent(restored);
 }
 ```
+
+
+---
+
+## Asset Server Provider'ları
+
+### `assetServerClientProvider`
+- **Tip**: `Provider<AssetServerClient>`
+- **Dosya**: `asset_server_providers.dart`
+- **Açıklama**: `AssetServerClient` instance'ı (baseUrl: `http://localhost:8080`)
+
+---
+
+## Connectivity Provider'ları
+
+### `serverConnectivityProvider`
+- **Tip**: `StateNotifierProvider<ServerConnectivityNotifier, ServerConnectivity>`
+- **Dosya**: `connectivity_providers.dart`
+- **Açıklama**: `/api/health` endpoint'ini her 30 saniyede bir poll eder. `connected` veya `disconnected` durumu yayar.
+
+### `isServerConnectedProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `connectivity_providers.dart`
+- **Bağımlılık**: `serverConnectivityProvider`
+- **Açıklama**: Server bağlıysa `true`
+
+---
+
+## Auto-Load Provider'ları
+
+### `autoLoadProvider`
+- **Tip**: `StateNotifierProvider<AutoLoadNotifier, AutoLoadStatus>`
+- **Dosya**: `auto_load_providers.dart`
+- **Bağımlılık**: `serverConnectivityProvider`, `assetServerClientProvider`, `contentStateProvider`, `savedBaselineProvider`, `historyProvider`
+- **Açıklama**: Server bağlantısı kurulduğunda tüm JSON verilerini otomatik yükler. Status: `idle` → `loading` → `loaded` / `failed`
+
+### `autoLoadCompleteProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `auto_load_providers.dart`
+- **Bağımlılık**: `autoLoadProvider`
+- **Açıklama**: Auto-load başarıyla tamamlandıysa `true`. Auto-save'i gate'lemek için kullanılır.
+
+---
+
+## Auto-Save Provider'ları
+
+### `autoSaveControllerProvider`
+- **Tip**: `StateNotifierProvider<AutoSaveController, SaveStatus>`
+- **Dosya**: `auto_save_providers.dart`
+- **Bağımlılık**: `autoLoadCompleteProvider`, `isServerConnectedProvider`, `contentStateProvider`, `assetServerClientProvider`, `savedBaselineProvider`, `validationResultsProvider`
+- **Açıklama**: ContentState değişikliklerini dinler, per-file 2s debounce ile server'a kaydeder. Status: `idle`, `saving`, `saved`, `error`
+
+### `saveStatusProvider`
+- **Tip**: `Provider<SaveStatus>`
+- **Dosya**: `auto_save_providers.dart`
+- **Bağımlılık**: `autoSaveControllerProvider`
+- **Açıklama**: Mevcut kaydetme durumu
+
+---
+
+## Asset List Provider
+
+### `assetListProvider`
+- **Tip**: `FutureProvider.family<List<FileEntry>, String>`
+- **Dosya**: `asset_providers.dart`
+- **Parametre**: API_Path (dizin yolu, ör. `images`, `audio`, `icons`)
+- **Bağımlılık**: `assetServerClientProvider`
+- **Açıklama**: Server'dan dizin içeriğini listeler. Assets sayfasındaki tüm tab'lar tarafından kullanılır.
+
+---
+
+## Missing Asset Validation Provider
+
+### `missingAssetValidationProvider`
+- **Tip**: `FutureProvider<List<ValidationIssue>>`
+- **Dosya**: `validation_providers.dart`
+- **Bağımlılık**: `isServerConnectedProvider`, `contentStateProvider`, `assetServerClientProvider`
+- **Açıklama**: Server bağlıyken, referans edilen asset dosyalarının varlığını kontrol eder. Eksik dosyalar için warning-level issue üretir.
+
+### `allValidationResultsProvider`
+- **Tip**: `Provider<List<ValidationIssue>>`
+- **Dosya**: `validation_providers.dart`
+- **Bağımlılık**: `validationResultsProvider`, `missingAssetValidationProvider`
+- **Açıklama**: Senkron validasyon + async missing asset kontrolünü birleştirir.

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/question_model.dart';
+import '../../providers/duplicate_check_provider.dart';
+import '../preview/question_preview_dialog.dart';
 import 'matching_form.dart';
 import 'multiple_choice_form.dart';
 import 'sorting_form.dart';
@@ -16,6 +18,9 @@ class QuestionForm extends ConsumerStatefulWidget {
     super.key,
     this.question,
     required this.onSave,
+    this.contentFile,
+    this.levelId,
+    this.questionIndex,
   });
 
   /// The question to edit, or null to create a new one.
@@ -24,12 +29,22 @@ class QuestionForm extends ConsumerStatefulWidget {
   /// Callback when the form is saved with a valid question.
   final ValueChanged<QuestionModel> onSave;
 
+  /// Content file of the current question (for duplicate exclusion).
+  final String? contentFile;
+
+  /// Level ID of the current question (for duplicate exclusion).
+  final int? levelId;
+
+  /// Index of the current question (for duplicate exclusion).
+  final int? questionIndex;
+
   @override
   ConsumerState<QuestionForm> createState() => _QuestionFormState();
 }
 
 class _QuestionFormState extends ConsumerState<QuestionForm> {
   late String _selectedType;
+  String _currentQuestionText = '';
 
   static const _typeLabels = {
     'multiple_choice': 'Multiple Choice',
@@ -42,6 +57,13 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
   void initState() {
     super.initState();
     _selectedType = widget.question?.type ?? 'multiple_choice';
+    _currentQuestionText = widget.question?.questionText ?? '';
+  }
+
+  void _onQuestionTextChanged(String text) {
+    if (text != _currentQuestionText) {
+      setState(() => _currentQuestionText = text);
+    }
   }
 
   @override
@@ -51,9 +73,23 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.question != null ? 'Edit Question' : 'New Question',
-            style: Theme.of(context).textTheme.headlineSmall,
+          Row(
+            children: [
+              Text(
+                widget.question != null ? 'Edit Question' : 'New Question',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const Spacer(),
+              if (widget.question != null)
+                IconButton(
+                  icon: const Icon(Icons.visibility_outlined),
+                  tooltip: 'Preview',
+                  onPressed: () => showQuestionPreviewDialog(
+                    context,
+                    question: widget.question!,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
@@ -73,7 +109,14 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
               }
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          _DuplicateWarningBanner(
+            questionText: _currentQuestionText,
+            excludeContentFile: widget.contentFile,
+            excludeLevelId: widget.levelId,
+            excludeQuestionIndex: widget.questionIndex,
+          ),
+          const SizedBox(height: 8),
           _buildTypeForm(),
         ],
       ),
@@ -91,27 +134,98 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
           key: ValueKey('mc_$_selectedType'),
           question: questionForForm,
           onSave: widget.onSave,
+          onQuestionTextChanged: _onQuestionTextChanged,
         ),
       'true_false' => TrueFalseForm(
           key: ValueKey('tf_$_selectedType'),
           question: questionForForm,
           onSave: widget.onSave,
+          onQuestionTextChanged: _onQuestionTextChanged,
         ),
       'matching' => MatchingForm(
           key: ValueKey('match_$_selectedType'),
           question: questionForForm,
           onSave: widget.onSave,
+          onQuestionTextChanged: _onQuestionTextChanged,
         ),
       'sorting' => SortingForm(
           key: ValueKey('sort_$_selectedType'),
           question: questionForForm,
           onSave: widget.onSave,
+          onQuestionTextChanged: _onQuestionTextChanged,
         ),
       _ => MultipleChoiceForm(
           key: ValueKey('default_$_selectedType'),
           question: questionForForm,
           onSave: widget.onSave,
+          onQuestionTextChanged: _onQuestionTextChanged,
         ),
     };
+  }
+}
+
+/// Shows an amber warning banner when duplicate questions are detected.
+class _DuplicateWarningBanner extends ConsumerWidget {
+  const _DuplicateWarningBanner({
+    required this.questionText,
+    this.excludeContentFile,
+    this.excludeLevelId,
+    this.excludeQuestionIndex,
+  });
+
+  final String questionText;
+  final String? excludeContentFile;
+  final int? excludeLevelId;
+  final int? excludeQuestionIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (questionText.trim().isEmpty) return const SizedBox.shrink();
+
+    final params = DuplicateCheckParams(
+      questionText: questionText,
+      excludeContentFile: excludeContentFile,
+      excludeLevelId: excludeLevelId,
+      excludeQuestionIndex: excludeQuestionIndex,
+    );
+
+    final locations = ref.watch(duplicateCheckProvider(params));
+
+    if (locations.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade900.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.amber.shade700),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bu soru başka bir yerde de mevcut:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade300,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...locations.map((loc) => Text(
+                      '• $loc',
+                      style: TextStyle(color: Colors.amber.shade200),
+                    )),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

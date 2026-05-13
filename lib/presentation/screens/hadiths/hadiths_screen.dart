@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/hadith_model.dart';
 import '../../providers/content_providers.dart';
+import '../../widgets/preview/hadith_preview_dialog.dart';
 
 /// Screen displaying all hadiths with CRUD operations.
 ///
@@ -10,6 +11,71 @@ import '../../providers/content_providers.dart';
 /// with its text and source.
 class HadithsScreen extends ConsumerWidget {
   const HadithsScreen({super.key});
+
+  void _showEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    HadithModel hadith,
+  ) {
+    final textController = TextEditingController(text: hadith.text);
+    final sourceController = TextEditingController(text: hadith.source);
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Hadith'),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: textController,
+                  decoration: const InputDecoration(
+                    labelText: 'Hadith Text',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 4,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: sourceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Source',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final newText = textController.text.trim();
+                final newSource = sourceController.text.trim();
+                if (newText.isEmpty || newSource.isEmpty) return;
+
+                final notifier = ref.read(contentStateProvider.notifier);
+                notifier.updateHadith(
+                  index,
+                  HadithModel(text: newText, source: newSource),
+                );
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,15 +136,38 @@ class HadithsScreen extends ConsumerWidget {
                       ),
                     ),
                     isThreeLine: true,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      color: Theme.of(context).colorScheme.error,
-                      tooltip: 'Delete hadith',
-                      onPressed: () {
-                        final notifier =
-                            ref.read(contentStateProvider.notifier);
-                        notifier.deleteHadith(index);
-                      },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.visibility_outlined),
+                          tooltip: 'Preview',
+                          onPressed: () => showHadithPreviewDialog(
+                            context,
+                            hadith: hadith,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit hadith',
+                          onPressed: () => _showEditDialog(
+                            context,
+                            ref,
+                            index,
+                            hadith,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          color: Theme.of(context).colorScheme.error,
+                          tooltip: 'Delete hadith',
+                          onPressed: () {
+                            final notifier =
+                                ref.read(contentStateProvider.notifier);
+                            notifier.deleteHadith(index);
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 );

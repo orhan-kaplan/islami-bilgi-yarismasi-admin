@@ -335,3 +335,178 @@ class BulkImportError {
   final String reason;
 }
 ```
+
+
+---
+
+## AssetServerClient
+
+**Dosya**: `asset_server_client.dart`
+**Pattern**: Stateful HTTP client (baseUrl + http.Client)
+
+Yerel Asset Server ile HTTP iletişimi sağlar.
+
+### Constructor
+
+```dart
+AssetServerClient({String baseUrl = 'http://localhost:8080', http.Client? client})
+```
+
+### Metotlar
+
+| Metot | HTTP | Açıklama |
+|-------|------|----------|
+| `health()` | GET `/api/health` | Server durumu (5s timeout) |
+| `getFile(String)` | GET `/api/files/{path}` | Dosya bytes |
+| `getFileAsString(String)` | GET `/api/files/{path}` | Dosya string |
+| `listDirectory(String)` | GET `/api/list/{path}` | Dizin listesi |
+| `putFile(String, Uint8List)` | PUT `/api/files/{path}` | Dosya üzerine yaz |
+| `createFile(String, Uint8List)` | POST `/api/files/{path}` | Yeni dosya (409 if exists) |
+| `deleteFile(String)` | DELETE `/api/files/{path}` | Dosya sil |
+| `createFolder(String)` | POST `/api/folders/{path}` | Klasör oluştur |
+
+### Hata Yönetimi
+
+Non-2xx yanıtlarda `AssetServerException(statusCode, message)` fırlatılır.
+
+---
+
+## AssetPathUtils
+
+**Dosya**: `asset_path_utils.dart`
+**Pattern**: Static utility sınıfı
+
+App_Path (JSON'da saklanan) ve API_Path (server'a gönderilen) arasında dönüşüm yapar.
+
+### Metotlar
+
+| Metot | Girdi | Çıktı |
+|-------|-------|-------|
+| `appPathToApiPath(String)` | `assets/images/book_1/cover.webp` | `images/book_1/cover.webp` |
+| `apiPathToAppPath(String)` | `images/book_1/cover.webp` | `assets/images/book_1/cover.webp` |
+| `isValidAppPath(String)` | Herhangi bir path | `true` if starts with `assets/` |
+| `sanitizeFilename(String)` | Raw filename | Güvenli dosya adı (lowercase, unsafe chars removed) |
+
+---
+
+## AssetReferenceDetector
+
+**Dosya**: `asset_reference_detector.dart`
+**Pattern**: Static utility sınıfı
+
+ContentState'teki `asset_image` referanslarını tarar. Silme işlemlerinde referans güvenliği sağlar.
+
+### Metotlar
+
+| Metot | Açıklama |
+|-------|----------|
+| `findReferences(ContentState, String)` | Verilen path'i referans eden tüm içerik öğelerini döndürür |
+| `isReferenced(ContentState, String)` | Path herhangi bir öğe tarafından referans ediliyorsa `true` |
+| `getAllReferencedPaths(ContentState)` | Tüm referans edilen asset path'lerini döndürür |
+
+---
+
+## UploadValidator
+
+**Dosya**: `upload_validator.dart`
+**Pattern**: Static utility sınıfı
+
+Dosya yükleme öncesi client-side doğrulama yapar.
+
+### Metotlar
+
+| Metot | Açıklama |
+|-------|----------|
+| `isValidExtension(String, AssetCategory)` | Dosya uzantısı kategoriye uygun mu (case-insensitive) |
+| `validateLottieStructure(List<int>)` | Lottie JSON yapısı geçerli mi (v, layers, w, h) |
+| `getAllowedExtensions(AssetCategory)` | Kategori için izin verilen uzantılar |
+
+### AssetCategory Enum
+
+| Kategori | İzin Verilen Uzantılar |
+|----------|----------------------|
+| `images` | .png, .jpg, .jpeg, .webp, .gif |
+| `audio` | .mp3, .wav, .m4a, .ogg |
+| `lottie` | .json |
+| `icons` | .png, .jpg, .jpeg, .webp, .ico |
+
+---
+
+## DevicePreviewService
+
+**Dosya**: `device_preview_service.dart`
+**Pattern**: Stateful HTTP client (opsiyonel `http.Client` bağımlılığı)
+
+Admin aracından asset sunucuya preview isteği gönderir. Feedback mesajını emülatörde/simülatörde çalışan mobil uygulamada test etmeyi sağlar.
+
+### Constructor
+
+```dart
+DevicePreviewService({http.Client? client})
+```
+
+### Metotlar
+
+| Metot | Açıklama |
+|-------|----------|
+| `sendPreview({message, screenContext, category, subcategory})` | Preview verisini sunucuya POST eder |
+| `dispose()` | HTTP client'ı kapatır |
+
+### PreviewResult Sealed Class
+
+```dart
+sealed class PreviewResult {}
+class PreviewResultSuccess extends PreviewResult {}
+class PreviewResultConnectionError extends PreviewResult {}
+class PreviewResultServerError extends PreviewResult { final String message; }
+```
+
+### Çalışma Akışı
+
+1. `FeedbackMessageModel` + `PreviewContext` + category/subcategory → JSON payload oluşturulur
+2. `POST http://localhost:8080/api/preview` adresine gönderilir (5s timeout)
+3. 200 → Success, timeout/connection error → ConnectionError, 4xx/5xx → ServerError
+
+### Kullanım Yeri
+
+`FeedbackPreviewDialog` → "Cihazda Test Et" butonu
+
+**Dosya**: `content_file_mapping.dart`
+**Pattern**: Pure functions
+
+İçerik değişiklik türlerini API dosya yollarına eşler. Auto-save tarafından kullanılır.
+
+### Fonksiyonlar
+
+| Fonksiyon | Açıklama |
+|-----------|----------|
+| `getApiPathForChange(ContentChangeType, {String? key})` | Değişiklik türü → API_Path |
+| `getChangedFiles(ContentState, ContentState)` | İki state karşılaştırır, değişen dosyaları döndürür |
+
+### Eşleme
+
+| ContentChangeType | API_Path |
+|-------------------|----------|
+| `series` | `data/series.json` |
+| `books` | `data/books.json` |
+| `rewards` | `data/rewards.json` |
+| `hadiths` | `data/hadiths.json` |
+| `contentFile` (key) | `data/content/{key}` |
+
+---
+
+## SaveGating
+
+**Dosya**: `save_gating.dart`
+**Pattern**: Pure function
+
+Kaydetme öncesi validasyon kontrolü. ERROR-level issue varsa kayıt bloklanır.
+
+### Fonksiyon
+
+```dart
+bool isSaveAllowedForFile(String apiPath, List<ValidationIssue> issues)
+```
+
+- `true`: Hedef dosya için sıfır ERROR-level issue varsa
+- WARNING-level issue'lar kayıt bloklamaz

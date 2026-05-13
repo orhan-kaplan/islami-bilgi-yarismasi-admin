@@ -35,6 +35,18 @@ class EditPanel extends ConsumerWidget {
         _buildLevelForm(ref, contentFile, levelId),
       SelectedQuestion(:final contentFile, :final levelId, :final questionIndex) =>
         _buildQuestionForm(ref, contentFile, levelId, questionIndex),
+      CreateSeries() => const SeriesForm(key: ValueKey('create_series')),
+      CreateBook(:final seriesId) => BookForm(
+          key: ValueKey('create_book_$seriesId'),
+          seriesId: seriesId,
+        ),
+      CreateLevel(:final contentFile, :final bookId) => LevelForm(
+          key: ValueKey('create_level_${contentFile}_$bookId'),
+          contentFile: contentFile,
+          bookId: bookId,
+        ),
+      CreateQuestion(:final contentFile, :final levelId) =>
+        _buildCreateQuestionForm(ref, contentFile, levelId),
     };
   }
 
@@ -86,6 +98,9 @@ class EditPanel extends ConsumerWidget {
     return QuestionForm(
       key: ValueKey('question_${contentFile}_${levelId}_$questionIndex'),
       question: question,
+      contentFile: contentFile,
+      levelId: levelId,
+      questionIndex: questionIndex,
       onSave: (updatedQuestion) {
         // Push current state to history before applying the change.
         ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
@@ -97,6 +112,24 @@ class EditPanel extends ConsumerWidget {
         } else {
           notifier.addQuestion(contentFile, levelId, updatedQuestion);
         }
+      },
+    );
+  }
+
+  Widget _buildCreateQuestionForm(
+    WidgetRef ref,
+    String contentFile,
+    int levelId,
+  ) {
+    return QuestionForm(
+      key: ValueKey('create_question_${contentFile}_$levelId'),
+      question: null,
+      onSave: (newQuestion) {
+        // Push current state to history before applying the change.
+        ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
+
+        final notifier = ref.read(contentStateProvider.notifier);
+        notifier.addQuestion(contentFile, levelId, newQuestion);
       },
     );
   }

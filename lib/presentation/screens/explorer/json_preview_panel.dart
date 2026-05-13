@@ -95,6 +95,12 @@ class JsonPreviewPanel extends ConsumerWidget {
           return null;
         }
         return level.questions[questionIndex].toJson();
+
+      case CreateSeries():
+      case CreateBook():
+      case CreateLevel():
+      case CreateQuestion():
+        return null;
     }
   }
 }

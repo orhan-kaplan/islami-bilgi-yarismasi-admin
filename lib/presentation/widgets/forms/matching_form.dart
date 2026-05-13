@@ -12,6 +12,7 @@ class MatchingForm extends StatefulWidget {
     super.key,
     this.question,
     required this.onSave,
+    this.onQuestionTextChanged,
   });
 
   /// The question to edit, or null to create a new one.
@@ -19,6 +20,9 @@ class MatchingForm extends StatefulWidget {
 
   /// Callback when the form is saved with a valid question.
   final ValueChanged<QuestionModel> onSave;
+
+  /// Callback when the question text field changes (for duplicate detection).
+  final ValueChanged<String>? onQuestionTextChanged;
 
   @override
   State<MatchingForm> createState() => _MatchingFormState();
@@ -61,6 +65,12 @@ class _MatchingFormState extends State<MatchingForm> {
     _rightCController = TextEditingController(text: partsC.$2);
     _leftDController = TextEditingController(text: partsD.$1);
     _rightDController = TextEditingController(text: partsD.$2);
+
+    _questionTextController.addListener(_notifyQuestionTextChanged);
+  }
+
+  void _notifyQuestionTextChanged() {
+    widget.onQuestionTextChanged?.call(_questionTextController.text);
   }
 
   (String, String) _splitOption(String? option) {
@@ -74,6 +84,7 @@ class _MatchingFormState extends State<MatchingForm> {
 
   @override
   void dispose() {
+    _questionTextController.removeListener(_notifyQuestionTextChanged);
     _questionTextController.dispose();
     _explanationController.dispose();
     _leftAController.dispose();

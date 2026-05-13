@@ -11,6 +11,7 @@ class TrueFalseForm extends StatefulWidget {
     super.key,
     this.question,
     required this.onSave,
+    this.onQuestionTextChanged,
   });
 
   /// The question to edit, or null to create a new one.
@@ -18,6 +19,9 @@ class TrueFalseForm extends StatefulWidget {
 
   /// Callback when the form is saved with a valid question.
   final ValueChanged<QuestionModel> onSave;
+
+  /// Callback when the question text field changes (for duplicate detection).
+  final ValueChanged<String>? onQuestionTextChanged;
 
   @override
   State<TrueFalseForm> createState() => _TrueFalseFormState();
@@ -38,10 +42,17 @@ class _TrueFalseFormState extends State<TrueFalseForm> {
     _explanationController = TextEditingController(text: q?.explanation ?? '');
     // For true/false, correct_option is either A (Doğru) or B (Yanlış)
     _correctOption = (q?.correctOption == 'B') ? 'B' : 'A';
+
+    _questionTextController.addListener(_notifyQuestionTextChanged);
+  }
+
+  void _notifyQuestionTextChanged() {
+    widget.onQuestionTextChanged?.call(_questionTextController.text);
   }
 
   @override
   void dispose() {
+    _questionTextController.removeListener(_notifyQuestionTextChanged);
     _questionTextController.dispose();
     _explanationController.dispose();
     super.dispose();

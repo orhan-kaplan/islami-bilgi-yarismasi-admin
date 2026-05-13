@@ -11,6 +11,7 @@ class SortingForm extends StatefulWidget {
     super.key,
     this.question,
     required this.onSave,
+    this.onQuestionTextChanged,
   });
 
   /// The question to edit, or null to create a new one.
@@ -18,6 +19,9 @@ class SortingForm extends StatefulWidget {
 
   /// Callback when the form is saved with a valid question.
   final ValueChanged<QuestionModel> onSave;
+
+  /// Callback when the question text field changes (for duplicate detection).
+  final ValueChanged<String>? onQuestionTextChanged;
 
   @override
   State<SortingForm> createState() => _SortingFormState();
@@ -43,10 +47,17 @@ class _SortingFormState extends State<SortingForm> {
     _optionCController = TextEditingController(text: q?.optionC ?? '');
     _optionDController = TextEditingController(text: q?.optionD ?? '');
     _explanationController = TextEditingController(text: q?.explanation ?? '');
+
+    _questionTextController.addListener(_notifyQuestionTextChanged);
+  }
+
+  void _notifyQuestionTextChanged() {
+    widget.onQuestionTextChanged?.call(_questionTextController.text);
   }
 
   @override
   void dispose() {
+    _questionTextController.removeListener(_notifyQuestionTextChanged);
     _questionTextController.dispose();
     _optionAController.dispose();
     _optionBController.dispose();

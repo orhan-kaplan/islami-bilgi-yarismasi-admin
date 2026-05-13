@@ -46,6 +46,29 @@ class SelectedQuestion extends SelectedItem {
   });
 }
 
+/// Triggers an empty SeriesForm in the edit panel (create mode).
+class CreateSeries extends SelectedItem {}
+
+/// Triggers an empty BookForm in the edit panel (create mode).
+class CreateBook extends SelectedItem {
+  final int seriesId;
+  CreateBook({required this.seriesId});
+}
+
+/// Triggers an empty LevelForm in the edit panel (create mode).
+class CreateLevel extends SelectedItem {
+  final String contentFile;
+  final int bookId;
+  CreateLevel({required this.contentFile, required this.bookId});
+}
+
+/// Triggers an empty QuestionForm in the edit panel (create mode).
+class CreateQuestion extends SelectedItem {
+  final String contentFile;
+  final int levelId;
+  CreateQuestion({required this.contentFile, required this.levelId});
+}
+
 // ---------------------------------------------------------------------------
 // Content Explorer Screen — master-detail layout.
 // ---------------------------------------------------------------------------

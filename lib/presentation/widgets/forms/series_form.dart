@@ -107,11 +107,11 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
               controller: _idController,
               decoration: const InputDecoration(
                 labelText: 'ID',
-                helperText: 'Auto-generated, but editable',
+                helperText: 'Auto-generated',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              enabled: !_isEditing,
+              enabled: false,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'ID is required';
                 final id = int.tryParse(value);
@@ -137,9 +137,10 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
               controller: _sortOrderController,
               decoration: const InputDecoration(
                 labelText: 'Sort Order',
+                helperText: 'Drag-drop ile ayarlanır',
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              enabled: false,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Sort order is required';
                 final order = int.tryParse(value);

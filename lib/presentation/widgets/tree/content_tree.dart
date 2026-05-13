@@ -59,9 +59,31 @@ class ContentTree extends ConsumerWidget {
 
     // When search is NOT active, use ReorderableListView for drag-and-drop
     if (searchResult == null) {
-      return _ReorderableSeriesTree(
-        seriesList: displayedSeries,
-        onItemSelected: onItemSelected,
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => onItemSelected(CreateSeries()),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Series'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _ReorderableSeriesTree(
+              seriesList: displayedSeries,
+              onItemSelected: onItemSelected,
+            ),
+          ),
+        ],
       );
     }
 
@@ -181,6 +203,21 @@ class _SeriesTile extends ConsumerWidget {
               series.iconEmoji,
               style: const TextStyle(fontSize: 20),
             ),
+      trailing: reorderable
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Add Book',
+                  onPressed: () =>
+                      onItemSelected(CreateBook(seriesId: series.id)),
+                ),
+                const Icon(Icons.expand_more),
+              ],
+            )
+          : null,
       title: GestureDetector(
         onTap: () => onItemSelected(SelectedSeries(seriesId: series.id)),
         child: Row(
@@ -340,6 +377,23 @@ class _BookTile extends ConsumerWidget {
                 child: const Icon(Icons.drag_handle),
               )
             : const Icon(Icons.book_outlined, size: 18),
+        trailing: reorderable
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Add Level',
+                    onPressed: () => onItemSelected(
+                      CreateLevel(
+                          contentFile: book.contentFile, bookId: book.id),
+                    ),
+                  ),
+                  const Icon(Icons.expand_more),
+                ],
+              )
+            : null,
         title: GestureDetector(
           onTap: () => onItemSelected(SelectedBook(bookId: book.id)),
           child: Row(
@@ -470,6 +524,20 @@ class _ReorderableLevelTile extends StatelessWidget {
       leading: ReorderableDragStartListener(
         index: index,
         child: const Icon(Icons.drag_handle),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.add, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Add Question',
+            onPressed: () => onItemSelected(
+              CreateQuestion(contentFile: contentFile, levelId: level.id),
+            ),
+          ),
+          const Icon(Icons.expand_more),
+        ],
       ),
       title: GestureDetector(
         onTap: () => onItemSelected(

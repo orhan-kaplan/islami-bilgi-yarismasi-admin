@@ -9,6 +9,7 @@ import '../../../data/models/content_state.dart';
 import '../../../data/services/file_download_web.dart';
 import '../../../data/services/zip_exporter.dart';
 import '../../../data/services/zip_importer.dart';
+import '../../providers/auto_load_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/history_providers.dart';
@@ -21,6 +22,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final autoLoadStatus = ref.watch(autoLoadProvider);
     final counts = ref.watch(totalCountsProvider);
     final healthScore = ref.watch(healthScoreProvider);
     final errors = ref.watch(validationErrorsProvider);
@@ -33,6 +35,14 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Auto-load loading indicator
+            if (autoLoadStatus == AutoLoadStatus.loading)
+              _buildAutoLoadingBanner(context),
+
+            // Auto-load failure banner
+            if (autoLoadStatus == AutoLoadStatus.failed)
+              _buildAutoLoadFailedBanner(context, ref),
+
             // Aggregate count cards
             _buildCountCards(counts),
             const SizedBox(height: 32),
@@ -46,13 +56,122 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 32),
             ],
 
-            // Action buttons
+            // Action buttons (always visible — includes ZIP import)
             _buildActionButtons(context, ref, isEmpty),
             const SizedBox(height: 32),
 
             // Critical issues summary (when health < 100%)
             if (!isEmpty && healthScore < 100.0) _buildCriticalIssues(errors),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoLoadingBanner(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Card(
+        color: Colors.blue.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Loading content from asset server...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.blue.shade800,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoLoadFailedBanner(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Card(
+        color: Colors.orange.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.cloud_off, color: Colors.orange.shade700, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Asset server unavailable',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade900,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Could not load content from the server. '
+                          'Start the server or import a ZIP archive instead.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.orange.shade800,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(autoLoadProvider.notifier).performAutoLoad();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Server start command
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.terminal, color: Colors.grey.shade400, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectableText(
+                        'cd islami-bilgi-yarismasi/server && dart run bin/server.dart',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                          color: Colors.green.shade300,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

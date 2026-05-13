@@ -5,13 +5,15 @@
 `AppShell` (`lib/presentation/router/app_router.dart`) uygulamanın ana iskeletidir. Sol tarafta `NavigationRail`, sağ tarafta aktif ekran gösterilir.
 
 ```
-AppShell (Scaffold + Row) — ConsumerWidget
+AppShell (Scaffold + Row) — ConsumerStatefulWidget
 ├── NavigationRail (sol panel)
+│   ├── leading: Connectivity indicator (yeşil/kırmızı nokta)
 │   ├── Tab 0: Dashboard     (Home)
 │   ├── Tab 1: Explorer      (Content Explorer)
 │   ├── Tab 2: Rewards       (Ödüller)
 │   ├── Tab 3: Hadiths       (Hadisler)
-│   ├── Tab 4: Validation    (Validasyon Raporu)
+│   ├── Tab 4: Assets        (Asset Yönetimi)
+│   ├── Tab 5: Validation    (Validasyon Raporu)
 │   └── trailing: Unsaved changes indicator (turuncu nokta, tüm sayfalarda görünür)
 ├── BeforeUnloadGuard (tarayıcı kapatma koruması)
 ├── AppShortcuts (global klavye kısayolları)
@@ -43,7 +45,7 @@ StatefulShellRoute.indexedStack(
 |---------|---------|
 | `Ctrl/Cmd + Z` | Undo (metin alanı dışında) |
 | `Ctrl/Cmd + Shift + Z` | Redo (metin alanı dışında) |
-| `Ctrl/Cmd + S` | Export ZIP |
+| `Ctrl/Cmd + S` | Server bağlıysa: Flush pending saves / Bağlı değilse: Export ZIP |
 | `Ctrl/Cmd + E` | Export ZIP |
 | `Ctrl/Cmd + F` | Arama alanına focus |
 | `?` | Kısayollar yardım dialogu (metin alanı dışında) |
@@ -67,6 +69,7 @@ Ana sayfa. İçerik durumunu özetler ve import/export işlemlerini başlatır.
 **Gösterilen bilgiler:**
 - Aggregate sayı kartları (Series, Books, Levels, Questions)
 - Health Score (dairesel ilerleme göstergesi, %0–100)
+- Auto-load durumu (loading banner, failed banner with retry)
 - Boş state uyarısı (içerik yüklenmemişse)
 - Kritik hatalar özeti (ilk 5 error)
 
@@ -74,8 +77,10 @@ Ana sayfa. İçerik durumunu özetler ve import/export işlemlerini başlatır.
 - "Import" butonu → file_picker ile ZIP/JSON seçimi → `ZipImporter` → state güncelleme
 - "Export ZIP" butonu → `ZipExporter` → tarayıcı indirme
 - "Validate All" butonu → `/validation` sayfasına yönlendirme
+- "Retry" butonu (auto-load başarısız olduğunda) → `performAutoLoad()` tekrar dener
 
 **Kullandığı provider'lar:**
+- `autoLoadProvider` — Auto-load durumu (loading/loaded/failed banner)
 - `totalCountsProvider` — Aggregate sayılar
 - `healthScoreProvider` — Sağlık skoru
 - `validationErrorsProvider` — Error listesi
@@ -179,6 +184,92 @@ Hadis listesi ve CRUD yönetimi.
 
 **Kullandığı provider'lar:**
 - `contentStateProvider` — Hadith CRUD işlemleri
+
+---
+
+### AssetsScreen (`screens/assets/assets_screen.dart`)
+
+Asset dosyalarını (görseller, ses, Lottie animasyonlar, ikonlar) görsel olarak yönetir.
+
+**Layout:**
+```
+Scaffold
+├── AppBar (title: "Assets")
+│   └── TabBar (Images, Audio, Lottie, Icons)
+└── TabBarView
+    ├── ImagesTab — Klasör sidebar + görsel grid
+    ├── AudioTab — Ses dosyaları listesi + oynatma
+    ├── LottieTab — Animasyon önizleme kartları
+    └── IconsTab — İkon grid
+```
+
+**Images Tab (`images_tab.dart`):**
+- Sol sidebar: `images/` altındaki klasörleri listeler (natural sort)
+- Sağ grid: Seçili klasördeki görselleri thumbnail olarak gösterir (natural sort)
+- Her kart: Thumbnail, dosya adı, boyut, Replace/Delete butonları
+- "Add New Image" butonu → file_picker → server'a upload
+- "New Folder" butonu → klasör adı dialogu → server'da oluşturma
+- Delete: Referans kontrolü → referanslıysa blokla, değilse onay al
+
+**Audio Tab (`audio_tab.dart`):**
+- Ses dosyaları listesi (filename, boyut, play/pause, Replace, Delete)
+- Browser audio playback (HTMLAudioElement via `package:web`)
+- "Add New Audio" butonu
+
+**Lottie Tab (`lottie_tab.dart`):**
+- İki bölüm: Root level (`lottie/`) ve Feedback (`lottie/feedback/`)
+- Canlı animasyon önizleme kartları (`Lottie.network()`)
+- Kart tıklama → büyük önizleme dialogu (Replace/Delete)
+- Upload öncesi Lottie yapı doğrulama (v, layers, w, h alanları)
+
+**Icons Tab (`icons_tab.dart`):**
+- İkon grid (thumbnail, dosya adı, Replace/Delete)
+- "Add New Icon" butonu
+
+**Kullandığı provider'lar:**
+- `assetListProvider(path)` — Dizin listeleme (FutureProvider.family)
+- `assetServerClientProvider` — HTTP işlemleri
+- `contentStateProvider` — Referans kontrolü için
+- `isServerConnectedProvider` — Bağlantı durumu
+
+---
+
+### FeedbackScreen (`screens/feedback/feedback_screen.dart`)
+
+Feedback mesajlarının yönetimi. Kategorilere göre tab'lı yapı.
+
+**Layout:**
+```
+Scaffold
+├── AppBar (title: "Feedback", search icon)
+│   └── TabBar (Quiz, Speed Quiz, Time, Comeback, Streak, Titles, Learned)
+└── TabBarView
+    ├── Quiz — Subcategory accordion + mesaj kartları
+    ├── Speed Quiz — Subcategory accordion + mesaj kartları
+    ├── Time — Subcategory accordion + mesaj kartları
+    ├── Comeback — Düz mesaj listesi + FAB
+    ├── Streak — Subcategory accordion + mesaj kartları
+    ├── Titles — Ünvan kartları + FAB
+    └── Learned — Subcategory accordion + mesaj kartları
+```
+
+**Önizleme Diyaloğu (`FeedbackPreviewDialog`):**
+- Telefon mockup çerçevesi içinde feedback mesajının mobil görünümü
+- Ekran bağlamı kategoriye göre **otomatik** belirlenir (tab seçimi yok):
+  - quiz, speed_quiz → QuizResultPreview
+  - time, comeback, streak → DashboardPreview
+  - learned → LearnedQuizResultPreview
+- "Cihazda Test Et" butonu: Asset sunucu bağlıysa aktif, preview'ı emülatöre gönderir
+- Asset sunucu bağlı değilse uyarı banner'ı gösterilir
+
+**Mesaj Ekleme/İptal Davranışı:**
+- "+" butonu → boş mesaj oluşturulur ve edit modunda açılır
+- İptal edilirse → boş mesaj listeden kaldırılır (hiçbir şey oluşmaz)
+- Mevcut mesaj düzenlenip iptal edilirse → eski hali korunur
+
+**Kullandığı provider'lar:**
+- `feedbackContentProvider` — Feedback CRUD işlemleri
+- `feedbackAutoSaveProvider` — Otomatik kaydetme
 
 ---
 

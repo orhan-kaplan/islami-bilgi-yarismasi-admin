@@ -6,6 +6,7 @@ import '../../../data/models/level_model.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
 import '../shared/confirm_dialog.dart';
+import 'inline_image_picker.dart';
 
 /// Form for creating or editing a [LevelModel].
 ///
@@ -16,6 +17,7 @@ class LevelForm extends ConsumerStatefulWidget {
     super.key,
     required this.contentFile,
     this.level,
+    this.bookId,
   });
 
   /// The content file this level belongs to.
@@ -23,6 +25,9 @@ class LevelForm extends ConsumerStatefulWidget {
 
   /// The level to edit, or null to create a new one.
   final LevelModel? level;
+
+  /// Optional book ID for create mode (used for image directory default).
+  final int? bookId;
 
   @override
   ConsumerState<LevelForm> createState() => _LevelFormState();
@@ -36,7 +41,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
   late final TextEditingController _levelOrderController;
   late final TextEditingController _titleController;
   late final TextEditingController _unlockScoreController;
-  late final TextEditingController _assetImageController;
+  late String? _assetImage;
 
   bool get _isEditing => widget.level != null;
 
@@ -59,9 +64,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
     _unlockScoreController = TextEditingController(
       text: level?.unlockScore.toString() ?? '0',
     );
-    _assetImageController = TextEditingController(
-      text: level?.assetImage ?? '',
-    );
+    _assetImage = level?.assetImage;
   }
 
   @override
@@ -71,7 +74,6 @@ class _LevelFormState extends ConsumerState<LevelForm> {
     _levelOrderController.dispose();
     _titleController.dispose();
     _unlockScoreController.dispose();
-    _assetImageController.dispose();
     super.dispose();
   }
 
@@ -89,9 +91,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
       levelOrder: int.parse(_levelOrderController.text),
       title: _titleController.text.trim(),
       unlockScore: int.parse(_unlockScoreController.text),
-      assetImage: _assetImageController.text.trim().isEmpty
-          ? null
-          : _assetImageController.text.trim(),
+      assetImage: _assetImage,
       questions: widget.level?.questions ?? [],
     );
 
@@ -158,11 +158,11 @@ class _LevelFormState extends ConsumerState<LevelForm> {
               controller: _idController,
               decoration: const InputDecoration(
                 labelText: 'ID',
-                helperText: 'Auto-generated, but editable',
+                helperText: 'Auto-generated',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              enabled: !_isEditing,
+              enabled: false,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'ID is required';
                 final id = int.tryParse(value);
@@ -188,9 +188,10 @@ class _LevelFormState extends ConsumerState<LevelForm> {
               controller: _levelOrderController,
               decoration: const InputDecoration(
                 labelText: 'Level Order',
+                helperText: 'Drag-drop ile ayarlanır',
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              enabled: false,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Level order is required';
                 final order = int.tryParse(value);
@@ -228,12 +229,47 @@ class _LevelFormState extends ConsumerState<LevelForm> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _assetImageController,
-              decoration: const InputDecoration(
-                labelText: 'Asset Image (optional)',
-                helperText: 'Leave empty if not needed',
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                InlineImagePicker(
+                  currentAppPath: _assetImage,
+                  defaultDirectory: 'images/book_${widget.level?.bookId ?? widget.bookId ?? 0}/',
+                  targetFileName: 'level_${_idController.text}',
+                  onPathChanged: (newPath) {
+                    setState(() => _assetImage = newPath);
+                    // Also update ContentState immediately if editing
+                    if (_isEditing) {
+                      ref.read(historyProvider.notifier).pushState(
+                        ref.read(contentStateProvider),
+                      );
+                      final notifier = ref.read(contentStateProvider.notifier);
+                      final updated = LevelModel(
+                        id: int.parse(_idController.text),
+                        bookId: widget.level!.bookId,
+                        categoryName: _categoryNameController.text.trim(),
+                        levelOrder: int.parse(_levelOrderController.text),
+                        title: _titleController.text.trim(),
+                        unlockScore: int.parse(_unlockScoreController.text),
+                        assetImage: newPath,
+                        questions: widget.level!.questions,
+                      );
+                      notifier.updateLevel(widget.contentFile, updated);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _assetImage == null || _assetImage!.isEmpty
+                        ? 'No image selected (optional)'
+                        : _assetImage!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             FilledButton.icon(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/reward_model.dart';
 import '../../providers/content_providers.dart';
+import 'inline_image_picker.dart';
 
 /// Form for creating or editing a [RewardModel].
 ///
@@ -29,7 +30,7 @@ class _RewardFormState extends ConsumerState<RewardForm> {
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _assetImageController;
+  late String _assetImage;
   late int? _selectedBookId;
 
   bool get _isEditing => widget.reward != null;
@@ -42,9 +43,7 @@ class _RewardFormState extends ConsumerState<RewardForm> {
     _descriptionController = TextEditingController(
       text: reward?.description ?? '',
     );
-    _assetImageController = TextEditingController(
-      text: reward?.assetImage ?? '',
-    );
+    _assetImage = reward?.assetImage ?? '';
     _selectedBookId = reward?.unlockBookId;
   }
 
@@ -52,18 +51,23 @@ class _RewardFormState extends ConsumerState<RewardForm> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _assetImageController.dispose();
     super.dispose();
   }
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    if (_assetImage.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Asset image is required')),
+      );
+      return;
+    }
 
     final notifier = ref.read(contentStateProvider.notifier);
     final reward = RewardModel(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      assetImage: _assetImageController.text.trim(),
+      assetImage: _assetImage,
       unlockBookId: _selectedBookId!,
     );
 
@@ -122,21 +126,37 @@ class _RewardFormState extends ConsumerState<RewardForm> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _assetImageController,
-              decoration: const InputDecoration(
-                labelText: 'Asset Image *',
-                helperText: 'Must start with "assets/"',
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Asset image must not be empty';
-                }
-                if (!value.trim().startsWith('assets/')) {
-                  return 'Asset image must start with "assets/"';
-                }
-                return null;
-              },
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                InlineImagePicker(
+                  currentAppPath: _assetImage.isEmpty ? null : _assetImage,
+                  defaultDirectory: 'images/rewards/',
+                  onPathChanged: (newPath) {
+                    setState(() => _assetImage = newPath);
+                    // Also update ContentState immediately if editing
+                    if (_isEditing && widget.rewardIndex != null) {
+                      final notifier = ref.read(contentStateProvider.notifier);
+                      final updated = RewardModel(
+                        title: _titleController.text.trim(),
+                        description: _descriptionController.text.trim(),
+                        assetImage: newPath,
+                        unlockBookId: _selectedBookId!,
+                      );
+                      notifier.updateReward(widget.rewardIndex!, updated);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _assetImage.isEmpty ? 'No image selected' : _assetImage,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(

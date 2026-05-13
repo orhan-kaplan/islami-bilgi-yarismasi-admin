@@ -2,9 +2,13 @@
 
 ## Genel Bakış
 
-Proje **standalone Flutter Web** uygulamasıdır. Tüm veri **in-memory** tutulur — backend veya veritabanı yoktur. İçerik ZIP/JSON dosyaları olarak import edilir, düzenlenir ve tekrar ZIP olarak export edilir.
+Proje **standalone Flutter Web** uygulamasıdır. Tüm veri **in-memory** tutulur ve iki farklı persistence modu desteklenir:
+
+1. **Asset Server modu** (birincil): Yerel Dart HTTP server üzerinden dosya sistemi erişimi. Veriler otomatik yüklenir ve değişiklikler otomatik kaydedilir.
+2. **ZIP modu** (fallback): İçerik ZIP/JSON dosyaları olarak import edilir, düzenlenir ve tekrar ZIP olarak export edilir.
 
 ```
+Asset Server → Auto-Load → ContentState (Riverpod) → Auto-Save → Asset Server
 ZIP/JSON → Parser → ContentState (Riverpod) → Serializer → ZIP
 ```
 
@@ -33,7 +37,7 @@ Veri modelleri ve iş mantığı servislerini barındırır.
 | Dizin | İçerik |
 |-------|--------|
 | `models/` | İmmutable veri modelleri: `SeriesModel`, `BookModel`, `LevelModel`, `QuestionModel`, `RewardModel`, `HadithModel`, `ContentState` |
-| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `downloadFile` |
+| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `AssetServerClient`, `AssetPathUtils`, `AssetReferenceDetector`, `UploadValidator`, `ContentFileMapping`, `SaveGating`, `downloadFile` |
 
 ### 3. Presentation Katmanı (`lib/presentation/`)
 
@@ -41,9 +45,9 @@ Kullanıcı arayüzü, state yönetimi ve navigasyon.
 
 | Dizin | İçerik |
 |-------|--------|
-| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart` |
-| `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `validation/` |
-| `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/`, `shared/`, `shortcuts/` |
+| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart`, `asset_server_providers.dart`, `connectivity_providers.dart`, `auto_load_providers.dart`, `auto_save_providers.dart`, `asset_providers.dart` |
+| `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `assets/`, `validation/` |
+| `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/` (InlineImagePicker dahil), `shared/`, `shortcuts/` |
 | `router/` | `go_router` yapılandırması ve `AppShell` (NavigationRail) |
 
 ## Bağımlılık Yönü
@@ -58,7 +62,7 @@ core ← data ← presentation
 
 ## Veri Akışı
 
-### Import Akışı
+### Import Akışı (ZIP — Fallback)
 ```
 1. Kullanıcı ZIP veya JSON dosyaları seçer (file_picker)
 2. ZipImporter → ZIP'i açar, dosyaları normalize eder
@@ -69,7 +73,31 @@ core ← data ← presentation
 7. Tüm derived provider'lar otomatik yeniden hesaplanır
 ```
 
-### Export Akışı
+### Auto-Load Akışı (Asset Server — Birincil)
+```
+1. Uygulama başlar → serverConnectivityProvider health check yapar
+2. Server bağlantısı kurulur → autoLoadProvider tetiklenir
+3. GET /api/health → Server durumu doğrulanır
+4. GET /api/files/data/series.json, books.json, rewards.json, hadiths.json → Fetch
+5. GET /api/list/data/content → Content dosyaları listelenir
+6. GET /api/files/data/content/{file} → Her content dosyası fetch edilir
+7. JsonParser → Tüm veriler parse edilir
+8. ContentNotifier.importContent() → ContentState güncellenir
+9. savedBaselineProvider → Yüklenen state baseline olarak kaydedilir
+10. HistoryNotifier.clear() → Undo/redo geçmişi temizlenir
+```
+
+### Auto-Save Akışı (Asset Server)
+```
+1. Kullanıcı içerik düzenler → contentStateProvider değişir
+2. AutoSaveController değişikliği algılar → getChangedFiles() ile etkilenen dosyalar belirlenir
+3. Her dosya için 2 saniyelik debounce timer başlar
+4. Timer dolduğunda → isSaveAllowedForFile() ile validasyon kontrolü
+5. ERROR-level issue yoksa → JsonSerializer ile serialize → PUT /api/files/{path}
+6. Başarılı kayıt → savedBaselineProvider güncellenir → isDirtyProvider false olur
+```
+
+### Export Akışı (ZIP — Fallback)
 ```
 1. Kullanıcı "Export ZIP" butonuna tıklar (veya Ctrl/Cmd+S kısayolu)
 2. ZipExporter → ContentValidator.validateAll() çalıştırır
@@ -97,9 +125,46 @@ core ← data ← presentation
 | **Riverpod** | Compile-time güvenlik, derived provider'lar ile reaktif validasyon |
 | **go_router** | StatefulShellRoute ile NavigationRail entegrasyonu |
 | **archive** | Dart-native ZIP encode/decode, web uyumlu |
-| **file_picker** | Tarayıcıda dosya seçimi (ZIP + JSON) |
-| **web** | Tarayıcı API'lerine erişim (Blob, URL, anchor download) |
+| **file_picker** | Tarayıcıda dosya seçimi (ZIP + JSON + asset dosyaları) |
+| **http** | AssetServerClient için HTTP istekleri |
+| **lottie** | Lottie animasyon önizleme (Assets sayfası) |
+| **web** | Tarayıcı API'lerine erişim (Blob, URL, anchor download, audio playback) |
+| **shelf (server)** | Hafif Dart HTTP server, middleware pipeline desteği |
 | **In-memory state** | Backend gerektirmez, offline çalışır, basit mimari |
+
+## Asset Server (`server/` paketi)
+
+Admin tool ile aynı workspace'te bulunan bağımsız Dart paketi. `assets/` dizinine REST API erişimi sağlar.
+
+```
+server/
+├── bin/server.dart          ← Giriş noktası (--port, --assets-root args)
+├── lib/
+│   ├── asset_server.dart    ← Barrel export
+│   └── src/
+│       ├── server_app.dart  ← Pipeline: CORS → Path Security → Extension Guard → Router
+│       ├── handlers/        ← health, file, list, folder endpoint'leri
+│       ├── middleware/      ← cors, path_security, extension_guard
+│       └── utils/           ← mime_types
+├── test/                    ← Unit + property-based testler
+└── pubspec.yaml
+```
+
+### Başlatma
+```bash
+cd server && dart run bin/server.dart --assets-root ../assets
+```
+
+### Endpoint'ler
+| Method | Path | Açıklama |
+|--------|------|----------|
+| GET | `/api/health` | Server durumu |
+| GET | `/api/files/{path}` | Dosya oku |
+| PUT | `/api/files/{path}` | Dosya üzerine yaz |
+| POST | `/api/files/{path}` | Yeni dosya oluştur |
+| DELETE | `/api/files/{path}` | Dosya sil |
+| GET | `/api/list/{path}` | Dizin listele |
+| POST | `/api/folders/{path}` | Klasör oluştur |
 
 ## Giriş Noktası (`main.dart`)
 
@@ -111,9 +176,13 @@ AdminApp → MaterialApp.router(
   theme: adminTheme,
   darkTheme: adminDarkTheme,
 )
+// Eager initialization:
+ref.watch(serverConnectivityProvider)  // Health polling başlatır
+ref.watch(autoLoadProvider)            // Auto-load tetikler
 ```
 
 - `ProviderScope` tüm Riverpod provider'ları sarar
 - `routerProvider` go_router instance'ını sağlar
-- Uygulama başladığında `ContentState.empty()` ile başlar (veri yok)
-- Kullanıcı import yapana kadar boş state gösterilir
+- Uygulama başladığında connectivity check yapılır
+- Server bağlıysa → auto-load ile veriler otomatik yüklenir
+- Server bağlı değilse → kullanıcı ZIP import yapabilir

@@ -3,18 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/book_model.dart';
+import '../../providers/asset_server_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
+import 'inline_image_picker.dart';
 
 /// Form for creating or editing a [BookModel].
 ///
 /// When [book] is null, the form is in "create" mode with auto-ID suggestion.
 /// When [book] is provided, the form is in "edit" mode.
 class BookForm extends ConsumerStatefulWidget {
-  const BookForm({super.key, this.book});
+  const BookForm({super.key, this.book, this.seriesId});
 
   /// The book to edit, or null to create a new one.
   final BookModel? book;
+
+  /// Optional series ID to pre-select when creating a new book.
+  final int? seriesId;
 
   @override
   ConsumerState<BookForm> createState() => _BookFormState();
@@ -26,7 +31,7 @@ class _BookFormState extends ConsumerState<BookForm> {
   late final TextEditingController _idController;
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _assetImageController;
+  late String _assetImage;
   late final TextEditingController _bookOrderController;
   late final TextEditingController _contentFileController;
   late int? _selectedSeriesId;
@@ -44,12 +49,14 @@ class _BookFormState extends ConsumerState<BookForm> {
     );
     _titleController = TextEditingController(text: book?.title ?? '');
     _descriptionController = TextEditingController(text: book?.description ?? '');
-    _assetImageController = TextEditingController(text: book?.assetImage ?? '');
+    _assetImage = book?.assetImage ?? '';
     _bookOrderController = TextEditingController(
       text: book?.bookOrder.toString() ?? '1',
     );
-    _contentFileController = TextEditingController(text: book?.contentFile ?? '');
-    _selectedSeriesId = book?.seriesId;
+    _contentFileController = TextEditingController(
+      text: book?.contentFile ?? 'book_${_idController.text}.json',
+    );
+    _selectedSeriesId = book?.seriesId ?? widget.seriesId;
   }
 
   @override
@@ -57,14 +64,19 @@ class _BookFormState extends ConsumerState<BookForm> {
     _idController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _assetImageController.dispose();
     _bookOrderController.dispose();
     _contentFileController.dispose();
     super.dispose();
   }
 
-  void _save() {
+  void _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_assetImage.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Asset image is required')),
+      );
+      return;
+    }
 
     // Push current state to history before applying the change.
     ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
@@ -74,7 +86,7 @@ class _BookFormState extends ConsumerState<BookForm> {
       id: int.parse(_idController.text),
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      assetImage: _assetImageController.text.trim(),
+      assetImage: _assetImage,
       bookOrder: int.parse(_bookOrderController.text),
       seriesId: _selectedSeriesId!,
       contentFile: _contentFileController.text.trim(),
@@ -84,6 +96,14 @@ class _BookFormState extends ConsumerState<BookForm> {
       notifier.updateBook(book);
     } else {
       notifier.addBook(book);
+      // Create the book's image folder and sync pubspec.yaml
+      try {
+        final client = ref.read(assetServerClientProvider);
+        await client.createFolder('images/book_${book.id}');
+        await client.syncPubspec();
+      } catch (_) {
+        // Non-critical — folder may already exist or server may be offline
+      }
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -111,11 +131,17 @@ class _BookFormState extends ConsumerState<BookForm> {
               controller: _idController,
               decoration: const InputDecoration(
                 labelText: 'ID',
-                helperText: 'Auto-generated, but editable',
+                helperText: 'Auto-generated',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              enabled: !_isEditing,
+              enabled: false,
+              onChanged: (value) {
+                // Auto-update content file name when ID changes in create mode
+                if (!_isEditing && value.isNotEmpty) {
+                  _contentFileController.text = 'book_$value.json';
+                }
+              },
               validator: (value) {
                 if (value == null || value.isEmpty) return 'ID is required';
                 final id = int.tryParse(value);
@@ -151,30 +177,54 @@ class _BookFormState extends ConsumerState<BookForm> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _assetImageController,
-              decoration: const InputDecoration(
-                labelText: 'Asset Image *',
-                helperText: 'Must start with "assets/"',
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Asset image must not be empty';
-                }
-                if (!value.trim().startsWith('assets/')) {
-                  return 'Asset image must start with "assets/"';
-                }
-                return null;
-              },
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                InlineImagePicker(
+                  currentAppPath: _assetImage.isEmpty ? null : _assetImage,
+                  defaultDirectory: 'images/book_${_idController.text}/',
+                  targetFileName: 'book_${_idController.text}',
+                  onPathChanged: (newPath) {
+                    setState(() => _assetImage = newPath);
+                    // Also update ContentState immediately if editing
+                    if (_isEditing) {
+                      ref.read(historyProvider.notifier).pushState(
+                        ref.read(contentStateProvider),
+                      );
+                      final notifier = ref.read(contentStateProvider.notifier);
+                      final updated = BookModel(
+                        id: int.parse(_idController.text),
+                        title: _titleController.text.trim(),
+                        description: _descriptionController.text.trim(),
+                        assetImage: newPath,
+                        bookOrder: int.parse(_bookOrderController.text),
+                        seriesId: _selectedSeriesId!,
+                        contentFile: _contentFileController.text.trim(),
+                      );
+                      notifier.updateBook(updated);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _assetImage.isEmpty ? 'No image selected' : _assetImage,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _bookOrderController,
               decoration: const InputDecoration(
                 labelText: 'Book Order',
+                helperText: 'Drag-drop ile ayarlanır',
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              enabled: false,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Book order is required';
                 final order = int.tryParse(value);
@@ -205,10 +255,12 @@ class _BookFormState extends ConsumerState<BookForm> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _contentFileController,
-              decoration: const InputDecoration(
-                labelText: 'Content File *',
-                helperText: 'Filename only, e.g. "book_1.json"',
+              decoration: InputDecoration(
+                labelText: 'Content File',
+                helperText: _isEditing ? null : 'Auto-generated from Book ID',
               ),
+              enabled: _isEditing,
+              readOnly: true,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Content file must not be empty';
