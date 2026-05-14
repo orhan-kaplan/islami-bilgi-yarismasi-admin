@@ -110,19 +110,31 @@ class DashboardPreview extends StatelessWidget {
 
   Widget _buildRankChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        gradient: PreviewTokens.goldGradient,
+        color: PreviewTokens.goldStart.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Text(
-        '🏅 Hafız Adayı',
-        style: TextStyle(
-          fontFamily: 'PlayfairDisplay',
-          fontSize: 13,
-          color: PreviewTokens.goldOnColor,
-          fontWeight: FontWeight.w600,
+        border: Border.all(
+          color: PreviewTokens.goldStart.withValues(alpha: 0.4),
+          width: 1,
         ),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('🏅', style: TextStyle(fontSize: 13)),
+          SizedBox(width: 6),
+          Text(
+            'Hafız Adayı',
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: PreviewTokens.goldEnd,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -169,8 +181,12 @@ class DashboardPreview extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: PreviewTokens.comebackBg,
+          color: PreviewTokens.bgDeep,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.12),
+            width: 1,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

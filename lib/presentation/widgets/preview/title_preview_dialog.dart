@@ -184,16 +184,12 @@ class TitlePreviewDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        gradient: PreviewTokens.goldGradient,
+        color: PreviewTokens.goldStart.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: PreviewTokens.goldStart.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: -2,
-          ),
-        ],
+        border: Border.all(
+          color: PreviewTokens.goldStart.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -209,7 +205,7 @@ class TitlePreviewDialog extends StatelessWidget {
               fontFamily: 'PlayfairDisplay',
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1B5E20), // Dark green text on gold
+              color: PreviewTokens.goldEnd,
               letterSpacing: 0.3,
             ),
           ),

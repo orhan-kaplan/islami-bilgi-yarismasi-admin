@@ -97,8 +97,8 @@ abstract class PreviewTokens {
   // 🎨 ÖZEL RENKLER
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Comeback dialog arka plan rengi
-  static const Color comebackBg = Color(0xFF1B5E20);
+  /// Comeback dialog arka plan rengi (bgDeep ile eşleşir)
+  static const Color comebackBg = Color(0xFF072420);
 
   /// Emerald accent (doğru cevap)
   static const Color emeraldAccent = Color(0xFF10B981);
