@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/changelog_provider.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
 import 'bulk_add_dialog.dart';
@@ -135,6 +136,56 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
     }
   }
 
+  void _showChangelogDialog(BuildContext context, WidgetRef ref) {
+    final entries = ref.read(changelogProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Değişiklikler'),
+        content: SizedBox(
+          width: 400,
+          child: entries.isEmpty
+              ? const Text('Değişiklik yok')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: entries.length,
+                  itemBuilder: (_, i) {
+                    final entry = entries[i];
+                    final icon = switch (entry.type) {
+                      ChangeType.added => Icons.add_circle_outline,
+                      ChangeType.modified => Icons.edit_outlined,
+                      ChangeType.removed => Icons.remove_circle_outline,
+                    };
+                    final color = switch (entry.type) {
+                      ChangeType.added => Colors.green,
+                      ChangeType.modified => Colors.orange,
+                      ChangeType.removed => Colors.red,
+                    };
+                    return ListTile(
+                      leading: Icon(icon, color: color, size: 20),
+                      title: Text(entry.description),
+                      subtitle: Text(
+                        entry.file,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      dense: true,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canUndo = ref.watch(canUndoProvider);
@@ -190,6 +241,19 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange,
+                      ),
+                    ),
+                  ),
+                if (isDirty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: TextButton.icon(
+                      onPressed: () => _showChangelogDialog(context, ref),
+                      icon: const Icon(Icons.history, size: 16),
+                      label: const Text('Değişiklikler'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        textStyle: const TextStyle(fontSize: 12),
                       ),
                     ),
                   ),

@@ -510,3 +510,65 @@ bool isSaveAllowedForFile(String apiPath, List<ValidationIssue> issues)
 
 - `true`: Hedef dosya için sıfır ERROR-level issue varsa
 - WARNING-level issue'lar kayıt bloklamaz
+
+---
+
+## DuplicateDetector (Provider)
+
+**Dosya**: `lib/presentation/providers/duplicate_check_provider.dart`
+**Pattern**: Riverpod Provider.family
+
+Soru formlarında anlık duplicate tespiti yapar.
+
+### Provider
+
+```dart
+final duplicateCheckProvider = Provider.family<List<String>, DuplicateCheckParams>((ref, params) { ... });
+```
+
+### DuplicateCheckParams
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `questionText` | String | Kontrol edilecek soru metni |
+| `excludeContentFile` | String? | Mevcut sorunun dosyası (hariç tutulur) |
+| `excludeLevelId` | int? | Mevcut sorunun level'ı |
+| `excludeQuestionIndex` | int? | Mevcut sorunun index'i |
+
+### Çalışma Mekanizması
+
+- Soru metni normalize edilir (trim, lowercase, whitespace collapse)
+- Tüm content dosyalarındaki tüm sorularla karşılaştırılır
+- Mevcut soru hariç tutulur (false positive önlenir)
+- Eşleşen konumlar döndürülür: "Kitap Adı > Level Adı > Soru N"
+
+---
+
+## ChangelogProvider
+
+**Dosya**: `lib/presentation/providers/changelog_provider.dart`
+**Pattern**: Riverpod Provider
+
+Son kaydetmeden bu yana yapılan değişikliklerin detaylı özetini hesaplar.
+
+### Provider
+
+```dart
+final changelogProvider = Provider<List<ChangeEntry>>((ref) { ... });
+```
+
+### ChangeEntry
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `description` | String | Değişiklik açıklaması (ör: "3 soru eklendi") |
+| `file` | String | Etkilenen dosya (ör: "content/book_1.json") |
+| `type` | ChangeType | added, modified, removed |
+
+### Karşılaştırma Kapsamı
+
+- Series: sayı farkı (eklendi/silindi/düzenlendi)
+- Books: sayı farkı
+- Rewards: sayı farkı
+- Hadiths: sayı farkı
+- Content files: level ve soru sayısı farkları (kitap adıyla birlikte)
