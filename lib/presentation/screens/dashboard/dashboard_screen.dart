@@ -12,6 +12,8 @@ import '../../../data/services/zip_importer.dart';
 import '../../providers/auto_load_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/feedback_content_providers.dart';
+import '../../providers/game_config_providers.dart';
 import '../../providers/history_providers.dart';
 import '../../providers/validation_providers.dart';
 
@@ -424,9 +426,15 @@ class DashboardScreen extends ConsumerWidget {
       // Import from the first ZIP file
       final zipFile = zipFiles.first;
       if (zipFile.bytes == null) return;
-      final (state, zipIssues) = importer.importZip(zipFile.bytes!);
-      importedState = state;
-      issues = zipIssues;
+      final bundle = importer.importAll(zipFile.bytes!);
+      importedState = bundle.content;
+      issues = bundle.issues;
+      if (bundle.feedback != null) {
+        ref.read(feedbackContentProvider.notifier).importContent(bundle.feedback!);
+      }
+      if (bundle.gameConfig != null) {
+        ref.read(gameConfigProvider.notifier).importContent(bundle.gameConfig!);
+      }
     } else if (jsonFiles.isNotEmpty) {
       // Import individual JSON files
       final Map<String, Uint8List> fileMap = {};
@@ -439,6 +447,14 @@ class DashboardScreen extends ConsumerWidget {
       final (state, fileIssues) = importer.importFiles(fileMap);
       importedState = state;
       issues = fileIssues;
+      final extras = importer.parseExtras(fileMap);
+      issues = [...issues, ...extras.issues];
+      if (extras.feedback != null) {
+        ref.read(feedbackContentProvider.notifier).importContent(extras.feedback!);
+      }
+      if (extras.gameConfig != null) {
+        ref.read(gameConfigProvider.notifier).importContent(extras.gameConfig!);
+      }
     } else {
       return;
     }
@@ -496,7 +512,11 @@ class DashboardScreen extends ConsumerWidget {
     final exporter = ZipExporter();
 
     try {
-      final zipBytes = exporter.exportZip(state);
+      final zipBytes = exporter.exportZip(
+        state,
+        feedback: ref.read(feedbackContentProvider),
+        gameConfig: ref.read(gameConfigProvider),
+      );
 
       // Trigger browser download
       downloadFile(zipBytes, 'content_export.zip');

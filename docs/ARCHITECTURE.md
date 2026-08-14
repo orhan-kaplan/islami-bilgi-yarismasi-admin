@@ -94,7 +94,8 @@ core ← data ← presentation
 3. Her dosya için 2 saniyelik debounce timer başlar
 4. Timer dolduğunda → isSaveAllowedForFile() ile validasyon kontrolü
 5. ERROR-level issue yoksa → JsonSerializer ile serialize → PUT /api/files/{path}
-6. Başarılı kayıt → savedBaselineProvider güncellenir → isDirtyProvider false olur
+6. Başarılı kayıt → `mergeSavedFileIntoBaseline()` ile yalnızca o dosyanın dilimi `savedBaselineProvider`'a işlenir
+7. Diğer dosyalarda kayıt edilmemiş değişiklik varsa `isDirtyProvider` true kalır
 ```
 
 ### Export Akışı (ZIP — Fallback)
@@ -179,10 +180,14 @@ AdminApp → MaterialApp.router(
 // Eager initialization:
 ref.watch(serverConnectivityProvider)  // Health polling başlatır
 ref.watch(autoLoadProvider)            // Auto-load tetikler
+ref.watch(autoSaveControllerProvider)  // Content auto-save dinlemeye başlar
+ref.watch(feedbackAutoSaveProvider)    // Feedback auto-save dinlemeye başlar
+ref.watch(gameConfigAutoSaveProvider)  // game_config.json auto-save dinlemeye başlar
 ```
 
 - `ProviderScope` tüm Riverpod provider'ları sarar
 - `routerProvider` go_router instance'ını sağlar
 - Uygulama başladığında connectivity check yapılır
 - Server bağlıysa → auto-load ile veriler otomatik yüklenir
+- Auto-save provider'ları lazy'dir; `AdminApp` onları `watch` etmezse içerik değişikliklerine abone olmaz
 - Server bağlı değilse → kullanıcı ZIP import yapabilir

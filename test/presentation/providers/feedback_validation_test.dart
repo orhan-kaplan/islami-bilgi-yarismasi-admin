@@ -151,7 +151,7 @@ void main() {
       expect(errors, contains('time: missing subcategory "teheccud"'));
     });
 
-    test('reports missing streak subcategories', () async {
+    test('accepts streak with only some positive-int keys', () async {
       final state = _createValidState().copyWith(streak: {
         '3': [
           const FeedbackMessageModel(
@@ -164,8 +164,23 @@ void main() {
 
       final errors = await validateFeedbackData(state);
 
-      expect(errors, contains('streak: missing subcategory "7"'));
-      expect(errors, contains('streak: missing subcategory "30"'));
+      expect(errors, isEmpty);
+    });
+
+    test('reports invalid streak keys', () async {
+      final state = _createValidState().copyWith(streak: {
+        'abc': [
+          const FeedbackMessageModel(
+            title: 'T',
+            message: 'M',
+            emoji: '⭐',
+          ),
+        ],
+      });
+
+      final errors = await validateFeedbackData(state);
+
+      expect(errors, contains('streak: key "abc" must be a positive integer'));
     });
 
     test('reports missing learned subcategories', () async {
@@ -240,7 +255,7 @@ void main() {
           contains('quiz: subcategory "speed_demon" has no messages'));
     });
 
-    test('reports invalid lottie_asset paths not starting with feedback/',
+    test('reports invalid lottie_asset paths that use an assets/ prefix',
         () async {
       final state = _createValidState().copyWith(quiz: {
         'speed_demon': [
@@ -300,7 +315,7 @@ void main() {
       expect(
         errors,
         contains(
-          'quiz.speed_demon[0]: lottie_asset "assets/lottie/feedback/lightning.json" must start with "feedback/"',
+          'quiz.speed_demon[0]: lottie_asset "assets/lottie/feedback/lightning.json" must not start with "assets/" (use a lottie-relative path, e.g. feedback/foo.json)',
         ),
       );
     });
@@ -516,13 +531,13 @@ void main() {
       );
     });
 
-    test('validates comeback lottie paths', () async {
+    test('validates comeback lottie paths that use an assets/ prefix', () async {
       final state = _createValidState().copyWith(comeback: [
         const FeedbackMessageModel(
           title: 'T',
           message: 'M',
           emoji: '⭐',
-          lottieAsset: 'wrong/path.json',
+          lottieAsset: 'assets/lottie/wrong.json',
         ),
       ]);
 
@@ -531,7 +546,7 @@ void main() {
       expect(
         errors,
         contains(
-          'comeback[0]: lottie_asset "wrong/path.json" must start with "feedback/"',
+          'comeback[0]: lottie_asset "assets/lottie/wrong.json" must not start with "assets/" (use a lottie-relative path, e.g. feedback/foo.json)',
         ),
       );
     });

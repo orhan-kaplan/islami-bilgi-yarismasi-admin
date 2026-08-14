@@ -125,7 +125,7 @@ void main() {
       expect(errors, contains(contains('comeback')));
     });
 
-    test('reports error when streak is missing subcategories', () async {
+    test('accepts streak with only some positive-int keys', () async {
       final state = _validState();
       final streak =
           Map<String, List<FeedbackMessageModel>>.from(state.streak);
@@ -133,9 +133,20 @@ void main() {
       final modified = state.copyWith(streak: streak);
 
       final errors = await validateFeedbackData(modified);
+      expect(errors, isEmpty);
+    });
+
+    test('reports error when streak key is not a positive integer', () async {
+      final state = _validState();
+      final streak =
+          Map<String, List<FeedbackMessageModel>>.from(state.streak);
+      streak['abc'] = streak['3']!;
+      final modified = state.copyWith(streak: streak);
+
+      final errors = await validateFeedbackData(modified);
       expect(
         errors,
-        contains(contains('missing required subcategory "30"')),
+        contains(contains('must be a positive integer')),
       );
     });
 
@@ -159,13 +170,13 @@ void main() {
       );
     });
 
-    test('reports error for lottie_asset not starting with "feedback/"',
+    test('reports error for lottie_asset that uses an assets/ prefix',
         () async {
       const badMsg = FeedbackMessageModel(
         title: 'Test',
         message: 'Test',
         emoji: '🎉',
-        lottieAsset: 'wrong/path.json',
+        lottieAsset: 'assets/lottie/feedback/lightning.json',
       );
       final state = _validState();
       final quiz = Map<String, List<FeedbackMessageModel>>.from(state.quiz);
@@ -173,21 +184,28 @@ void main() {
       final modified = state.copyWith(quiz: quiz);
 
       final errors = await validateFeedbackData(modified);
-      expect(errors, contains(contains('must start with "feedback/"')));
+      expect(errors, contains(contains('must not start with "assets/"')));
     });
 
-    test('accepts valid lottie_asset path starting with "feedback/"',
-        () async {
+    test('accepts lottie-relative paths including trophy_2.json', () async {
       const goodMsg = FeedbackMessageModel(
         title: 'Test',
         message: 'Test',
         emoji: '🎉',
         lottieAsset: 'feedback/masallah.json',
       );
+      const rootMsg = FeedbackMessageModel(
+        title: 'Test',
+        message: 'Test',
+        emoji: '🎉',
+        lottieAsset: 'trophy_2.json',
+      );
       final state = _validState();
       final quiz = Map<String, List<FeedbackMessageModel>>.from(state.quiz);
       quiz['perfect'] = [goodMsg];
-      final modified = state.copyWith(quiz: quiz);
+      final learned = Map<String, List<FeedbackMessageModel>>.from(state.learned);
+      learned['100'] = [rootMsg];
+      final modified = state.copyWith(quiz: quiz, learned: learned);
 
       final errors = await validateFeedbackData(modified);
       expect(errors, isEmpty);

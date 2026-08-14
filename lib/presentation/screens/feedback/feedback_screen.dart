@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/feedback_models.dart';
+import '../../../data/models/game_config_models.dart';
 import '../../providers/feedback_content_providers.dart';
+import '../../providers/game_config_providers.dart';
 import '../../widgets/feedback_card.dart';
 import '../../widgets/title_card.dart';
 
@@ -63,6 +65,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
   Widget build(BuildContext context) {
     final loadStatus = ref.watch(feedbackLoadProvider);
     final feedbackState = ref.watch(feedbackContentProvider);
+    final gameConfig = ref.watch(gameConfigProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -102,14 +105,17 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
               ),
       ),
       body: _isSearching && _searchQuery.isNotEmpty
-          ? _buildSearchResults(feedbackState)
-          : _buildBody(loadStatus, feedbackState),
+          ? _buildSearchResults(feedbackState, gameConfig)
+          : _buildBody(loadStatus, feedbackState, gameConfig),
       floatingActionButton: _isSearching ? null : _buildFab(loadStatus),
     );
   }
 
   /// Builds search results across all categories.
-  Widget _buildSearchResults(FeedbackContentState state) {
+  Widget _buildSearchResults(
+    FeedbackContentState state,
+    GameConfigState gameConfig,
+  ) {
     final results = <_SearchResult>[];
 
     void searchInMap(Map<String, List<FeedbackMessageModel>> map, String category, Map<String, _SubcategoryMeta> meta) {
@@ -131,11 +137,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
       }
     }
 
-    searchInMap(state.quiz, 'quiz', _quizMeta);
-    searchInMap(state.speedQuiz, 'speed_quiz', _speedQuizMeta);
-    searchInMap(state.time, 'time', _timeMeta);
-    searchInMap(state.streak, 'streak', _streakMeta);
-    searchInMap(state.learned, 'learned', _learnedMeta);
+    searchInMap(state.quiz, 'quiz', _quizMetaFrom(gameConfig));
+    searchInMap(state.speedQuiz, 'speed_quiz', _speedQuizMetaFrom(gameConfig));
+    searchInMap(state.time, 'time', _timeMetaFrom(gameConfig));
+    searchInMap(state.streak, 'streak', _streakMetaFrom(state));
+    searchInMap(state.learned, 'learned', _learnedMetaFrom(gameConfig));
 
     // Comeback (flat)
     for (var i = 0; i < state.comeback.length; i++) {
@@ -262,7 +268,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
     });
   }
 
-  Widget _buildBody(FeedbackLoadStatus loadStatus, FeedbackContentState state) {
+  Widget _buildBody(
+    FeedbackLoadStatus loadStatus,
+    FeedbackContentState state,
+    GameConfigState gameConfig,
+  ) {
     switch (loadStatus) {
       case FeedbackLoadStatus.idle:
       case FeedbackLoadStatus.loading:
@@ -305,13 +315,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
         return TabBarView(
           controller: _tabController,
           children: [
-            _SubcategoryMessageGrid(messageMap: state.quiz, category: 'quiz', subcategoryMeta: _quizMeta),
-            _SubcategoryMessageGrid(messageMap: state.speedQuiz, category: 'speed_quiz', subcategoryMeta: _speedQuizMeta),
-            _SubcategoryMessageGrid(messageMap: state.time, category: 'time', subcategoryMeta: _timeMeta),
-            _ComebackTab(state: state),
-            _SubcategoryMessageGrid(messageMap: state.streak, category: 'streak', subcategoryMeta: _streakMeta),
+            _SubcategoryMessageGrid(messageMap: state.quiz, category: 'quiz', subcategoryMeta: _quizMetaFrom(gameConfig)),
+            _SubcategoryMessageGrid(messageMap: state.speedQuiz, category: 'speed_quiz', subcategoryMeta: _speedQuizMetaFrom(gameConfig)),
+            _SubcategoryMessageGrid(messageMap: state.time, category: 'time', subcategoryMeta: _timeMetaFrom(gameConfig)),
+            _ComebackTab(state: state, minDays: gameConfig.comebackMinDays),
+            _SubcategoryMessageGrid(messageMap: state.streak, category: 'streak', subcategoryMeta: _streakMetaFrom(state)),
             _TitlesTab(state: state),
-            _SubcategoryMessageGrid(messageMap: state.learned, category: 'learned', subcategoryMeta: _learnedMeta),
+            _SubcategoryMessageGrid(messageMap: state.learned, category: 'learned', subcategoryMeta: _learnedMetaFrom(gameConfig)),
           ],
         );
     }
@@ -398,55 +408,118 @@ class _SubcategoryMeta {
   const _SubcategoryMeta(this.label, this.condition);
 }
 
-const Map<String, _SubcategoryMeta> _quizMeta = {
-  'speed_demon': _SubcategoryMeta('Hız Canavarı', 'Soru başına 10 saniyeden kısa sürede ve %90 üzeri doğrulukla bitiren kullanıcıya gösterilir. (süre < soru×10sn ve doğruluk ≥ %90)'),
-  'perfect': _SubcategoryMeta('Mükemmel Başarı', 'Tüm soruları eksiksiz doğru cevaplayan kullanıcıya gösterilir. (doğruluk = %100)'),
-  'one_wrong': _SubcategoryMeta('Tek Yanlış', 'Sadece 1 soruyu yanlış yapan kullanıcıya gösterilir. (yanlış sayısı = 1)'),
-  'two_wrong': _SubcategoryMeta('İki Yanlış', '2 soruyu yanlış yapan kullanıcıya gösterilir. (yanlış sayısı = 2)'),
-  'good': _SubcategoryMeta('İyi Performans', 'Soruların %70 ile %90 arasını doğru cevaplayan kullanıcıya gösterilir. (doğruluk %70–%90)'),
-  'moderate': _SubcategoryMeta('Orta Performans', 'Soruların %50 ile %70 arasını doğru cevaplayan kullanıcıya gösterilir. (doğruluk %50–%70)'),
-  'failure': _SubcategoryMeta('Başarısız (Can Bitti)', '3 canını kaybedip quiz\'den elenen kullanıcıya gösterilir. (3 yanlış = eleme)'),
-};
+String _pct(double accuracy) => '${(accuracy * 100).round()}';
 
-const Map<String, _SubcategoryMeta> _speedQuizMeta = {
-  'combo_master': _SubcategoryMeta('Kombo Ustası', 'Arka arkaya 10 veya daha fazla doğru cevap veren kullanıcıya gösterilir. (combo ≥ 10)'),
-  'high_score': _SubcategoryMeta('Yüksek Skor', 'Hızlı quiz\'de 8 veya daha fazla doğru yapan kullanıcıya gösterilir. (skor ≥ 8)'),
-  'time_expired': _SubcategoryMeta('Süre Doldu', 'Süre bittiğinde düşük skorla kalan kullanıcıya gösterilir. (süre = 0, skor düşük)'),
-  'moderate': _SubcategoryMeta('Orta Performans', '4 ile 7 arası doğru cevap veren kullanıcıya gösterilir. (skor 4–7)'),
-  'low': _SubcategoryMeta('Düşük Performans', '4\'ten az doğru cevap veren kullanıcıya gösterilir. (skor < 4)'),
-};
+Map<String, _SubcategoryMeta> _quizMetaFrom(GameConfigState cfg) {
+  final q = cfg.quiz;
+  return {
+    'speed_demon': _SubcategoryMeta(
+      'Hız Canavarı',
+      'Soru başına ${q.speedDemonMaxSecondsPerQuestion} saniyeden kısa sürede ve %${_pct(q.speedDemonMinAccuracy)} üzeri doğrulukla bitiren kullanıcıya gösterilir.',
+    ),
+    'perfect': _SubcategoryMeta(
+      'Mükemmel Başarı',
+      'Doğruluk ≥ %${_pct(q.perfectMinAccuracy)}.',
+    ),
+    'one_wrong': _SubcategoryMeta(
+      'Tek Yanlış',
+      'Yanlış soru sayısı = ${q.oneWrongCount}.',
+    ),
+    'two_wrong': _SubcategoryMeta(
+      'İki Yanlış',
+      'Yanlış soru sayısı = ${q.twoWrongCount}.',
+    ),
+    'good': _SubcategoryMeta(
+      'İyi Performans',
+      'Doğruluk ≥ %${_pct(q.goodMinAccuracy)} (üst bantlara girmeyen). 3 canla genelde latent kalır.',
+    ),
+    'moderate': _SubcategoryMeta(
+      'Orta Performans',
+      'Önceki bantlara girmeyen başarılı sonuçlar (fallback).',
+    ),
+    'failure': _SubcategoryMeta(
+      'Başarısız (Can Bitti)',
+      '${q.lives} can bitince gösterilir. Routing dışı.',
+    ),
+  };
+}
 
-const Map<String, _SubcategoryMeta> _timeMeta = {
-  'seher': _SubcategoryMeta('Seher Bülbülü', 'Sabah 04:30 ile 07:00 arası uygulamaya giren kullanıcıya gösterilir. (04:30–07:00)'),
-  'morning': _SubcategoryMeta('Sabah Seyyahı', 'Sabah 07:00 ile 11:00 arası uygulamaya giren kullanıcıya gösterilir. (07:00–11:00)'),
-  'noon': _SubcategoryMeta('Vakit Sarrafı', 'Öğlen 11:00 ile 14:00 arası uygulamaya giren kullanıcıya gösterilir. (11:00–14:00)'),
-  'afternoon': _SubcategoryMeta('Gündüz Süvarisi', 'Öğleden sonra 14:00 ile 19:00 arası uygulamaya giren kullanıcıya gösterilir. (14:00–19:00)'),
-  'evening': _SubcategoryMeta('Huzur Yolcusu', 'Akşam 19:00 ile 23:00 arası uygulamaya giren kullanıcıya gösterilir. (19:00–23:00)'),
-  'night': _SubcategoryMeta('Gece Kuşu', 'Gece 23:00 ile 02:00 arası uygulamaya giren kullanıcıya gösterilir. (23:00–02:00)'),
-  'teheccud': _SubcategoryMeta('Teheccüd Ehli', 'Gece 02:00 ile 04:30 arası uygulamaya giren kullanıcıya gösterilir. (02:00–04:30)'),
-};
+Map<String, _SubcategoryMeta> _speedQuizMetaFrom(GameConfigState cfg) {
+  final s = cfg.speedQuiz;
+  final clauses = s.highScoreAny
+      .map((c) {
+        final parts = <String>[];
+        if (c.minAccuracy != null) parts.add('doğruluk ≥ %${_pct(c.minAccuracy!)}');
+        if (c.minCorrect != null) parts.add('en az ${c.minCorrect} doğru');
+        return parts.join(' ve ');
+      })
+      .join(', veya ');
+  return {
+    'combo_master': _SubcategoryMeta(
+      'Kombo Ustası',
+      'Kombo ≥ ${s.comboMinCombo} ve doğruluk ≥ %${_pct(s.comboMinAccuracy)}.',
+    ),
+    'high_score': _SubcategoryMeta(
+      'Yüksek Skor',
+      clauses.isEmpty ? 'Yüksek skor bantları.' : clauses,
+    ),
+    'time_expired': _SubcategoryMeta(
+      'Süre Doldu / Düşük',
+      '${s.timeExpiredOnTimeout ? 'Süre bitince veya ' : ''}doğruluk < %${_pct(s.timeExpiredMaxAccuracy)}.',
+    ),
+    'moderate': _SubcategoryMeta(
+      'Orta Performans',
+      'Doğruluk ≥ %${_pct(s.moderateMinAccuracy)} (üst bantlara girmeyen). Mesajda {correctAnswers} kullanılabilir.',
+    ),
+    'low': const _SubcategoryMeta(
+      'Düşük Performans',
+      'Yukarıdaki bantlara girmeyen kalan sonuçlar.',
+    ),
+  };
+}
 
-const Map<String, _SubcategoryMeta> _streakMeta = {
-  '3': _SubcategoryMeta('3 Gün Serisi', '3 gün üst üste uygulamaya giren kullanıcıya gösterilir. (streak ≥ 3)'),
-  '7': _SubcategoryMeta('Haftalık Seri', '7 gün üst üste uygulamaya giren kullanıcıya gösterilir. (streak ≥ 7)'),
-  '30': _SubcategoryMeta('Efsane Seri', '30 gün üst üste uygulamaya giren kullanıcıya gösterilir. (streak ≥ 30)'),
-};
+Map<String, _SubcategoryMeta> _timeMetaFrom(GameConfigState cfg) {
+  return {
+    for (final slot in cfg.timeSlots)
+      slot.key: _SubcategoryMeta(
+        slot.label,
+        '${formatGameConfigHhMm(slot.startMinutes)}–${formatGameConfigHhMm(slot.endMinutes)}',
+      ),
+  };
+}
 
-const Map<String, _SubcategoryMeta> _learnedMeta = {
-  '100': _SubcategoryMeta('Tam Puan', 'Öğrenilen bilgi testinde tüm soruları doğru cevaplayan kullanıcıya gösterilir. (doğruluk = %100)'),
-  '75': _SubcategoryMeta('Çok Başarılı', 'Öğrenilen bilgi testinde soruların %75 ile %99 arasını doğru cevaplayan kullanıcıya gösterilir. (doğruluk %75–%99)'),
-  '50': _SubcategoryMeta('Gayret Güzel', 'Öğrenilen bilgi testinde soruların %50 ile %74 arasını doğru cevaplayan kullanıcıya gösterilir. (doğruluk %50–%74)'),
-  '25': _SubcategoryMeta('Daha İyisi Olabilir', 'Öğrenilen bilgi testinde soruların %25 ile %49 arasını doğru cevaplayan kullanıcıya gösterilir. (doğruluk %25–%49)'),
-  '0': _SubcategoryMeta('Yeniden Bismillah', 'Öğrenilen bilgi testinde soruların %25\'inden azını doğru cevaplayan kullanıcıya gösterilir. (doğruluk < %25)'),
-};
+Map<String, _SubcategoryMeta> _streakMetaFrom(FeedbackContentState state) {
+  final keys = state.streak.keys.toList()
+    ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+  return {
+    for (final k in keys)
+      k: _SubcategoryMeta(
+        '$k gün serisi',
+        '$k gün üst üste uygulamaya giren kullanıcıya gösterilir. (streak ≥ $k)',
+      ),
+  };
+}
+
+Map<String, _SubcategoryMeta> _learnedMetaFrom(GameConfigState cfg) {
+  return {
+    for (final band in cfg.learnedBands)
+      band.key: _SubcategoryMeta(
+        band.key,
+        band.exclusiveMin
+            ? 'doğruluk > ${band.minPercent.round()}%'
+            : 'doğruluk ≥ ${band.minPercent.round()}%',
+      ),
+  };
+}
 
 // =============================================================================
 // Comeback Tab (flat list)
 // =============================================================================
 
 class _ComebackTab extends ConsumerWidget {
-  const _ComebackTab({required this.state});
+  const _ComebackTab({required this.state, required this.minDays});
   final FeedbackContentState state;
+  final int minDays;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -456,7 +529,7 @@ class _ComebackTab extends ConsumerWidget {
       children: [
         _SectionHeader(
           label: 'Geri Dönüş Mesajları',
-          condition: '3 gün boyunca uygulamaya girmemiş kullanıcıya gösterilir. (son giriş ≥ 3 gün önce)',
+          condition: '$minDays gün boyunca uygulamaya girmemiş kullanıcıya gösterilir. (son giriş ≥ $minDays gün önce)',
           messageCount: messages.length,
         ),
         if (messages.isEmpty)

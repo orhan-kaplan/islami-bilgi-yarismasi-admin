@@ -119,6 +119,8 @@ ZIP arşivlerini ve bireysel JSON dosyalarını import eder.
 | Metot | Girdi | Çıktı |
 |-------|-------|-------|
 | `importZip(Uint8List)` | ZIP bytes | `(ContentState, List<ImportIssue>)` |
+| `importAll(Uint8List)` | ZIP bytes | `ZipImportBundle` (content + optional feedback/game_config) |
+| `parseExtras(Map)` | Dosya adı → bytes | sidecar feedback/game_config |
 | `importFiles(Map<String, Uint8List>)` | Dosya adı → bytes map | `(ContentState, List<ImportIssue>)` |
 
 ### Path Normalization
@@ -162,8 +164,14 @@ class ImportIssue {
 ### Metot
 
 ```dart
-Uint8List exportZip(ContentState state)
+Uint8List exportZip(
+  ContentState state, {
+  FeedbackContentState? feedback,
+  GameConfigState? gameConfig,
+})
 ```
+
+`feedback` / `gameConfig` verilmezse ZIP şekli eskisi gibi kalır (4 top-level + `content/`). Dashboard ve bağlantısız Ctrl+S bunları ekler. Eski ZIP import'ta sidecar yoksa uyarı verilir; mevcut feedback/oyun state silinmez.
 
 ### Çalışma Akışı
 
@@ -482,6 +490,7 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 |-----------|----------|
 | `getApiPathForChange(ContentChangeType, {String? key})` | Değişiklik türü → API_Path |
 | `getChangedFiles(ContentState, ContentState)` | İki state karşılaştırır, değişen dosyaları döndürür |
+| `mergeSavedFileIntoBaseline(baseline, saved, apiPath)` | Kaydedilen dosyanın dilimini baseline'a kopyalar; diğer dosyaları dirty bırakır |
 
 ### Eşleme
 

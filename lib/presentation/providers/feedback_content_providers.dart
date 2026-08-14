@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/feedback_models.dart';
 import '../../data/services/asset_server_client.dart';
+import '../../data/services/feedback_validator.dart' show isValidLottieShortPath;
 import 'asset_server_providers.dart';
 import 'connectivity_providers.dart';
 
@@ -324,7 +325,6 @@ const Map<String, List<String>> _requiredSubcategories = {
     'night',
     'teheccud',
   ],
-  'streak': ['3', '7', '30'],
   'learned': ['100', '75', '50', '25', '0'],
 };
 
@@ -333,7 +333,7 @@ const Map<String, List<String>> _requiredSubcategories = {
 /// Checks:
 /// - All required top-level categories are present and non-empty
 /// - Each category has the correct subcategories with at least one message each
-/// - All `lottie_asset` paths (if set) start with "feedback/"
+/// - All `lottie_asset` paths (if set) are lottie-relative (not `assets/...`)
 /// - Optionally verifies lottie file existence via [client] if provided
 ///
 /// Returns a list of validation error messages. An empty list means the data is valid.
@@ -385,7 +385,7 @@ Future<List<String>> validateFeedbackData(
   _validateSubcategories(state.quiz, 'quiz', errors);
   _validateSubcategories(state.speedQuiz, 'speed_quiz', errors);
   _validateSubcategories(state.time, 'time', errors);
-  _validateSubcategories(state.streak, 'streak', errors);
+  _validateStreakSubcategories(state.streak, errors);
   _validateSubcategories(state.learned, 'learned', errors);
 
   // --- Check lottie_asset paths format ---
@@ -421,14 +421,32 @@ void _validateSubcategories(
   }
 }
 
-/// Validates that all lottie_asset paths start with "feedback/" if set.
+void _validateStreakSubcategories(
+  Map<String, List<FeedbackMessageModel>> map,
+  List<String> errors,
+) {
+  for (final entry in map.entries) {
+    final days = int.tryParse(entry.key);
+    if (days == null || days <= 0) {
+      errors.add('streak: key "${entry.key}" must be a positive integer');
+    }
+    if (entry.value.isEmpty) {
+      errors.add('streak: subcategory "${entry.key}" has no messages');
+    }
+  }
+}
+
+/// Validates that all lottie_asset paths are relative to `assets/lottie/` if set.
 void _validateLottiePaths(FeedbackContentState state, List<String> errors) {
   void checkMessages(List<FeedbackMessageModel> messages, String context) {
     for (var i = 0; i < messages.length; i++) {
       final asset = messages[i].lottieAsset;
-      if (asset != null && asset.isNotEmpty && !asset.startsWith('feedback/')) {
+      if (asset != null &&
+          asset.isNotEmpty &&
+          !isValidLottieShortPath(asset)) {
         errors.add(
-            '$context[$i]: lottie_asset "$asset" must start with "feedback/"');
+            '$context[$i]: lottie_asset "$asset" must not start with "assets/" '
+            '(use a lottie-relative path, e.g. feedback/foo.json)');
       }
     }
   }
@@ -491,7 +509,7 @@ Future<void> _validateLottieFilesExist(
   // Check each unique path exists on the server
   for (final path in lottiePaths) {
     try {
-      // lottie_asset stores "feedback/file.json", server path is "lottie/feedback/file.json"
+      // lottie_asset is relative to assets/lottie/ (feedback/file.json or trophy_2.json)
       await client.getFile('lottie/$path');
     } on AssetServerException catch (e) {
       if (e.statusCode == 404) {

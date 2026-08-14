@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
 import '../models/content_state.dart';
+import '../models/feedback_models.dart';
+import '../models/game_config_models.dart';
 import 'content_validator.dart';
 import 'json_serializer.dart';
 
@@ -55,7 +58,13 @@ class ZipExporter {
   /// ```
   ///
   /// Returns the ZIP archive as [Uint8List].
-  Uint8List exportZip(ContentState state) {
+  /// Optional [feedback] / [gameConfig] are added as sidecar JSON files.
+  /// Omit them to keep the original 4-file (+ content/) ZIP shape.
+  Uint8List exportZip(
+    ContentState state, {
+    FeedbackContentState? feedback,
+    GameConfigState? gameConfig,
+  }) {
     // Run validation
     final issues = _validator.validateAll(state);
     final errors = issues
@@ -84,6 +93,19 @@ class ZipExporter {
     for (final entry in state.contentFiles.entries) {
       final contentJson = _serializer.serializeContentFile(entry.value);
       archive.add(ArchiveFile.string('content/${entry.key}', contentJson));
+    }
+
+    if (feedback != null) {
+      archive.add(ArchiveFile.string(
+        'feedback.json',
+        const JsonEncoder.withIndent('  ').convert(feedback.toJson()),
+      ));
+    }
+    if (gameConfig != null) {
+      archive.add(ArchiveFile.string(
+        'game_config.json',
+        const JsonEncoder.withIndent('  ').convert(gameConfig.toJson()),
+      ));
     }
 
     // Encode to ZIP bytes

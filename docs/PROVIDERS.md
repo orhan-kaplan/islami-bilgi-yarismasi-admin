@@ -20,6 +20,10 @@ lib/presentation/providers/
 ├── asset_server_providers.dart ← AssetServerClient instance
 ├── connectivity_providers.dart ← Server bağlantı durumu (polling)
 ├── auto_load_providers.dart    ← Startup auto-load yönetimi
+├── feedback_content_providers.dart
+├── feedback_auto_save_providers.dart
+├── game_config_providers.dart
+├── game_config_auto_save_providers.dart
 ├── auto_save_providers.dart    ← Debounced auto-save controller
 └── asset_providers.dart        ← Asset dizin listeleme
 ```
@@ -223,7 +227,7 @@ final books = ref.watch(booksForSeriesProvider(seriesId));
 ### `savedBaselineProvider`
 - **Tip**: `StateProvider<ContentState?>`
 - **Dosya**: `history_providers.dart`
-- **Açıklama**: Son import/export edilen state. Dirty karşılaştırması için kullanılır.
+- **Açıklama**: Son import/export edilen state, plus auto-save ile kaydedilmiş dosya dilimleri. Dirty karşılaştırması için kullanılır. Auto-save tüm state'i değil, kaydedilen dosyanın dilimini `mergeSavedFileIntoBaseline` ile işler.
 
 ### `isDirtyProvider`
 - **Tip**: `Provider<bool>`
@@ -319,7 +323,11 @@ if (restored != null) {
 - **Tip**: `StateNotifierProvider<AutoSaveController, SaveStatus>`
 - **Dosya**: `auto_save_providers.dart`
 - **Bağımlılık**: `autoLoadCompleteProvider`, `isServerConnectedProvider`, `contentStateProvider`, `assetServerClientProvider`, `savedBaselineProvider`, `validationResultsProvider`
-- **Açıklama**: ContentState değişikliklerini dinler, per-file 2s debounce ile server'a kaydeder. Status: `idle`, `saving`, `saved`, `error`
+- **Açıklama**: ContentState değişikliklerini dinler, per-file 2s debounce ile server'a kaydeder. Status: `idle`, `saving`, `saved`, `error`. `AdminApp` tarafından eager `watch` edilir; aksi halde notifier oluşmaz ve kayıt yapılmaz. Başarılı PUT sonrası `savedBaselineProvider` yalnızca ilgili dosya dilimiyle güncellenir. `feedbackAutoSaveProvider` ve `gameConfigAutoSaveProvider` aynı şekilde `AdminApp`'te eager initialize edilir.
+
+### `gameConfigProvider` / `gameConfigLoadProvider` / `gameConfigAutoSaveProvider`
+- **Dosya**: `game_config_providers.dart`, `game_config_auto_save_providers.dart`
+- **Açıklama**: `data/game_config.json` yükleme ve 2s debounce PUT. ContentState'e karışmaz. 404 → seed defaults.
 
 ### `saveStatusProvider`
 - **Tip**: `Provider<SaveStatus>`

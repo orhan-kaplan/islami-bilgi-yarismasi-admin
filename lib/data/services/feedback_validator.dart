@@ -30,9 +30,18 @@ const _requiredTimeSubcategories = [
   'teheccud',
 ];
 
-const _requiredStreakSubcategories = ['3', '7', '30'];
-
 const _requiredLearnedSubcategories = ['100', '75', '50', '25', '0'];
+
+/// Short lottie path relative to `assets/lottie/`.
+/// Accepts `feedback/foo.json` and root files like `trophy_2.json`.
+/// Rejects App_Path prefixes (`assets/...`) and parent-directory traversal.
+bool isValidLottieShortPath(String? asset) {
+  if (asset == null || asset.isEmpty) return true;
+  if (asset.startsWith('assets/')) return false;
+  if (asset.startsWith('/')) return false;
+  if (asset.contains('..')) return false;
+  return true;
+}
 
 /// Validates a [FeedbackContentState] against the expected schema.
 ///
@@ -40,7 +49,7 @@ const _requiredLearnedSubcategories = ['100', '75', '50', '25', '0'];
 /// - All required top-level categories are present and non-empty
 /// - Each category has the correct subcategories
 /// - Each subcategory has at least one message
-/// - Lottie asset paths start with "feedback/" if set
+/// - Lottie asset paths are lottie-relative (not `assets/...`) if set
 /// - Optionally verifies lottie files exist on the asset server
 ///
 /// Returns a list of error messages. An empty list means the data is valid.
@@ -79,12 +88,7 @@ Future<List<String>> validateFeedbackData(
     errors.add('Category "comeback" must have at least one message');
   }
 
-  _validateMapCategory(
-    map: state.streak,
-    categoryName: 'streak',
-    requiredKeys: _requiredStreakSubcategories,
-    errors: errors,
-  );
+  _validateStreakCategory(state.streak, errors);
 
   // Titles
   if (state.titles.isEmpty) {
@@ -135,7 +139,32 @@ void _validateMapCategory({
   }
 }
 
-/// Validates that all lottie_asset paths (if set) start with "feedback/".
+/// Streak keys are thresholds: any positive integer, at least one non-empty list.
+void _validateStreakCategory(
+  Map<String, List<FeedbackMessageModel>> map,
+  List<String> errors,
+) {
+  if (map.isEmpty) {
+    errors.add('Category "streak" is missing or empty');
+    return;
+  }
+
+  for (final entry in map.entries) {
+    final days = int.tryParse(entry.key);
+    if (days == null || days <= 0) {
+      errors.add(
+        'Category "streak" key "${entry.key}" must be a positive integer',
+      );
+    }
+    if (entry.value.isEmpty) {
+      errors.add(
+        'Category "streak" subcategory "${entry.key}" must have at least one message',
+      );
+    }
+  }
+}
+
+/// Validates that lottie_asset paths (if set) are relative to `assets/lottie/`.
 void _validateLottiePaths(
   FeedbackContentState state,
   List<String> errors,
@@ -146,10 +175,13 @@ void _validateLottiePaths(
   ) {
     for (var i = 0; i < messages.length; i++) {
       final asset = messages[i].lottieAsset;
-      if (asset != null && asset.isNotEmpty && !asset.startsWith('feedback/')) {
+      if (asset != null &&
+          asset.isNotEmpty &&
+          !isValidLottieShortPath(asset)) {
         errors.add(
           'Invalid lottie_asset path at $location[$i]: '
-          '"$asset" must start with "feedback/"',
+          '"$asset" must not start with "assets/" '
+          '(use a lottie-relative path, e.g. feedback/foo.json)',
         );
       }
     }

@@ -8,11 +8,16 @@ import '../providers/auto_load_providers.dart';
 import '../providers/auto_save_providers.dart';
 import '../providers/connectivity_providers.dart';
 import '../providers/content_providers.dart';
+import '../providers/feedback_auto_save_providers.dart';
+import '../providers/feedback_content_providers.dart';
+import '../providers/game_config_auto_save_providers.dart';
+import '../providers/game_config_providers.dart';
 import '../providers/history_providers.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/explorer/content_explorer_screen.dart';
 import '../screens/assets/assets_screen.dart';
 import '../screens/feedback/feedback_screen.dart';
+import '../screens/game_config/game_config_screen.dart';
 import '../screens/hadiths/hadiths_screen.dart';
 import '../screens/rewards/rewards_screen.dart';
 import '../screens/validation/validation_report_screen.dart';
@@ -76,6 +81,8 @@ class _AppShellState extends ConsumerState<AppShell> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 ref.read(autoSaveControllerProvider.notifier).flushPendingSaves();
+                ref.read(feedbackAutoSaveProvider.notifier).flushPendingSave();
+                ref.read(gameConfigAutoSaveProvider.notifier).flushPendingSave();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Saving changes to server...'),
@@ -196,6 +203,11 @@ class _AppShellState extends ConsumerState<AppShell> {
                 label: Text('Feedback'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.sports_esports_outlined),
+                selectedIcon: Icon(Icons.sports_esports),
+                label: Text('Oyun'),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.verified_outlined),
                 selectedIcon: Icon(Icons.verified),
                 label: Text('Validation'),
@@ -292,6 +304,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ref
                           .read(autoSaveControllerProvider.notifier)
                           .flushPendingSaves();
+                      ref
+                          .read(feedbackAutoSaveProvider.notifier)
+                          .flushPendingSave();
+                      ref
+                          .read(gameConfigAutoSaveProvider.notifier)
+                          .flushPendingSave();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Saving...'),
@@ -303,7 +321,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final contentState = ref.read(contentStateProvider);
                       final exporter = ZipExporter();
                       try {
-                        final zipBytes = exporter.exportZip(contentState);
+                        final zipBytes = exporter.exportZip(
+                          contentState,
+                          feedback: ref.read(feedbackContentProvider),
+                          gameConfig: ref.read(gameConfigProvider),
+                        );
                         downloadFile(zipBytes, 'content_export.zip');
                         ref.read(savedBaselineProvider.notifier).state =
                             contentState;
@@ -416,6 +438,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/feedback',
                 builder: (context, state) => const FeedbackScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/game-config',
+                builder: (context, state) => const GameConfigScreen(),
               ),
             ],
           ),

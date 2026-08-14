@@ -10,6 +10,8 @@ import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/feedback_models.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/game_config_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/zip_exporter.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/zip_importer.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/content_validator.dart';
@@ -554,6 +556,74 @@ void main() {
 
       expect(exception.toString(), contains('2 error(s)'));
       expect(exception.toString(), contains('ValidationBlockedExportException'));
+    });
+  });
+
+  group('ZIP sidecar extras', () {
+    test('export without extras omits feedback.json and game_config.json', () {
+      final zipBytes = exporter.exportZip(_createValidState());
+      final names = ZipDecoder()
+          .decodeBytes(zipBytes)
+          .files
+          .where((f) => f.isFile)
+          .map((f) => f.name)
+          .toSet();
+
+      expect(names.contains('feedback.json'), isFalse);
+      expect(names.contains('game_config.json'), isFalse);
+    });
+
+    test('export with extras includes sidecars and importAll roundtrips', () {
+      final zipBytes = exporter.exportZip(
+        _createValidState(),
+        feedback: FeedbackContentState.empty(),
+        gameConfig: GameConfigState.defaults,
+      );
+      final names = ZipDecoder()
+          .decodeBytes(zipBytes)
+          .files
+          .where((f) => f.isFile)
+          .map((f) => f.name)
+          .toSet();
+
+      expect(names, contains('feedback.json'));
+      expect(names, contains('game_config.json'));
+
+      final bundle = ZipImporter().importAll(zipBytes);
+      expect(bundle.feedback, isNotNull);
+      expect(bundle.gameConfig?.quiz.lives, 3);
+      expect(
+        bundle.issues.where(
+          (i) =>
+              i.fileName == 'feedback.json' &&
+              i.severity == ImportIssueSeverity.warning,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('importAll of old ZIP warns and does not parse extras', () {
+      final zipBytes = exporter.exportZip(_createValidState());
+      final bundle = ZipImporter().importAll(zipBytes);
+
+      expect(bundle.feedback, isNull);
+      expect(bundle.gameConfig, isNull);
+      expect(
+        bundle.issues.any(
+          (i) =>
+              i.fileName == 'feedback.json' &&
+              i.severity == ImportIssueSeverity.warning,
+        ),
+        isTrue,
+      );
+      expect(
+        bundle.issues.any(
+          (i) =>
+              i.fileName == 'game_config.json' &&
+              i.severity == ImportIssueSeverity.warning,
+        ),
+        isTrue,
+      );
     });
   });
 }

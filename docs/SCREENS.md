@@ -13,7 +13,9 @@ AppShell (Scaffold + Row) — ConsumerStatefulWidget
 │   ├── Tab 2: Rewards       (Ödüller)
 │   ├── Tab 3: Hadiths       (Hadisler)
 │   ├── Tab 4: Assets        (Asset Yönetimi)
-│   ├── Tab 5: Validation    (Validasyon Raporu)
+│   ├── Tab 5: Feedback     (Mesajlar)
+│   ├── Tab 6: Oyun         (game_config.json)
+│   ├── Tab 7: Validation   (Validasyon Raporu)
 │   └── trailing: Unsaved changes indicator (turuncu nokta, tüm sayfalarda görünür)
 ├── BeforeUnloadGuard (tarayıcı kapatma koruması)
 ├── AppShortcuts (global klavye kısayolları)
@@ -178,8 +180,8 @@ Hadis listesi ve CRUD yönetimi.
 - Toplam hadis sayısı
 
 **Kullanıcı etkileşimleri:**
-- Yeni hadis ekleme
-- Mevcut hadisi düzenleme
+- Yeni hadis ekleme (popup: Hadith, Source, Cancel, Save)
+- Mevcut hadisi düzenleme (aynı popup)
 - Hadis silme
 
 **Kullandığı provider'lar:**
@@ -270,6 +272,24 @@ Scaffold
 **Kullandığı provider'lar:**
 - `feedbackContentProvider` — Feedback CRUD işlemleri
 - `feedbackAutoSaveProvider` — Otomatik kaydetme
+- `gameConfigProvider` — Eşik / saat dilimi etiketleri (salt okunur)
+
+Streak sekmeleri `feedback.json` anahtarlarından üretilir (`3 gün serisi`); 3/7/30 zorunlu değildir. Bant ekleme FAB'ı yoktur.
+
+---
+
+### GameConfigScreen (`screens/game_config/game_config_screen.dart`)
+
+`data/game_config.json` düzenleme. ContentState'e karışmaz.
+
+**Bölümler:** Quiz (can, puan, routing), Hızlı quiz süre/eşikler, öğrenilen bantlar, günlük hedef, saat dilimleri, lottie kısa yolları, copy.
+
+Debounced auto-save (`data/game_config.json`). Validasyon hatası kaydı bloklar.
+
+**Kullandığı provider'lar:**
+- `gameConfigProvider`
+- `gameConfigLoadProvider`
+- `gameConfigAutoSaveProvider`
 
 ---
 

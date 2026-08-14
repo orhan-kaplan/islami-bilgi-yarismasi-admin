@@ -5,6 +5,8 @@ import 'package:archive/archive.dart';
 
 import '../models/content_state.dart';
 import '../models/book_model.dart';
+import '../models/feedback_models.dart';
+import '../models/game_config_models.dart';
 import '../models/hadith_model.dart';
 import '../models/level_model.dart';
 import '../models/reward_model.dart';
@@ -41,6 +43,21 @@ class ImportIssue {
 
   @override
   int get hashCode => Object.hash(fileName, message, severity);
+}
+
+/// Result of [ZipImporter.importAll]: quiz content plus optional sidecars.
+class ZipImportBundle {
+  final ContentState content;
+  final List<ImportIssue> issues;
+  final FeedbackContentState? feedback;
+  final GameConfigState? gameConfig;
+
+  const ZipImportBundle({
+    required this.content,
+    required this.issues,
+    this.feedback,
+    this.gameConfig,
+  });
 }
 
 /// Orchestrates extraction and parsing of ZIP archives and individual files.
@@ -205,6 +222,129 @@ class ZipImporter {
     return (state, issues);
   }
 
+  /// Imports quiz content plus optional sidecar `feedback.json` / `game_config.json`.
+  ///
+  /// Missing sidecars are warnings; existing in-memory extras must be left
+  /// unchanged by the caller when the corresponding field is null.
+  ZipImportBundle importAll(Uint8List zipBytes) {
+    final (content, issues) = importZip(zipBytes);
+    final extraIssues = List<ImportIssue>.from(issues);
+
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBytes(zipBytes);
+    } catch (_) {
+      return ZipImportBundle(content: content, issues: extraIssues);
+    }
+
+    final fileMap = <String, Uint8List>{};
+    for (final file in archive.files) {
+      if (!file.isFile) continue;
+      String name = file.name;
+      if (name.startsWith('__MACOSX')) continue;
+      if (name.startsWith('assets/data/')) {
+        name = name.substring('assets/data/'.length);
+      } else if (name.startsWith('data/')) {
+        name = name.substring('data/'.length);
+      }
+      if (name.isNotEmpty) {
+        fileMap[name] = file.content as Uint8List;
+      }
+    }
+
+    FeedbackContentState? feedback;
+    GameConfigState? gameConfig;
+
+    if (fileMap.containsKey('feedback.json')) {
+      try {
+        final decoded = json.decode(utf8.decode(fileMap['feedback.json']!));
+        feedback =
+            FeedbackContentState.fromJson(decoded as Map<String, dynamic>);
+      } catch (e) {
+        extraIssues.add(ImportIssue(
+          fileName: 'feedback.json',
+          message: 'Parse error: $e',
+          severity: ImportIssueSeverity.error,
+        ));
+      }
+    } else {
+      extraIssues.add(const ImportIssue(
+        fileName: 'feedback.json',
+        message: 'File not found in ZIP — existing feedback left unchanged',
+        severity: ImportIssueSeverity.warning,
+      ));
+    }
+
+    if (fileMap.containsKey('game_config.json')) {
+      try {
+        final decoded = json.decode(utf8.decode(fileMap['game_config.json']!));
+        gameConfig = GameConfigState.fromJson(decoded as Map<String, dynamic>);
+      } catch (e) {
+        extraIssues.add(ImportIssue(
+          fileName: 'game_config.json',
+          message: 'Parse error: $e',
+          severity: ImportIssueSeverity.error,
+        ));
+      }
+    } else {
+      extraIssues.add(const ImportIssue(
+        fileName: 'game_config.json',
+        message:
+            'File not found in ZIP — existing game config left unchanged',
+        severity: ImportIssueSeverity.warning,
+      ));
+    }
+
+    return ZipImportBundle(
+      content: content,
+      issues: extraIssues,
+      feedback: feedback,
+      gameConfig: gameConfig,
+    );
+  }
+
+  /// Parses sidecar JSON files picked individually. Unknown names are ignored.
+  ({
+    FeedbackContentState? feedback,
+    GameConfigState? gameConfig,
+    List<ImportIssue> issues,
+  }) parseExtras(Map<String, Uint8List> files) {
+    final issues = <ImportIssue>[];
+    FeedbackContentState? feedback;
+    GameConfigState? gameConfig;
+
+    final feedbackBytes = files['feedback.json'];
+    if (feedbackBytes != null) {
+      try {
+        final decoded = json.decode(utf8.decode(feedbackBytes));
+        feedback =
+            FeedbackContentState.fromJson(decoded as Map<String, dynamic>);
+      } catch (e) {
+        issues.add(ImportIssue(
+          fileName: 'feedback.json',
+          message: 'Parse error: $e',
+          severity: ImportIssueSeverity.error,
+        ));
+      }
+    }
+
+    final configBytes = files['game_config.json'];
+    if (configBytes != null) {
+      try {
+        final decoded = json.decode(utf8.decode(configBytes));
+        gameConfig = GameConfigState.fromJson(decoded as Map<String, dynamic>);
+      } catch (e) {
+        issues.add(ImportIssue(
+          fileName: 'game_config.json',
+          message: 'Parse error: $e',
+          severity: ImportIssueSeverity.error,
+        ));
+      }
+    }
+
+    return (feedback: feedback, gameConfig: gameConfig, issues: issues);
+  }
+
   /// Imports content from individual files by inferring roles from filenames.
   ///
   /// Recognized filenames:
@@ -286,6 +426,8 @@ class ZipImporter {
             severity: ImportIssueSeverity.error,
           ));
         }
+      } else if (fileName == 'feedback.json' || fileName == 'game_config.json') {
+        // Sidecars are handled by parseExtras / importAll, not ContentState.
       } else {
         issues.add(ImportIssue(
           fileName: fileName,
