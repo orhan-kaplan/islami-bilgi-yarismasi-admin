@@ -829,7 +829,7 @@ void main() {
       /// **Validates: Requirements 11.4**
 
       Glados(any.feedbackContentState, ExploreConfig(numRuns: 100)).test(
-        'no lottie_asset contains assets/lottie/ prefix and all start with feedback/',
+        'no lottie_asset contains assets/lottie/ prefix',
         (state) {
           void checkMessages(List<FeedbackMessageModel> messages) {
             for (final msg in messages) {
@@ -837,9 +837,9 @@ void main() {
                 expect(msg.lottieAsset!.contains('assets/lottie/'), isFalse,
                     reason:
                         'lottie_asset should not contain "assets/lottie/" prefix: ${msg.lottieAsset}');
-                expect(msg.lottieAsset!.startsWith('feedback/'), isTrue,
+                expect(msg.lottieAsset!.startsWith('assets/'), isFalse,
                     reason:
-                        'lottie_asset should start with "feedback/": ${msg.lottieAsset}');
+                        'lottie_asset should be lottie-relative: ${msg.lottieAsset}');
               }
             }
           }

@@ -12,68 +12,31 @@ import '../../widgets/preview/hadith_preview_dialog.dart';
 class HadithsScreen extends ConsumerWidget {
   const HadithsScreen({super.key});
 
+  void _showAddDialog(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _HadithFormDialog(
+        onSave: (hadith) {
+          ref.read(contentStateProvider.notifier).addHadith(hadith);
+        },
+      ),
+    );
+  }
+
   void _showEditDialog(
     BuildContext context,
     WidgetRef ref,
     int index,
     HadithModel hadith,
   ) {
-    final textController = TextEditingController(text: hadith.text);
-    final sourceController = TextEditingController(text: hadith.source);
-
     showDialog<void>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Edit Hadith'),
-          content: SizedBox(
-            width: 500,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: textController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hadith Text',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 4,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: sourceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Source',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final newText = textController.text.trim();
-                final newSource = sourceController.text.trim();
-                if (newText.isEmpty || newSource.isEmpty) return;
-
-                final notifier = ref.read(contentStateProvider.notifier);
-                notifier.updateHadith(
-                  index,
-                  HadithModel(text: newText, source: newSource),
-                );
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => _HadithFormDialog(
+        hadith: hadith,
+        onSave: (updated) {
+          ref.read(contentStateProvider.notifier).updateHadith(index, updated);
+        },
+      ),
     );
   }
 
@@ -87,15 +50,7 @@ class HadithsScreen extends ConsumerWidget {
         title: Text('Hadiths (${hadiths.length})'),
         actions: [
           FilledButton.icon(
-            onPressed: () {
-              final notifier = ref.read(contentStateProvider.notifier);
-              notifier.addHadith(
-                const HadithModel(
-                  text: 'New hadith text',
-                  source: 'Source',
-                ),
-              );
-            },
+            onPressed: () => _showAddDialog(context, ref),
             icon: const Icon(Icons.add),
             label: const Text('Add Hadith'),
           ),
@@ -173,6 +128,112 @@ class HadithsScreen extends ConsumerWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+/// Dialog for creating or editing a hadith (text + source).
+class _HadithFormDialog extends StatefulWidget {
+  const _HadithFormDialog({
+    this.hadith,
+    required this.onSave,
+  });
+
+  final HadithModel? hadith;
+  final ValueChanged<HadithModel> onSave;
+
+  @override
+  State<_HadithFormDialog> createState() => _HadithFormDialogState();
+}
+
+class _HadithFormDialogState extends State<_HadithFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _textController;
+  late final TextEditingController _sourceController;
+
+  bool get _isEditing => widget.hadith != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.hadith?.text ?? '');
+    _sourceController =
+        TextEditingController(text: widget.hadith?.source ?? '');
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _sourceController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+
+    widget.onSave(
+      HadithModel(
+        text: _textController.text.trim(),
+        source: _sourceController.text.trim(),
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_isEditing ? 'Edit Hadith' : 'Add Hadith'),
+      content: SizedBox(
+        width: 500,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _textController,
+                decoration: const InputDecoration(
+                  labelText: 'Hadith',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 4,
+                autofocus: true,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Hadith text is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _sourceController,
+                decoration: const InputDecoration(
+                  labelText: 'Source',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Source is required';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

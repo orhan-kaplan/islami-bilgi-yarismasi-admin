@@ -3,6 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide expect, group, test;
+import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/hadith_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/content_file_mapping.dart';
 
 /// Characters allowed in content file keys (alphanumeric, underscore, hyphen, dot).
@@ -92,6 +98,166 @@ void main() {
           reason: '${entry.key} should map to ${entry.value}',
         );
       }
+    });
+  });
+
+  group('mergeSavedFileIntoBaseline', () {
+    const seriesA = SeriesModel(
+      id: 1,
+      name: 'A',
+      sortOrder: 1,
+      isLocked: false,
+      iconEmoji: 'A',
+    );
+    const seriesB = SeriesModel(
+      id: 1,
+      name: 'B',
+      sortOrder: 1,
+      isLocked: false,
+      iconEmoji: 'B',
+    );
+    const bookA = BookModel(
+      id: 1,
+      title: 'Book A',
+      description: 'Desc',
+      assetImage: 'assets/images/a.png',
+      bookOrder: 1,
+      seriesId: 1,
+      contentFile: 'book_1.json',
+    );
+    const bookB = BookModel(
+      id: 1,
+      title: 'Book B',
+      description: 'Desc',
+      assetImage: 'assets/images/b.png',
+      bookOrder: 1,
+      seriesId: 1,
+      contentFile: 'book_1.json',
+    );
+    const levelA = LevelModel(
+      id: 1,
+      bookId: 1,
+      categoryName: 'Cat',
+      levelOrder: 1,
+      title: 'Level A',
+      unlockScore: 0,
+      questions: [],
+    );
+    const levelB = LevelModel(
+      id: 1,
+      bookId: 1,
+      categoryName: 'Cat',
+      levelOrder: 1,
+      title: 'Level B',
+      unlockScore: 0,
+      questions: [],
+    );
+
+    ContentState state({
+      List<SeriesModel> series = const [seriesA],
+      List<BookModel> books = const [bookA],
+      Map<String, List<LevelModel>>? contentFiles,
+      List<RewardModel> rewards = const [],
+      List<HadithModel> hadiths = const [],
+    }) {
+      return ContentState(
+        series: series,
+        books: books,
+        contentFiles: contentFiles ??
+            const {
+              'book_1.json': [levelA],
+            },
+        rewards: rewards,
+        hadiths: hadiths,
+      );
+    }
+
+    test('merging series.json keeps other slices from baseline', () {
+      final baseline = state();
+      final saved = state(series: const [seriesB], books: const [bookB]);
+
+      final merged = mergeSavedFileIntoBaseline(
+        baseline,
+        saved,
+        'data/series.json',
+      );
+
+      expect(merged.series, equals(const [seriesB]));
+      expect(merged.books, equals(const [bookA]));
+    });
+
+    test('merging books.json keeps series from baseline', () {
+      final baseline = state();
+      final saved = state(series: const [seriesB], books: const [bookB]);
+
+      final merged = mergeSavedFileIntoBaseline(
+        baseline,
+        saved,
+        'data/books.json',
+      );
+
+      expect(merged.series, equals(const [seriesA]));
+      expect(merged.books, equals(const [bookB]));
+    });
+
+    test('merging a content file updates only that key', () {
+      final baseline = state(
+        contentFiles: const {
+          'book_1.json': [levelA],
+          'book_2.json': [levelA],
+        },
+      );
+      final saved = state(
+        contentFiles: const {
+          'book_1.json': [levelB],
+          'book_2.json': [levelB],
+        },
+      );
+
+      final merged = mergeSavedFileIntoBaseline(
+        baseline,
+        saved,
+        'data/content/book_1.json',
+      );
+
+      expect(merged.contentFiles['book_1.json'], equals(const [levelB]));
+      expect(merged.contentFiles['book_2.json'], equals(const [levelA]));
+    });
+
+    test('unknown api path leaves baseline unchanged', () {
+      final baseline = state();
+      final saved = state(series: const [seriesB]);
+
+      final merged = mergeSavedFileIntoBaseline(
+        baseline,
+        saved,
+        'data/unknown.json',
+      );
+
+      expect(merged, equals(baseline));
+    });
+
+    test('missing content file key is removed from baseline', () {
+      final baseline = state(
+        contentFiles: const {
+          'book_1.json': [levelA],
+          'book_2.json': [levelA],
+        },
+      );
+      final saved = state(
+        contentFiles: const {
+          'book_1.json': [levelA],
+        },
+      );
+
+      final merged = mergeSavedFileIntoBaseline(
+        baseline,
+        saved,
+        'data/content/book_2.json',
+      );
+
+      expect(merged.contentFiles.containsKey('book_2.json'), isFalse);
+      expect(merged.contentFiles['book_1.json'], equals(const [levelA]));
     });
   });
 }

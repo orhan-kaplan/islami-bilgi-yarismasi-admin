@@ -40,7 +40,7 @@ enum SaveStatus { idle, saving, saved, error }
 /// 5. When timer fires: serializes the relevant data and PUTs to server
 /// 6. Tracks save status: idle → saving → saved (or error)
 /// 7. [flushPendingSaves]: cancels all timers and immediately saves all pending
-/// 8. On successful save: updates [savedBaselineProvider]
+/// 8. On successful save: merges that file's slice into [savedBaselineProvider]
 class AutoSaveController extends StateNotifier<SaveStatus> {
   AutoSaveController(this._ref) : super(SaveStatus.idle) {
     _init();
@@ -130,10 +130,8 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
 
       if (bytes != null) {
         await client.putFile(apiPath, bytes);
+        _mergeSavedFileIntoBaseline(apiPath, contentState);
       }
-
-      // Update saved baseline on success
-      _ref.read(savedBaselineProvider.notifier).state = contentState;
 
       if (mounted) {
         state = SaveStatus.saved;
@@ -149,6 +147,18 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
         state = SaveStatus.error;
       }
     }
+  }
+
+  /// Merges only the saved file's slice into the dirty-state baseline.
+  ///
+  /// Skips the update when no baseline exists yet (auto-load has not
+  /// completed). Does not replace the entire baseline with [savedState],
+  /// which would hide unsaved changes in other files.
+  void _mergeSavedFileIntoBaseline(String apiPath, ContentState savedState) {
+    final baseline = _ref.read(savedBaselineProvider);
+    if (baseline == null) return;
+    _ref.read(savedBaselineProvider.notifier).state =
+        mergeSavedFileIntoBaseline(baseline, savedState, apiPath);
   }
 
   /// Serializes the appropriate content for the given API path.
@@ -229,11 +239,9 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
         final bytes = _serializeForPath(apiPath, contentState);
         if (bytes != null) {
           await client.putFile(apiPath, bytes);
+          _mergeSavedFileIntoBaseline(apiPath, contentState);
         }
       }
-
-      // Update saved baseline on success
-      _ref.read(savedBaselineProvider.notifier).state = contentState;
 
       if (mounted) {
         state = SaveStatus.saved;

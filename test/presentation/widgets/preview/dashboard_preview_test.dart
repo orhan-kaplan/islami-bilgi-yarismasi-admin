@@ -116,14 +116,14 @@ void main() {
         category: 'time',
       ));
 
-      // Find the rank chip text
-      final chipFinder = find.text('🏅 Hafız Adayı');
+      expect(find.text('🏅'), findsOneWidget);
+      final chipFinder = find.text('Hafız Adayı');
       expect(chipFinder, findsOneWidget);
 
       final chipWidget = tester.widget<Text>(chipFinder);
       expect(chipWidget.style?.fontFamily, 'PlayfairDisplay');
       expect(chipWidget.style?.fontSize, 13);
-      expect(chipWidget.style?.color, PreviewTokens.goldOnColor);
+      expect(chipWidget.style?.color, PreviewTokens.goldEnd);
     });
   });
 
@@ -264,13 +264,9 @@ void main() {
         subcategory: '7',
       ));
 
-      // Find the flame icon
-      final flameIcon = find.byIcon(Icons.local_fire_department);
-      expect(flameIcon, findsOneWidget);
-
-      final iconWidget = tester.widget<Icon>(flameIcon);
-      expect(iconWidget.color, Colors.orange);
-      expect(iconWidget.size, 40);
+      final flame = find.text('🔥');
+      expect(flame, findsOneWidget);
+      expect(tester.widget<Text>(flame).style?.fontSize, 36);
     });
 
     testWidgets('renders streak number from subcategory', (tester) async {

@@ -66,7 +66,12 @@ class ContentNotifier extends StateNotifier<ContentState> {
   // ---------------------------------------------------------------------------
 
   void addBook(BookModel book) {
-    state = state.copyWith(books: [...state.books, book]);
+    final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
+    updatedMap.putIfAbsent(book.contentFile, () => const []);
+    state = state.copyWith(
+      books: [...state.books, book],
+      contentFiles: updatedMap,
+    );
   }
 
   void updateBook(BookModel updated) {
@@ -84,8 +89,13 @@ class ContentNotifier extends StateNotifier<ContentState> {
     );
     final levels = state.contentFiles[book.contentFile];
     if (levels != null && levels.isNotEmpty) return false;
+    final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
+    if (levels != null && levels.isEmpty) {
+      updatedMap.remove(book.contentFile);
+    }
     state = state.copyWith(
       books: state.books.where((b) => b.id != bookId).toList(),
+      contentFiles: updatedMap,
     );
     return true;
   }

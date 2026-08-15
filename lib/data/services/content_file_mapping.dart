@@ -82,3 +82,45 @@ List<String> getChangedFiles(ContentState previous, ContentState current) {
 
   return changedPaths;
 }
+
+/// Copies the slice of [saved] that corresponds to [apiPath] onto [baseline].
+///
+/// Auto-save writes one JSON file at a time. Replacing the entire baseline
+/// with [saved] would mark unrelated unsaved files as clean.
+///
+/// Unknown [apiPath] values leave [baseline] unchanged. If a content file
+/// key is absent from [saved], it is removed from the baseline map.
+ContentState mergeSavedFileIntoBaseline(
+  ContentState baseline,
+  ContentState saved,
+  String apiPath,
+) {
+  if (apiPath == getApiPathForChange(ContentChangeType.series)) {
+    return baseline.copyWith(series: saved.series);
+  }
+  if (apiPath == getApiPathForChange(ContentChangeType.books)) {
+    return baseline.copyWith(books: saved.books);
+  }
+  if (apiPath == getApiPathForChange(ContentChangeType.rewards)) {
+    return baseline.copyWith(rewards: saved.rewards);
+  }
+  if (apiPath == getApiPathForChange(ContentChangeType.hadiths)) {
+    return baseline.copyWith(hadiths: saved.hadiths);
+  }
+
+  const contentPrefix = 'data/content/';
+  if (apiPath.startsWith(contentPrefix)) {
+    final key = apiPath.substring(contentPrefix.length);
+    if (key.isEmpty) return baseline;
+
+    final updated = Map.of(baseline.contentFiles);
+    if (saved.contentFiles.containsKey(key)) {
+      updated[key] = saved.contentFiles[key]!;
+    } else {
+      updated.remove(key);
+    }
+    return baseline.copyWith(contentFiles: updated);
+  }
+
+  return baseline;
+}

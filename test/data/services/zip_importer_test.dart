@@ -456,6 +456,78 @@ void main() {
     });
   });
 
+  group('sidecar extras', () {
+    test('importFiles skips feedback.json and game_config.json without warning',
+        () {
+      final files = <String, Uint8List>{
+        'series.json': Uint8List.fromList(utf8.encode(_validSeriesJson)),
+        'feedback.json': Uint8List.fromList(utf8.encode('{"quiz":{}}')),
+        'game_config.json': Uint8List.fromList(utf8.encode('{"quiz":{"lives":9}}')),
+      };
+
+      final (state, issues) = importer.importFiles(files);
+
+      expect(state.series, hasLength(1));
+      expect(issues, isEmpty);
+    });
+
+    test('parseExtras reads sidecars and ignores unknown names', () {
+      final extras = importer.parseExtras({
+        'feedback.json': Uint8List.fromList(utf8.encode('{"quiz":{}}')),
+        'game_config.json': Uint8List.fromList(
+          utf8.encode('{"quiz":{"lives":4},"comeback":{"min_days":6}}'),
+        ),
+        'notes.txt': Uint8List.fromList(utf8.encode('ignore me')),
+      });
+
+      expect(extras.issues, isEmpty);
+      expect(extras.feedback, isNotNull);
+      expect(extras.gameConfig?.quiz.lives, 4);
+      expect(extras.gameConfig?.comebackMinDays, 6);
+    });
+
+    test('parseExtras reports parse errors without inventing defaults', () {
+      final extras = importer.parseExtras({
+        'feedback.json': Uint8List.fromList(utf8.encode('{"quiz":{}}')),
+        'game_config.json': Uint8List.fromList(utf8.encode('not-json')),
+      });
+
+      expect(extras.feedback, isNotNull);
+      expect(extras.gameConfig, isNull);
+      expect(
+        extras.issues.singleWhere((i) => i.fileName == 'game_config.json').severity,
+        ImportIssueSeverity.error,
+      );
+    });
+
+    test('importAll of corrupt sidecar keeps quiz content and leaves extra null',
+        () {
+      final zipBytes = createTestZip({
+        'series.json': _validSeriesJson,
+        'books.json': _validBooksJson,
+        'rewards.json': _validRewardsJson,
+        'hadiths.json': _validHadithsJson,
+        'content/book_1.json': _validContentJson,
+        'game_config.json': '{bad',
+        'feedback.json': '{"quiz":{}}',
+      });
+
+      final bundle = importer.importAll(zipBytes);
+
+      expect(bundle.content.series, hasLength(1));
+      expect(bundle.feedback, isNotNull);
+      expect(bundle.gameConfig, isNull);
+      expect(
+        bundle.issues.any(
+          (i) =>
+              i.fileName == 'game_config.json' &&
+              i.severity == ImportIssueSeverity.error,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('ImportIssue', () {
     test('equality works correctly', () {
       const issue1 = ImportIssue(

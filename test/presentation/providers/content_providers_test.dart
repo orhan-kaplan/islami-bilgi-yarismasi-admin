@@ -132,6 +132,8 @@ void main() {
 
       expect(notifier.state.books.length, 1);
       expect(notifier.state.books.first, book);
+      expect(notifier.state.contentFiles.containsKey('book_1.json'), isTrue);
+      expect(notifier.state.contentFiles['book_1.json'], isEmpty);
     });
 
     test('updateBook replaces by ID', () {
@@ -168,6 +170,7 @@ void main() {
 
       expect(result, true);
       expect(notifier.state.books, isEmpty);
+      expect(notifier.state.contentFiles.containsKey('book_1.json'), isFalse);
     });
 
     test('deleteBook blocks when book has levels in contentFiles', () {
