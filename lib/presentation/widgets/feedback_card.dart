@@ -202,7 +202,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
@@ -398,7 +398,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
                       'http://localhost:8080/api/files/lottie/${widget.message.lottieAsset}',
                       fit: BoxFit.contain,
                       repeat: true,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 20),
+                      errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, size: 20),
                     )
                   : const Icon(Icons.animation_outlined, size: 20, color: Colors.grey),
             ),

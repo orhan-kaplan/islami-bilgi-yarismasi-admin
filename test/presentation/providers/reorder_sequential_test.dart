@@ -368,14 +368,14 @@ void main() {
       (data) {
         final otherContentFile = 'other_${data.contentFile}';
         final otherLevels = [
-          LevelModel(
+          const LevelModel(
             id: 200,
             bookId: 99,
             categoryName: 'Other',
             levelOrder: 7,
             title: 'OtherLevel',
             unlockScore: 0,
-            questions: const [],
+            questions: [],
           ),
         ];
 

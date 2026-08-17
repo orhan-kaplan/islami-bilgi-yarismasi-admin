@@ -354,7 +354,7 @@ class _RewardFormDialogState extends ConsumerState<_RewardFormDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int>(
-                  value: _selectedBookId,
+                  initialValue: _selectedBookId,
                   decoration: const InputDecoration(
                     labelText: 'Unlock Book *',
                     border: OutlineInputBorder(),

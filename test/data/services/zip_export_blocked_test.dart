@@ -5,7 +5,6 @@ import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/hadith_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
-import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/content_validator.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/zip_exporter.dart';
@@ -43,7 +42,7 @@ extension ExportBlockedGenerators on Any {
   /// Generates a random [ErrorInjection] type.
   Generator<ErrorInjection> get errorInjection => simple(
         generate: (random, size) {
-          final values = ErrorInjection.values;
+          const values = ErrorInjection.values;
           return values[random.nextInt(values.length)];
         },
         shrink: (input) => const Iterable.empty(),
@@ -333,7 +332,7 @@ ContentState _stateWithEmptyRequiredField(int seed) {
       ),
     ],
     books: [
-      BookModel(
+      const BookModel(
         id: 1,
         title: '', // Empty required field!
         description: 'Açıklama',

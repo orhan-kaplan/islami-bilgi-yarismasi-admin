@@ -10,7 +10,7 @@ FeedbackContentState _validState() {
     emoji: '🎉',
   );
 
-  return FeedbackContentState(
+  return const FeedbackContentState(
     quiz: {
       'speed_demon': [msg],
       'perfect': [msg],
@@ -43,7 +43,7 @@ FeedbackContentState _validState() {
       '30': [msg],
     },
     titles: [
-      const PlayerTitleModel(
+      PlayerTitleModel(
         title: 'İlim Yolcusu',
         icon: '🌱',
         requiredBooks: 0,

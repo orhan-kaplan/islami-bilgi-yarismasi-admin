@@ -51,7 +51,7 @@ void main() {
 
     test('flush saves valid game_config.json', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         return http.Response('', 200);
       });
 
@@ -82,7 +82,7 @@ void main() {
 
     test('invalid config blocks PUT and marks error', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         return http.Response('', 200);
       });
 

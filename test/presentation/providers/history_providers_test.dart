@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide expect, group;
-import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/history_providers.dart';
 

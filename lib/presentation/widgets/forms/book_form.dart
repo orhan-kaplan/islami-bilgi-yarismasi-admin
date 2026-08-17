@@ -81,6 +81,10 @@ class _BookFormState extends ConsumerState<BookForm> {
     // Push current state to history before applying the change.
     ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
 
+    // Async gap'ten önce yakalanır: kullanıcı kayıt sürerken formu kapatırsa
+    // context geçersiz olur ve ScaffoldMessenger.of(context) fırlatır.
+    final messenger = ScaffoldMessenger.of(context);
+
     final notifier = ref.read(contentStateProvider.notifier);
     final book = BookModel(
       id: int.parse(_idController.text),
@@ -106,7 +110,7 @@ class _BookFormState extends ConsumerState<BookForm> {
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(content: Text(_isEditing ? 'Book updated' : 'Book created')),
     );
   }

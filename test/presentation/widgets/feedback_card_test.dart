@@ -13,7 +13,7 @@ void main() {
       message: 'Test mesajı',
       emoji: '📝',
     );
-    return FeedbackContentState(
+    return const FeedbackContentState(
       quiz: {
         'perfect': [msg],
       },

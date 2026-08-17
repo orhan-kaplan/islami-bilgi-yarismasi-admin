@@ -221,18 +221,18 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
 
   /// Builds tabs with message count badges.
   List<Widget> _buildTabs(FeedbackContentState state) {
-    int _countMessages(Map<String, List<FeedbackMessageModel>> map) {
+    int countMessages(Map<String, List<FeedbackMessageModel>> map) {
       return map.values.fold(0, (sum, list) => sum + list.length);
     }
 
     final counts = [
-      _countMessages(state.quiz),
-      _countMessages(state.speedQuiz),
-      _countMessages(state.time),
+      countMessages(state.quiz),
+      countMessages(state.speedQuiz),
+      countMessages(state.time),
       state.comeback.length,
-      _countMessages(state.streak),
+      countMessages(state.streak),
       state.titles.length,
-      _countMessages(state.learned),
+      countMessages(state.learned),
     ];
 
     const labels = ['Quiz', 'Speed Quiz', 'Time', 'Comeback', 'Streak', 'Titles', 'Learned'];
@@ -433,7 +433,7 @@ Map<String, _SubcategoryMeta> _quizMetaFrom(GameConfigState cfg) {
       'İyi Performans',
       'Doğruluk ≥ %${_pct(q.goodMinAccuracy)} (üst bantlara girmeyen). 3 canla genelde latent kalır.',
     ),
-    'moderate': _SubcategoryMeta(
+    'moderate': const _SubcategoryMeta(
       'Orta Performans',
       'Önceki bantlara girmeyen başarılı sonuçlar (fallback).',
     ),

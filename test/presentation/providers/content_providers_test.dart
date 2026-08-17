@@ -17,9 +17,9 @@ void main() {
 
   group('importContent', () {
     test('replaces entire state', () {
-      final newState = ContentState(
+      const newState = ContentState(
         series: [
-          const SeriesModel(
+          SeriesModel(
             id: 1,
             name: 'Test Series',
             sortOrder: 1,
@@ -27,10 +27,10 @@ void main() {
             iconEmoji: '📚',
           ),
         ],
-        books: const [],
-        contentFiles: const {},
-        rewards: const [],
-        hadiths: const [],
+        books: [],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
       );
 
       notifier.importContent(newState);

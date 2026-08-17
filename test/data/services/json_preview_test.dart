@@ -14,7 +14,7 @@ void main() {
   group('Property 14: JSON preview produces valid indented JSON that round-trips', () {
     /// **Validates: Requirements 7.2, 7.3, 7.4, 7.5, 7.6**
 
-    final encoder = JsonEncoder.withIndent('  ');
+    const encoder = JsonEncoder.withIndent('  ');
 
     Glados(any.seriesModel, ExploreConfig(numRuns: 100)).test(
       'SeriesModel: toJson → indented JSON → jsonDecode → fromJson equals original',

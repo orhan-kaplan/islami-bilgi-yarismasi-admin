@@ -106,7 +106,7 @@ void main() {
       // Simulate a timeout by using a completer that never completes
       final mockClient = MockClient((request) async {
         // Simulate a request that takes longer than the 5s timeout
-        throw TimeoutException('Connection timed out', Duration(seconds: 5));
+        throw TimeoutException('Connection timed out', const Duration(seconds: 5));
       });
 
       final container = createContainer(mockClient);

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -356,9 +355,9 @@ void main() {
 
     test('warnings do NOT block export', () {
       // Create a state that has warnings (< 10 questions) but no errors
-      final stateWithWarnings = ContentState(
+      const stateWithWarnings = ContentState(
         series: [
-          const SeriesModel(
+          SeriesModel(
             id: 1,
             name: 'Test',
             sortOrder: 1,
@@ -368,7 +367,7 @@ void main() {
           ),
         ],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Test Book',
             description: 'Desc',
@@ -390,7 +389,7 @@ void main() {
               assetImage: null,
               // Only 3 questions — triggers warning but not error
               questions: [
-                const QuestionModel(
+                QuestionModel(
                   questionText: 'Q1?',
                   optionA: 'A',
                   optionB: 'B',
@@ -400,7 +399,7 @@ void main() {
                   explanation: null,
                   type: 'multiple_choice',
                 ),
-                const QuestionModel(
+                QuestionModel(
                   questionText: 'Q2?',
                   optionA: 'A',
                   optionB: 'B',
@@ -410,7 +409,7 @@ void main() {
                   explanation: null,
                   type: 'multiple_choice',
                 ),
-                const QuestionModel(
+                QuestionModel(
                   questionText: 'Q3?',
                   optionA: 'A',
                   optionB: 'B',

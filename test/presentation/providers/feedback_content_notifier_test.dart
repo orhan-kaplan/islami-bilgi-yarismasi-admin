@@ -19,7 +19,7 @@ void main() {
       profileImage: 'images/seed/default.webp',
     );
 
-    return FeedbackContentState(
+    return const FeedbackContentState(
       quiz: {
         'perfect': [msg],
         'failure': [msg],
@@ -66,7 +66,7 @@ void main() {
       profileImage: 'img2.webp',
     );
 
-    return FeedbackContentState(
+    return const FeedbackContentState(
       quiz: {
         'perfect': [msg1, msg2],
         'failure': [msg1, msg2],

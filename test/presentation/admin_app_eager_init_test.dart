@@ -19,13 +19,13 @@ import 'package:islami_bilgi_yarismasi_admin/presentation/router/app_router.dart
 
 void main() {
   group('AdminApp eager auto-save init', () {
-    MockClient _failingClient() {
+    MockClient failingClient() {
       return MockClient((request) async {
         return http.Response('unavailable', 500);
       });
     }
 
-    GoRouter _dummyRouter() {
+    GoRouter dummyRouter() {
       return GoRouter(
         routes: [
           GoRoute(
@@ -42,7 +42,7 @@ void main() {
           assetServerClientProvider.overrideWithValue(
             AssetServerClient(
               baseUrl: 'http://localhost:8080',
-              client: _failingClient(),
+              client: failingClient(),
             ),
           ),
         ],
@@ -56,7 +56,7 @@ void main() {
 
     testWidgets('AdminApp watches auto-save providers on first build',
         (tester) async {
-      final router = _dummyRouter();
+      final router = dummyRouter();
       addTearDown(router.dispose);
 
       final container = ProviderContainer(
@@ -64,7 +64,7 @@ void main() {
           assetServerClientProvider.overrideWithValue(
             AssetServerClient(
               baseUrl: 'http://localhost:8080',
-              client: _failingClient(),
+              client: failingClient(),
             ),
           ),
           routerProvider.overrideWithValue(router),

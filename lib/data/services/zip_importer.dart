@@ -75,7 +75,7 @@ class ZipImporter {
   /// parsing to [JsonParser]. Missing files are reported as warnings,
   /// parse errors are reported as errors.
   ///
-  /// Returns a tuple of (ContentState with loaded data, List<ImportIssue>).
+  /// Returns a tuple of `(ContentState, List<ImportIssue>)`.
   (ContentState, List<ImportIssue>) importZip(Uint8List zipBytes) {
     final Archive archive;
     try {
@@ -109,7 +109,7 @@ class ZipImporter {
           name = name.substring('data/'.length);
         }
         if (name.isNotEmpty) {
-          fileMap[name] = file.content as Uint8List;
+          fileMap[name] = file.content;
         }
       }
     }
@@ -248,7 +248,7 @@ class ZipImporter {
         name = name.substring('data/'.length);
       }
       if (name.isNotEmpty) {
-        fileMap[name] = file.content as Uint8List;
+        fileMap[name] = file.content;
       }
     }
 
@@ -356,7 +356,7 @@ class ZipImporter {
   ///
   /// Unrecognized filenames are reported as warnings.
   ///
-  /// Returns a tuple of (ContentState with loaded data, List<ImportIssue>).
+  /// Returns a tuple of `(ContentState, List<ImportIssue>)`.
   (ContentState, List<ImportIssue>) importFiles(Map<String, Uint8List> files) {
     final issues = <ImportIssue>[];
 

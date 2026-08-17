@@ -140,7 +140,7 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.amber.shade900.withOpacity(0.9),
+        color: Colors.amber.shade900.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Row(

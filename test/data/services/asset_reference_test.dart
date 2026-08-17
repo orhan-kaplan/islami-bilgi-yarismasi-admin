@@ -6,7 +6,6 @@ import 'package:glados/glados.dart' hide expect, group, test;
 import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
-import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_reference_detector.dart';
 
@@ -232,10 +231,10 @@ void main() {
     // Unit tests for specific edge cases
     test('isReferenced returns true for path in book assetImage', () {
       const path = 'assets/images/book_1/book_1.png';
-      final state = ContentState(
-        series: const [],
+      const state = ContentState(
+        series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Test Book',
             description: 'Desc',
@@ -245,9 +244,9 @@ void main() {
             contentFile: 'book_1.json',
           ),
         ],
-        contentFiles: const {},
-        rewards: const [],
-        hadiths: const [],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
       );
 
       expect(AssetReferenceDetector.isReferenced(state, path), isTrue);
@@ -255,12 +254,12 @@ void main() {
 
     test('isReferenced returns true for path in level assetImage', () {
       const path = 'assets/images/book_1/level_1.webp';
-      final state = ContentState(
-        series: const [],
-        books: const [],
+      const state = ContentState(
+        series: [],
+        books: [],
         contentFiles: {
           'book_1.json': [
-            const LevelModel(
+            LevelModel(
               id: 1,
               bookId: 1,
               categoryName: 'Cat',
@@ -272,8 +271,8 @@ void main() {
             ),
           ],
         },
-        rewards: const [],
-        hadiths: const [],
+        rewards: [],
+        hadiths: [],
       );
 
       expect(AssetReferenceDetector.isReferenced(state, path), isTrue);
@@ -281,19 +280,19 @@ void main() {
 
     test('isReferenced returns true for path in reward assetImage', () {
       const path = 'assets/images/rewards/book_1_reward.webp';
-      final state = ContentState(
-        series: const [],
-        books: const [],
-        contentFiles: const {},
+      const state = ContentState(
+        series: [],
+        books: [],
+        contentFiles: {},
         rewards: [
-          const RewardModel(
+          RewardModel(
             title: 'Reward',
             description: 'Desc',
             assetImage: path,
             unlockBookId: 1,
           ),
         ],
-        hadiths: const [],
+        hadiths: [],
       );
 
       expect(AssetReferenceDetector.isReferenced(state, path), isTrue);
@@ -301,10 +300,10 @@ void main() {
 
     test('isReferenced returns false for unreferenced path', () {
       const path = 'assets/images/book_99/nonexistent.webp';
-      final state = ContentState(
-        series: const [],
+      const state = ContentState(
+        series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Test Book',
             description: 'Desc',
@@ -314,9 +313,9 @@ void main() {
             contentFile: 'book_1.json',
           ),
         ],
-        contentFiles: const {},
-        rewards: const [],
-        hadiths: const [],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
       );
 
       expect(AssetReferenceDetector.isReferenced(state, path), isFalse);
@@ -326,10 +325,10 @@ void main() {
         () {
       const appPath = 'assets/images/book_1/book_1.png';
       const apiPath = 'images/book_1/book_1.png';
-      final state = ContentState(
-        series: const [],
+      const state = ContentState(
+        series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Test Book',
             description: 'Desc',
@@ -339,9 +338,9 @@ void main() {
             contentFile: 'book_1.json',
           ),
         ],
-        contentFiles: const {},
-        rewards: const [],
-        hadiths: const [],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
       );
 
       // Query with API_Path format should still find the reference
@@ -350,10 +349,10 @@ void main() {
 
     test('findReferences returns correct reference types', () {
       const path = 'assets/images/book_1/level_1.webp';
-      final state = ContentState(
-        series: const [],
+      const state = ContentState(
+        series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -365,7 +364,7 @@ void main() {
         ],
         contentFiles: {
           'book_1.json': [
-            const LevelModel(
+            LevelModel(
               id: 1,
               bookId: 1,
               categoryName: 'Cat',
@@ -378,14 +377,14 @@ void main() {
           ],
         },
         rewards: [
-          const RewardModel(
+          RewardModel(
             title: 'Reward',
             description: 'Desc',
             assetImage: path,
             unlockBookId: 1,
           ),
         ],
-        hadiths: const [],
+        hadiths: [],
       );
 
       final refs = AssetReferenceDetector.findReferences(state, path);

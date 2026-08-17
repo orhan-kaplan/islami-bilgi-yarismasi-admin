@@ -113,7 +113,7 @@ void main() {
         // Pick a file that only has warnings (no errors)
         // Create a target file with only warnings
         const targetFile = 'series.json';
-        final apiPath = 'data/$targetFile';
+        const apiPath = 'data/$targetFile';
 
         // Filter to only keep warnings for the target file
         final warningOnlyIssues = issues

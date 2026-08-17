@@ -122,7 +122,7 @@ void main() {
 
     test('saves feedback.json after debounce when content changes', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         if (request.url.path == '/api/files/data/feedback.json') {
           return http.Response('', 200);
         }
@@ -167,7 +167,7 @@ void main() {
 
     test('blocks save when validation fails', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         return http.Response('', 200);
       });
 
@@ -201,7 +201,7 @@ void main() {
     test('flushPendingSave saves immediately without waiting for debounce',
         () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         if (request.url.path == '/api/files/data/feedback.json') {
           return http.Response('', 200);
         }
@@ -241,7 +241,7 @@ void main() {
 
     test('does not save when server is disconnected', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         return http.Response('', 200);
       });
 
@@ -282,7 +282,7 @@ void main() {
     test('transitions to saved then back to idle after successful save',
         () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         if (request.url.path == '/api/files/data/feedback.json') {
           return http.Response('', 200);
         }
@@ -322,7 +322,7 @@ void main() {
 
     test('transitions to error on server failure', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         if (request.url.path == '/api/files/data/feedback.json' &&
             request.method == 'PUT') {
           return http.Response('{"error": "Internal error"}', 500);
@@ -357,7 +357,7 @@ void main() {
 
     test('debounces multiple rapid changes into single save', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         if (request.url.path == '/api/files/data/feedback.json') {
           return http.Response('', 200);
         }

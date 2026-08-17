@@ -104,7 +104,7 @@ void main() {
 
     test('saving series.json does not mark unsaved books as clean', () async {
       final mockClient = MockClient((request) async {
-        capturedRequests.add(request as http.Request);
+        capturedRequests.add(request);
         return http.Response('', 200);
       });
       final container = createLoadedContainer(mockClient: mockClient);

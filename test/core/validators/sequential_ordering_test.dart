@@ -71,10 +71,6 @@ List<ValidationIssue> _errors(ContentState state) => _validator
     .where((i) => i.severity == ValidationSeverity.error)
     .toList();
 
-/// Checks if any error is related to sequential ordering.
-bool _hasOrderingError(List<ValidationIssue> issues) => issues.any((i) =>
-    i.message.contains('not sequential starting from 1'));
-
 /// Checks if any error is specifically about series sort_order.
 bool _hasSeriesSortOrderError(List<ValidationIssue> issues) => issues.any((i) =>
     i.message.contains('sort_order') &&
@@ -193,7 +189,7 @@ void main() {
 
         // Build a valid state around the bad series ordering
         final books = [
-          BookModel(
+          const BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -256,7 +252,7 @@ void main() {
       'non-sequential book_order within a series always produces an error',
       (bookCount) {
         final series = [
-          SeriesModel(
+          const SeriesModel(
             id: 1,
             name: 'Series 1',
             sortOrder: 1,
@@ -332,7 +328,7 @@ void main() {
       'non-sequential level_order within a book always produces an error',
       (levelCount) {
         final series = [
-          SeriesModel(
+          const SeriesModel(
             id: 1,
             name: 'Series 1',
             sortOrder: 1,
@@ -342,7 +338,7 @@ void main() {
         ];
 
         final books = [
-          BookModel(
+          const BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -421,7 +417,7 @@ void main() {
         }
 
         final books = [
-          BookModel(
+          const BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -497,7 +493,7 @@ void main() {
         }
 
         final books = [
-          BookModel(
+          const BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -572,7 +568,7 @@ void main() {
         }
 
         final books = [
-          BookModel(
+          const BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',

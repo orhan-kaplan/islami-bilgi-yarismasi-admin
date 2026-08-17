@@ -171,7 +171,7 @@ void main() {
           totalQuestionsAfter,
           equals(totalQuestionsBefore - deletedQuestionCount),
           reason:
-              'Total question count should decrease by ${deletedQuestionCount} '
+              'Total question count should decrease by $deletedQuestionCount '
               '(the number of questions in the deleted level)',
         );
       },

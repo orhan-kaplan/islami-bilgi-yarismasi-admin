@@ -45,13 +45,12 @@ void main() {
     test('returns empty list when server is disconnected', () async {
       final mockClient = MockClient((request) async {
         fail('Should not make any HTTP requests when disconnected');
-        return http.Response('', 500);
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -112,10 +111,10 @@ void main() {
         return http.Response(jsonEncode([]), 200);
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -127,7 +126,7 @@ void main() {
         ],
         contentFiles: {},
         rewards: [
-          const RewardModel(
+          RewardModel(
             title: 'Reward 1',
             description: 'Desc',
             assetImage: 'assets/images/rewards/reward_1.webp',
@@ -183,10 +182,10 @@ void main() {
         return http.Response(jsonEncode([]), 200);
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -198,7 +197,7 @@ void main() {
         ],
         contentFiles: {
           'book_1.json': [
-            const LevelModel(
+            LevelModel(
               id: 1,
               bookId: 1,
               categoryName: 'Cat',
@@ -211,7 +210,7 @@ void main() {
           ],
         },
         rewards: [
-          const RewardModel(
+          RewardModel(
             title: 'Reward 1',
             description: 'Desc',
             assetImage: 'assets/images/rewards/reward_1.webp',
@@ -241,10 +240,9 @@ void main() {
     test('returns empty list when content has no asset references', () async {
       final mockClient = MockClient((request) async {
         fail('Should not make any HTTP requests when no assets referenced');
-        return http.Response('', 500);
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [],
         contentFiles: {},
@@ -269,10 +267,10 @@ void main() {
         return http.Response(jsonEncode([]), 200);
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',
@@ -284,7 +282,7 @@ void main() {
         ],
         contentFiles: {
           'book_1.json': [
-            const LevelModel(
+            LevelModel(
               id: 1,
               bookId: 1,
               categoryName: 'Cat',
@@ -297,7 +295,7 @@ void main() {
           ],
         },
         rewards: [
-          const RewardModel(
+          RewardModel(
             title: 'Reward 1',
             description: 'Desc',
             assetImage: 'assets/images/rewards/reward_1.webp',
@@ -340,10 +338,10 @@ void main() {
         );
       });
 
-      final state = ContentState(
+      const state = ContentState(
         series: [],
         books: [
-          const BookModel(
+          BookModel(
             id: 1,
             title: 'Book 1',
             description: 'Desc',

@@ -128,7 +128,7 @@ List<ValidationIssue> _errors(ContentState state) => _validator
 /// Wraps a single question in a valid ContentState for validation.
 ContentState _stateWithQuestion(QuestionModel question) => ContentState(
       series: [
-        SeriesModel(
+        const SeriesModel(
           id: 1,
           name: 'Series 1',
           sortOrder: 1,
@@ -137,7 +137,7 @@ ContentState _stateWithQuestion(QuestionModel question) => ContentState(
         ),
       ],
       books: [
-        BookModel(
+        const BookModel(
           id: 1,
           title: 'Book 1',
           description: 'Description',
@@ -168,7 +168,7 @@ ContentState _stateWithQuestion(QuestionModel question) => ContentState(
 /// Wraps multiple questions in a valid ContentState for validation.
 ContentState _stateWithQuestions(List<QuestionModel> questions) => ContentState(
       series: [
-        SeriesModel(
+        const SeriesModel(
           id: 1,
           name: 'Series 1',
           sortOrder: 1,
@@ -177,7 +177,7 @@ ContentState _stateWithQuestions(List<QuestionModel> questions) => ContentState(
         ),
       ],
       books: [
-        BookModel(
+        const BookModel(
           id: 1,
           title: 'Book 1',
           description: 'Description',
@@ -398,7 +398,7 @@ void main() {
       (input) {
         // Place the bad option at a random position (1-4 maps to A-D)
         final position = (input.whichOption % 4) + 1;
-        final good = 'left|right';
+        const good = 'left|right';
 
         final question = QuestionModel(
           questionText: 'Match the pairs?',

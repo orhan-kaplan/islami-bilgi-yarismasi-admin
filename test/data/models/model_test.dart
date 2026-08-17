@@ -1146,18 +1146,18 @@ void main() {
         HadithModel(text: 'Text', source: 'Source'),
       ];
 
-      final a = ContentState(
+      const a = ContentState(
         series: series,
-        books: const [],
-        contentFiles: const {},
-        rewards: const [],
+        books: [],
+        contentFiles: {},
+        rewards: [],
         hadiths: hadiths,
       );
-      final b = ContentState(
+      const b = ContentState(
         series: series,
-        books: const [],
-        contentFiles: const {},
-        rewards: const [],
+        books: [],
+        contentFiles: {},
+        rewards: [],
         hadiths: hadiths,
       );
       final c = ContentState.empty();
@@ -1178,21 +1178,21 @@ void main() {
         questions: [],
       );
 
-      final a = ContentState(
-        series: const [],
-        books: const [],
-        contentFiles: const {
+      const a = ContentState(
+        series: [],
+        books: [],
+        contentFiles: {
           'book_1.json': [level],
         },
-        rewards: const [],
-        hadiths: const [],
+        rewards: [],
+        hadiths: [],
       );
-      final b = ContentState(
-        series: const [],
-        books: const [],
-        contentFiles: const {},
-        rewards: const [],
-        hadiths: const [],
+      const b = ContentState(
+        series: [],
+        books: [],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
       );
 
       expect(a, isNot(equals(b)));

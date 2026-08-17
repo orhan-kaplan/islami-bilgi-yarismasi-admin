@@ -80,7 +80,7 @@ void main() {
       final shadow = decoration.boxShadow!.first;
       expect(shadow.blurRadius, 20);
       expect(shadow.offset, const Offset(0, 10));
-      expect(shadow.color, Colors.black.withOpacity(0.5));
+      expect(shadow.color, Colors.black.withValues(alpha: 0.5));
     });
 
     testWidgets('clips content with ClipRRect at 37px radius', (tester) async {

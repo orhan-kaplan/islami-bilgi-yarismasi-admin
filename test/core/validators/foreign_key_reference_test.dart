@@ -141,7 +141,7 @@ ContentState _buildValidState({
       ),
     ],
     hadiths: [
-      HadithModel(text: 'Hadith text', source: 'Source'),
+      const HadithModel(text: 'Hadith text', source: 'Source'),
     ],
   );
 }
@@ -166,11 +166,11 @@ void main() {
         // Create a state where the book's seriesId doesn't match any series
         const existingSeriesId = 1;
         // Use a broken series reference that is guaranteed different
-        final brokenSeriesId = existingSeriesId + 1000;
+        const brokenSeriesId = existingSeriesId + 1000;
 
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: existingSeriesId,
               name: 'Existing Series',
               sortOrder: 1,
@@ -670,7 +670,7 @@ void main() {
 
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: 1,
               name: 'Series',
               sortOrder: 1,

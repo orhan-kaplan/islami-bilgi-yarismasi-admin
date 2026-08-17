@@ -2,10 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide expect, group;
 import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
-import 'package:islami_bilgi_yarismasi_admin/data/models/hadith_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
-import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/content_validator.dart';
 
@@ -83,11 +81,6 @@ List<ValidationIssue> _errors(ContentState state) => _validator
     .validateAll(state)
     .where((i) => i.severity == ValidationSeverity.error)
     .toList();
-
-/// Checks if any error is related to ID positivity or uniqueness.
-bool _hasIdError(List<ValidationIssue> issues) => issues.any((i) =>
-    i.message.contains('positive integer') ||
-    i.message.contains('Duplicate'));
 
 /// Checks if any error is specifically about ID positivity.
 bool _hasPositivityError(List<ValidationIssue> issues) =>
@@ -268,7 +261,7 @@ void main() {
       (badBookId) {
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: 1,
               name: 'Series',
               sortOrder: 1,
@@ -326,7 +319,7 @@ void main() {
       (badLevelId) {
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: 1,
               name: 'Series',
               sortOrder: 1,
@@ -335,7 +328,7 @@ void main() {
             ),
           ],
           books: [
-            BookModel(
+            const BookModel(
               id: 1,
               title: 'Book',
               description: 'Desc',
@@ -412,7 +405,7 @@ void main() {
           ],
           contentFiles: {
             'book_1.json': [
-              LevelModel(
+              const LevelModel(
                 id: 1,
                 bookId: 1,
                 categoryName: 'Cat',
@@ -449,7 +442,7 @@ void main() {
       (duplicateId) {
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: 1,
               name: 'Series',
               sortOrder: 1,
@@ -527,7 +520,7 @@ void main() {
       (duplicateId) {
         final state = ContentState(
           series: [
-            SeriesModel(
+            const SeriesModel(
               id: 1,
               name: 'Series',
               sortOrder: 1,
@@ -536,7 +529,7 @@ void main() {
             ),
           ],
           books: [
-            BookModel(
+            const BookModel(
               id: 1,
               title: 'Book A',
               description: 'Desc A',
@@ -545,7 +538,7 @@ void main() {
               seriesId: 1,
               contentFile: 'book_1.json',
             ),
-            BookModel(
+            const BookModel(
               id: 2,
               title: 'Book B',
               description: 'Desc B',

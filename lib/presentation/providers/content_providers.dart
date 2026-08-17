@@ -103,7 +103,6 @@ class ContentNotifier extends StateNotifier<ContentState> {
   /// Reorders books within a series by assigning sequential book_order values
   /// (1, 2, 3, ...) based on the provided list of IDs in the new order.
   void reorderBooks(int seriesId, List<int> newOrder) {
-    final bookMap = {for (final b in state.books) b.id: b};
     final updatedBooks = state.books.map((b) {
       final index = newOrder.indexOf(b.id);
       if (b.seriesId == seriesId && index != -1) {

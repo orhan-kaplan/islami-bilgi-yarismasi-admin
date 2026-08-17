@@ -210,7 +210,7 @@ class DashboardPreview extends StatelessWidget {
                 onPressed: null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
-                  disabledBackgroundColor: Colors.amber.withOpacity(0.7),
+                  disabledBackgroundColor: Colors.amber.withValues(alpha: 0.7),
                   foregroundColor: Colors.black87,
                   disabledForegroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -394,9 +394,9 @@ class DashboardPreview extends StatelessWidget {
           width: double.infinity,
           height: 60,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
         ),
       );

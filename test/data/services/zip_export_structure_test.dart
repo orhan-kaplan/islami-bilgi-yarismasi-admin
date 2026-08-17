@@ -47,22 +47,6 @@ extension ValidContentStateGenerators on Any {
         shrink: (input) => const Iterable.empty(),
       );
 
-  /// Generates a valid multiple_choice question with all required fields.
-  Generator<QuestionModel> get _validQuestion => combine2(
-        _nonEmptyString,
-        choose(['A', 'B', 'C', 'D']),
-        (String text, String correct) => QuestionModel(
-          questionText: 'Soru: $text?',
-          optionA: 'Cevap A',
-          optionB: 'Cevap B',
-          optionC: 'Cevap C',
-          optionD: 'Cevap D',
-          correctOption: correct,
-          explanation: 'Açıklama',
-          type: 'multiple_choice',
-        ),
-      );
-
   /// Generates a book count between 1 and 5.
   Generator<int> get _bookCount => simple(
         generate: (random, size) => random.nextInt(5) + 1,
@@ -140,7 +124,7 @@ extension ValidContentStateGenerators on Any {
 
           // Create rewards referencing valid book IDs
           final rewards = [
-            RewardModel(
+            const RewardModel(
               title: 'Ödül',
               description: 'Tebrikler',
               assetImage: 'assets/images/rewards/reward.webp',
@@ -243,7 +227,7 @@ extension ValidContentStateGenerators on Any {
           }
 
           final rewards = [
-            RewardModel(
+            const RewardModel(
               title: 'Ödül',
               description: 'Tebrikler',
               assetImage: 'assets/images/rewards/reward.webp',

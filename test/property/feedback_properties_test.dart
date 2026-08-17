@@ -161,32 +161,6 @@ extension FeedbackGenerators on Any {
   Generator<List<FeedbackMessageModel>> get messageList =>
       listWithLengthInRange(1, 4, feedbackMessage);
 
-  /// Generates a message map for a given set of subcategory keys.
-  Generator<Map<String, List<FeedbackMessageModel>>> _messageMapFor(
-      List<String> keys) {
-    return simple(
-      generate: (random, size) {
-        final map = <String, List<FeedbackMessageModel>>{};
-        for (final key in keys) {
-          final count = random.nextInt(3) + 1;
-          map[key] = List.generate(count, (_) {
-            return FeedbackMessageModel(
-              title: _randomTurkish(random, size),
-              message: _randomTurkish(random, size),
-              emoji: _emojiPool[random.nextInt(_emojiPool.length)],
-              lottieAsset: random.nextBool()
-                  ? 'feedback/${_lottieNames[random.nextInt(_lottieNames.length)]}'
-                  : null,
-              shouldRepeat: random.nextBool(),
-            );
-          });
-        }
-        return map;
-      },
-      shrink: (input) => const Iterable.empty(),
-    );
-  }
-
   /// Generates a full [FeedbackContentState].
   Generator<FeedbackContentState> get feedbackContentState => simple(
         generate: (random, size) {
@@ -541,7 +515,7 @@ void main() {
         'delete reduces list by 1 when category has >1 messages',
         (state) {
           // Ensure comeback has >1 messages
-          final extraMessage = const FeedbackMessageModel(
+          const extraMessage = FeedbackMessageModel(
             title: 'Extra',
             message: 'Extra message',
             emoji: '🎯',

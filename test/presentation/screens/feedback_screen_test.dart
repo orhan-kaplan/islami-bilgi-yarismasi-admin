@@ -20,7 +20,7 @@ void main() {
       profileImage: 'images/seed/default.webp',
     );
 
-    return FeedbackContentState(
+    return const FeedbackContentState(
       quiz: {
         'speed_demon': [msg],
         'perfect': [msg],
