@@ -8,6 +8,7 @@ import 'learned_result_preview.dart';
 import 'phone_mockup_frame.dart';
 import 'preview_helpers.dart';
 import 'quiz_result_preview.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Ana önizleme dialog'unu gösterir.
 ///
@@ -79,7 +80,7 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
   Future<void> _checkAssetServer() async {
     final client = widget.httpClient;
     try {
-      final uri = Uri.parse('http://localhost:8080/api/health');
+      final uri = Uri.parse(AssetServerConfig.healthUrl);
       final response = client != null
           ? await client.get(uri).timeout(const Duration(seconds: 3))
           : await http.get(uri).timeout(const Duration(seconds: 3));

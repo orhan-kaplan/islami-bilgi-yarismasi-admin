@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 import '../../../data/models/feedback_models.dart';
 import 'preview_helpers.dart';
 import 'preview_tokens.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Öğrenilen quiz sonuç ekranı önizlemesi.
 ///
@@ -74,7 +75,7 @@ class LearnedQuizResultPreview extends StatelessWidget {
 
     if (hasLottie) {
       final url =
-          'http://localhost:8080/api/files/lottie/${message.lottieAsset}';
+          AssetServerConfig.fileUrl('lottie/${message.lottieAsset}');
       return SizedBox(
         height: 180,
         child: Lottie.network(

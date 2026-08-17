@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../presentation/widgets/preview/preview_helpers.dart';
 import '../models/feedback_models.dart';
+import '../../core/constants/asset_server_config.dart';
 
 /// Cihaz önizleme isteğinin sonucunu temsil eden sealed class.
 ///
@@ -31,7 +32,7 @@ class PreviewResultServerError extends PreviewResult {
 /// Admin aracından asset sunucuya preview isteği gönderen servis.
 ///
 /// Feedback mesajını ve ekran bağlamını JSON formatında
-/// `http://localhost:8080/api/preview` endpoint'ine POST eder.
+/// Asset server'ın `/api/preview` endpoint'ine POST eder.
 ///
 /// [client] parametresi test ortamında HTTP çağrılarını mock'lamak için
 /// kullanılabilir. Verilmezse varsayılan `http.Client()` kullanılır.
@@ -41,7 +42,7 @@ class DevicePreviewService {
   final bool _ownsClient;
 
   /// Preview endpoint URL'i.
-  static const String _previewUrl = 'http://localhost:8080/api/preview';
+  static String get _previewUrl => AssetServerConfig.previewUrl;
 
   /// İstek timeout süresi.
   static const Duration _timeout = Duration(seconds: 5);

@@ -6,6 +6,7 @@ import '../../../data/services/asset_path_utils.dart';
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_server_providers.dart';
 import '../../providers/connectivity_providers.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// A compact, reusable inline image picker widget for embedding in form rows.
 ///
@@ -55,7 +56,7 @@ class _InlineImagePickerState extends ConsumerState<InlineImagePicker> {
     final appPath = widget.currentAppPath;
     if (appPath == null || appPath.isEmpty) return null;
     final apiPath = AssetPathUtils.appPathToApiPath(appPath);
-    return 'http://localhost:8080/api/files/$apiPath?t=$_cacheBuster';
+    return AssetServerConfig.fileUrl(apiPath, cacheBuster: _cacheBuster);
   }
 
   @override

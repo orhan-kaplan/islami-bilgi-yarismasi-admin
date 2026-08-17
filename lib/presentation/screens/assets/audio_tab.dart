@@ -6,6 +6,7 @@ import 'package:web/web.dart' as web;
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Audio tab for the Assets screen.
 ///
@@ -43,7 +44,7 @@ class _AudioTabState extends ConsumerState<AudioTab> {
     // Stop any currently playing audio
     _audioElement?.pause();
 
-    final url = 'http://localhost:8080/api/files/${entry.path}';
+    final url = AssetServerConfig.fileUrl(entry.path);
     final audio = web.HTMLAudioElement()..src = url;
 
     audio.onEnded.listen((_) {

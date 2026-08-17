@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import '../../core/constants/asset_server_config.dart';
 
 /// Exception thrown when the Asset Server returns a non-2xx response.
 class AssetServerException implements Exception {
@@ -76,7 +77,7 @@ class AssetServerClient {
   static const Duration _fileTimeout = Duration(seconds: 30);
 
   AssetServerClient({
-    this.baseUrl = 'http://localhost:8080',
+    this.baseUrl = AssetServerConfig.baseUrl,
     http.Client? client,
   }) : _client = client ?? http.Client();
 

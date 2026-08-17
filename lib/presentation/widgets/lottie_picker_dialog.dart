@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../data/services/asset_server_client.dart';
 import '../providers/asset_server_providers.dart';
+import '../../core/constants/asset_server_config.dart';
 
 /// Shows a dialog for selecting or uploading a Lottie animation file.
 ///
@@ -311,7 +312,7 @@ class _LottieFileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = 'http://localhost:8080/api/files/lottie/feedback/${file.name}';
+    final url = AssetServerConfig.fileUrl('lottie/feedback/${file.name}');
 
     return InkWell(
       onTap: onTap,

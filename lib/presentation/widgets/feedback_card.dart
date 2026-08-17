@@ -7,6 +7,7 @@ import '../providers/feedback_content_providers.dart';
 import 'emoji_picker_dialog.dart';
 import 'lottie_picker_dialog.dart';
 import 'preview/feedback_preview_dialog.dart';
+import '../../core/constants/asset_server_config.dart';
 
 /// A card widget displaying a single feedback message with live Lottie preview.
 ///
@@ -243,7 +244,8 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
   /// - `true`: loops the animation continuously
   /// - `false`: plays the animation once (oneshot)
   Widget _buildLottieAnimation() {
-    final url = 'http://localhost:8080/api/files/lottie/${widget.message.lottieAsset}';
+    final url =
+        AssetServerConfig.fileUrl('lottie/${widget.message.lottieAsset}');
 
     return Lottie.network(
       url,
@@ -395,7 +397,8 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
               clipBehavior: Clip.antiAlias,
               child: hasLottie
                   ? Lottie.network(
-                      'http://localhost:8080/api/files/lottie/${widget.message.lottieAsset}',
+                      AssetServerConfig.fileUrl(
+                          'lottie/${widget.message.lottieAsset}'),
                       fit: BoxFit.contain,
                       repeat: true,
                       errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, size: 20),

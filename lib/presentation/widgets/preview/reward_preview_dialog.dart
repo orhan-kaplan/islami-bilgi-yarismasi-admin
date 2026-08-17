@@ -4,6 +4,7 @@ import '../../../data/models/reward_model.dart';
 import '../../../data/services/asset_path_utils.dart';
 import 'phone_mockup_frame.dart';
 import 'preview_tokens.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Shows a preview dialog demonstrating how a reward looks in the mobile app.
 ///
@@ -36,7 +37,7 @@ class _RewardPreviewDialogState extends State<RewardPreviewDialog> {
   @override
   Widget build(BuildContext context) {
     final apiPath = AssetPathUtils.appPathToApiPath(widget.reward.assetImage);
-    final imageUrl = 'http://localhost:8080/api/files/$apiPath';
+    final imageUrl = AssetServerConfig.fileUrl(apiPath);
 
     return Dialog(
       backgroundColor: Colors.transparent,

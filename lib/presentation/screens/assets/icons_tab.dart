@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Icons tab for the Assets screen.
 ///
@@ -212,7 +213,7 @@ class _IconCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   String get _thumbnailUrl =>
-      'http://localhost:8080/api/files/${entry.path}?t=$cacheBuster';
+      AssetServerConfig.fileUrl(entry.path, cacheBuster: cacheBuster);
 
   @override
   Widget build(BuildContext context) {

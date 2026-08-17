@@ -7,6 +7,7 @@ import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../widgets/forms/inline_image_picker.dart';
 import '../../widgets/preview/reward_preview_dialog.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Screen displaying all rewards with image previews and CRUD operations.
 class RewardsScreen extends ConsumerWidget {
@@ -197,7 +198,7 @@ class _RewardImage extends StatelessWidget {
 
     final apiPath = AssetPathUtils.appPathToApiPath(assetImage);
     final url =
-        'http://localhost:8080/api/files/$apiPath?t=${DateTime.now().millisecondsSinceEpoch}';
+        AssetServerConfig.fileUrl(apiPath, cacheBuster: AssetServerConfig.now);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),

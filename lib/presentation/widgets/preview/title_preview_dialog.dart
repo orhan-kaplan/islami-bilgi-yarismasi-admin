@@ -4,6 +4,7 @@ import '../../../data/models/feedback_models.dart';
 import '../../../data/services/asset_path_utils.dart';
 import 'phone_mockup_frame.dart';
 import 'preview_tokens.dart';
+import '../../../core/constants/asset_server_config.dart';
 
 /// Shows a preview dialog demonstrating how a player title looks in the mobile app.
 ///
@@ -63,7 +64,7 @@ class TitlePreviewDialog extends StatelessWidget {
         ? AssetPathUtils.appPathToApiPath(title.profileImage)
         : '';
     final profileUrl =
-        hasProfileImage ? 'http://localhost:8080/api/files/$apiPath' : '';
+        hasProfileImage ? AssetServerConfig.fileUrl(apiPath) : '';
 
     return Container(
       width: double.infinity,
