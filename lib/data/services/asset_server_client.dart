@@ -152,10 +152,12 @@ class AssetServerClient {
     _throwIfNotOk(response);
   }
 
-  /// Syncs the main project's pubspec.yaml with current book directories.
+  /// Syncs the main project's pubspec.yaml with the current image directories.
   ///
-  /// Scans `images/` for `book_*` folders and updates pubspec.yaml's assets
-  /// section to include them all. Call this after creating a new book folder.
+  /// Scans every folder under `images/` and updates pubspec.yaml's assets
+  /// section to include them all. Call this after creating a new image folder.
+  /// Throws [AssetServerException] with 409 if pubspec.yaml has no
+  /// `- assets/images/` line to insert under; the file is left untouched.
   Future<void> syncPubspec() async {
     final uri = Uri.parse('$baseUrl/api/sync-pubspec');
     final response = await _client.post(uri).timeout(_fileTimeout);

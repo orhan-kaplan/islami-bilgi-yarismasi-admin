@@ -372,10 +372,19 @@ AssetServerClient({String baseUrl = 'http://localhost:8080', http.Client? client
 | `createFile(String, Uint8List)` | POST `/api/files/{path}` | Yeni dosya (409 if exists) |
 | `deleteFile(String)` | DELETE `/api/files/{path}` | Dosya sil |
 | `createFolder(String)` | POST `/api/folders/{path}` | Klasör oluştur |
+| `syncPubspec()` | POST `/api/sync-pubspec` | `images/` altındaki dizinleri ana projenin pubspec.yaml'ına yazar |
 
 ### Hata Yönetimi
 
-Non-2xx yanıtlarda `AssetServerException(statusCode, message)` fırlatılır.
+Non-2xx yanıtlarda `AssetServerException(statusCode, message)` fırlatılır; `message` sunucunun JSON gövdesindeki `error` alanından gelir.
+
+Sunucudan gelebilecek, istemci tarafında anlamı olan durumlar:
+
+| Kod | Ne zaman |
+|-----|----------|
+| 403 | Yol assets kökünün dışına çıkıyor, adda kontrol karakteri var, ya da yazma isteği izinli olmayan bir `Origin` taşıyor |
+| 409 | `createFile` için dosya zaten var; `syncPubspec` için pubspec.yaml'da `- assets/images/` çapa satırı yok (dosya değiştirilmedi) |
+| 415 | Uzantı, hedef dizin için izinli listede değil |
 
 ---
 
