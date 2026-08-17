@@ -388,6 +388,31 @@ void main() {
       expect(result[0].assetImage, isNull);
     });
 
+    test('parses content file with level missing unlock_score', () {
+      // CONTENT_GUIDE marks unlock_score optional and the app's DatabaseSeeder
+      // reads it as `?? 0`. A hand-authored file without the key must not take
+      // the whole auto-load down with it.
+      const jsonString = '''
+{
+  "levels": [
+    {
+      "id": 1,
+      "book_id": 1,
+      "category_name": "Test",
+      "level_order": 1,
+      "title": "Test Level",
+      "asset_image": "assets/images/book_1/level_1.webp",
+      "questions": []
+    }
+  ]
+}
+''';
+
+      final result = parser.parseContentFile(jsonString);
+
+      expect(result[0].unlockScore, 0);
+    });
+
     test('parses content file with empty levels array', () {
       const jsonString = '{"levels": []}';
 

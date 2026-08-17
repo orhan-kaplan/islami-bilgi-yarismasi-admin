@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/content_state.dart';
+import '../../data/services/asset_server_client.dart';
 import '../../data/services/content_file_mapping.dart';
 import '../../data/services/json_serializer.dart';
 import '../../data/services/save_gating.dart';
@@ -126,10 +127,8 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     try {
       final client = _ref.read(assetServerClientProvider);
       final contentState = _ref.read(contentStateProvider);
-      final bytes = _serializeForPath(apiPath, contentState);
 
-      if (bytes != null) {
-        await client.putFile(apiPath, bytes);
+      if (await _writeFile(client, apiPath, contentState)) {
         _mergeSavedFileIntoBaseline(apiPath, contentState);
       }
 
@@ -143,10 +142,51 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
         });
       }
     } catch (_) {
+      // Keep the file pending so a later flush can retry it. Dropping it here
+      // would strand the edit in browser memory with no way to re-save.
+      _pendingFiles.add(apiPath);
       if (mounted) {
         state = SaveStatus.error;
       }
     }
+  }
+
+  /// Writes one file to the server; returns whether it was handled.
+  ///
+  /// A content file that is no longer in [contentState] belongs to a deleted
+  /// book, so it is deleted from the server rather than written — otherwise it
+  /// stays on disk, ships inside the app bundle, and reappears on the next
+  /// auto-load.
+  Future<bool> _writeFile(
+    AssetServerClient client,
+    String apiPath,
+    ContentState contentState,
+  ) async {
+    final bytes = _serializeForPath(apiPath, contentState);
+    if (bytes != null) {
+      await client.putFile(apiPath, bytes);
+      return true;
+    }
+
+    if (_isRemovedContentFile(apiPath, contentState)) {
+      try {
+        await client.deleteFile(apiPath);
+      } on AssetServerException catch (e) {
+        // Already absent on the server — that is the state we wanted.
+        if (e.statusCode != 404) rethrow;
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Whether [apiPath] points at a content file that the state no longer has.
+  bool _isRemovedContentFile(String apiPath, ContentState contentState) {
+    const contentPrefix = 'data/content/';
+    if (!apiPath.startsWith(contentPrefix)) return false;
+    final key = apiPath.substring(contentPrefix.length);
+    return key.isNotEmpty && !contentState.contentFiles.containsKey(key);
   }
 
   /// Merges only the saved file's slice into the dirty-state baseline.
@@ -231,31 +271,37 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
       state = SaveStatus.saving;
     }
 
-    try {
-      final client = _ref.read(assetServerClientProvider);
-      final contentState = _ref.read(contentStateProvider);
+    final client = _ref.read(assetServerClientProvider);
+    final contentState = _ref.read(contentStateProvider);
+    final failedFiles = <String>{};
 
-      for (final apiPath in allowedFiles) {
-        final bytes = _serializeForPath(apiPath, contentState);
-        if (bytes != null) {
-          await client.putFile(apiPath, bytes);
+    for (final apiPath in allowedFiles) {
+      try {
+        if (await _writeFile(client, apiPath, contentState)) {
           _mergeSavedFileIntoBaseline(apiPath, contentState);
         }
-      }
-
-      if (mounted) {
-        state = SaveStatus.saved;
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && state == SaveStatus.saved) {
-            state = SaveStatus.idle;
-          }
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        state = SaveStatus.error;
+      } catch (_) {
+        // One rejected file must not cancel the rest of the batch.
+        failedFiles.add(apiPath);
       }
     }
+
+    // Failed writes stay pending so the next flush retries them.
+    _pendingFiles.addAll(failedFiles);
+
+    if (!mounted) return;
+
+    if (failedFiles.isNotEmpty) {
+      state = SaveStatus.error;
+      return;
+    }
+
+    state = SaveStatus.saved;
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && state == SaveStatus.saved) {
+        state = SaveStatus.idle;
+      }
+    });
   }
 
   @override

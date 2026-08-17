@@ -339,7 +339,7 @@ class ContentValidator {
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // 10.9, 10.10, 10.11, 10.12  Question-level checks
+  // 10.9, 10.10, 10.11, 10.12, 10.18  Question-level checks
   // ──────────────────────────────────────────────────────────────────
   void _validateQuestions(ContentState state, List<ValidationIssue> issues) {
     for (final entry in state.contentFiles.entries) {
@@ -360,6 +360,27 @@ class ContentValidator {
               message:
                   'correct_option must be one of A, B, C, D — got '
                   '"${q.correctOption}"',
+            ));
+          }
+
+          // 10.18 — correct_option must point at an option that has text.
+          // The app maps the letter to an index and renders that option as the
+          // right answer; an empty string there is an unpickable answer.
+          final options = {
+            'A': q.optionA,
+            'B': q.optionB,
+            'C': q.optionC,
+            'D': q.optionD,
+          };
+          final answer = options[q.correctOption];
+          if (answer != null && answer.isEmpty) {
+            issues.add(ValidationIssue(
+              severity: ValidationSeverity.error,
+              sourceFile: fileName,
+              jsonPath: '$qPath.correct_option',
+              message:
+                  'correct_option "${q.correctOption}" points at an empty '
+                  'option_${q.correctOption.toLowerCase()}',
             ));
           }
 

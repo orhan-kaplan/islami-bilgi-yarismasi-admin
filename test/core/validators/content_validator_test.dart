@@ -425,6 +425,92 @@ void main() {
     });
   });
 
+  // ── 10.18 correct_option must point at a filled option ────────
+
+  group('10.18 — correct_option must reference a non-empty option', () {
+    test('multiple_choice pointing at an empty option_d produces error', () {
+      final state = _validState().copyWith(
+        contentFiles: {
+          'book_1.json': [
+            _level(questions: [
+              _question(optionC: '', optionD: '', correctOption: 'D'),
+            ]),
+          ],
+        },
+      );
+      final issues = _errors(state);
+      expect(
+        issues.any((i) =>
+            i.jsonPath.contains('correct_option') &&
+            i.message.contains('option_d')),
+        isTrue,
+        reason: 'the app renders options[3] as the right answer — an empty '
+            'string makes the correct answer unpickable',
+      );
+    });
+
+    test('true_false with correct_option C produces error', () {
+      final state = _validState().copyWith(
+        contentFiles: {
+          'book_1.json': [
+            _level(questions: [
+              _question(
+                type: 'true_false',
+                optionA: 'Doğru',
+                optionB: 'Yanlış',
+                optionC: '',
+                optionD: '',
+                correctOption: 'C',
+              ),
+            ]),
+          ],
+        },
+      );
+      final issues = _errors(state);
+      expect(
+        issues.any((i) =>
+            i.jsonPath.contains('correct_option') &&
+            i.message.contains('option_c')),
+        isTrue,
+      );
+    });
+
+    test('multiple_choice pointing at a filled option produces no error', () {
+      final state = _validState().copyWith(
+        contentFiles: {
+          'book_1.json': [
+            _level(questions: [
+              _question(optionC: '', optionD: '', correctOption: 'B'),
+            ]),
+          ],
+        },
+      );
+      expect(_errors(state), isEmpty);
+    });
+
+    test('true_false answered with A or B produces no error', () {
+      for (final correct in ['A', 'B']) {
+        final state = _validState().copyWith(
+          contentFiles: {
+            'book_1.json': [
+              _level(questions: [
+                _question(
+                  type: 'true_false',
+                  optionA: 'Doğru',
+                  optionB: 'Yanlış',
+                  optionC: '',
+                  optionD: '',
+                  correctOption: correct,
+                ),
+              ]),
+            ],
+          },
+        );
+        expect(_errors(state), isEmpty, reason: 'correct_option $correct');
+      }
+    });
+  });
+
   // ── 10.13 content_file format and existence ───────────────────
 
   group('10.13 — content_file filename only and exists', () {

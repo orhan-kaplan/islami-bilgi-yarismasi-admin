@@ -392,6 +392,9 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
           SnackBar(content: Text('Created folder: $sanitized')),
         );
       }
+      // Bir dizin pubspec.yaml'a yazılmazsa içindeki görseller uygulama
+      // bundle'ına girmez; kullanıcı bunu ancak uygulamada fark eder.
+      await client.syncPubspec();
     } on AssetServerException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

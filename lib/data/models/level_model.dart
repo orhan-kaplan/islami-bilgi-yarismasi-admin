@@ -34,7 +34,8 @@ class LevelModel {
       categoryName: json['category_name'] as String,
       levelOrder: json['level_order'] as int,
       title: json['title'] as String,
-      unlockScore: json['unlock_score'] as int,
+      // Opsiyonel: mobil taraftaki DatabaseSeeder da `?? 0` ile okuyor.
+      unlockScore: json['unlock_score'] as int? ?? 0,
       assetImage: json['asset_image'] as String?,
       questions: (json['questions'] as List<dynamic>)
           .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>))

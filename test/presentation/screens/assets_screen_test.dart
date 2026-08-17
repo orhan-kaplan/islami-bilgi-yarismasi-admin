@@ -153,6 +153,32 @@ void main() {
       expect(find.text('rewards'), findsOneWidget);
     });
 
+    testWidgets('creating an image folder syncs pubspec.yaml', (tester) async {
+      // A folder that never reaches pubspec.yaml is a folder whose images are
+      // missing from the app bundle at runtime, with no warning anywhere.
+      final requestedPaths = <String>[];
+      final mockClient = MockClient((request) async {
+        requestedPaths.add('${request.method} ${request.url.path}');
+        if (request.url.path.startsWith('/api/list/')) {
+          return http.Response(jsonEncode([]), 200);
+        }
+        return http.Response(jsonEncode({'success': true}), 200);
+      });
+
+      await tester.pumpWidget(createTestWidget(mockClient));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('New Folder'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, 'siyer');
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(requestedPaths, contains('POST /api/folders/images/siyer'));
+      expect(requestedPaths, contains('POST /api/sync-pubspec'));
+    });
+
     testWidgets(
         'Icons tab shows "No icons found" when server returns empty list',
         (tester) async {
