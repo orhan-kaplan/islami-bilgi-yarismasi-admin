@@ -202,7 +202,9 @@ void main() {
         final remainingLevels =
             notifier.state.contentFiles[data.contentFile] ?? [];
 
-        // Each remaining level should be identical (including questions)
+        // Each remaining level keeps its content. level_order is the one
+        // exception: it is renumbered 1..N so the deletion does not leave a
+        // gap that blocks the content file's save.
         for (final expected in expectedRemaining) {
           final actual = remainingLevels.firstWhere(
             (l) => l.id == expected.id,
@@ -210,12 +212,25 @@ void main() {
                 'Level ${expected.id} should still exist after deleting '
                 'level ${targetLevel.id}'),
           );
-          expect(actual, equals(expected),
+          expect(actual, equals(expected.copyWith(levelOrder: actual.levelOrder)),
               reason: 'Level ${expected.id} should be unchanged');
           expect(actual.questions.length, equals(expected.questions.length),
               reason:
                   'Questions in level ${expected.id} should be unchanged');
         }
+
+        // Relative order is preserved and the values stay sequential.
+        final byOrder = [...remainingLevels]
+          ..sort((a, b) => a.levelOrder.compareTo(b.levelOrder));
+        expect(
+          byOrder.map((l) => l.id).toList(),
+          expectedRemaining.map((l) => l.id).toList(),
+          reason: 'renumbering should not reshuffle the remaining levels',
+        );
+        expect(
+          byOrder.map((l) => l.levelOrder).toList(),
+          List.generate(byOrder.length, (i) => i + 1),
+        );
       },
     );
 

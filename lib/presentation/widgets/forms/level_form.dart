@@ -57,8 +57,13 @@ class _LevelFormState extends ConsumerState<LevelForm> {
     _categoryNameController = TextEditingController(
       text: level?.categoryName ?? '',
     );
+    // Sıra alanı disabled (drag-drop ile ayarlanır); sabit 1 ile açılınca
+    // ikinci level ardışıklık kuralını kırıp dosyanın kaydını blokluyordu.
+    final levelCount =
+        ref.read(contentStateProvider).contentFiles[widget.contentFile]?.length ??
+            0;
     _levelOrderController = TextEditingController(
-      text: level?.levelOrder.toString() ?? '1',
+      text: level?.levelOrder.toString() ?? '${levelCount + 1}',
     );
     _titleController = TextEditingController(text: level?.title ?? '');
     _unlockScoreController = TextEditingController(
@@ -86,7 +91,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
     final notifier = ref.read(contentStateProvider.notifier);
     final level = LevelModel(
       id: int.parse(_idController.text),
-      bookId: widget.level?.bookId ?? 0,
+      bookId: widget.level?.bookId ?? widget.bookId ?? 0,
       categoryName: _categoryNameController.text.trim(),
       levelOrder: int.parse(_levelOrderController.text),
       title: _titleController.text.trim(),

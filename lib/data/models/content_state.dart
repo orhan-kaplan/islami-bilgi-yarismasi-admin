@@ -68,7 +68,14 @@ class ContentState {
     return Object.hash(
       Object.hashAll(series),
       Object.hashAll(books),
-      Object.hashAll(contentFiles.entries),
+      // MapEntry `==`/`hashCode` override etmez ve `entries` her çağrıda yeni
+      // nesne üretir; doğrudan hash'lemek aynı instance için bile farklı sonuç
+      // veriyordu. Anahtar/değer çiftlerini sırasız birleştirmek hem kararlı
+      // hem de `==` içindeki `mapEquals` ile tutarlı.
+      Object.hashAllUnordered([
+        for (final entry in contentFiles.entries)
+          Object.hash(entry.key, entry.value),
+      ]),
       Object.hashAll(rewards),
       Object.hashAll(hadiths),
     );

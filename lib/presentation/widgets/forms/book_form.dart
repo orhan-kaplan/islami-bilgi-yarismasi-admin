@@ -50,8 +50,15 @@ class _BookFormState extends ConsumerState<BookForm> {
     _titleController = TextEditingController(text: book?.title ?? '');
     _descriptionController = TextEditingController(text: book?.description ?? '');
     _assetImage = book?.assetImage ?? '';
+    // Sıra alanı disabled; sabit 1 ile açılınca serideki ikinci kitap
+    // ardışıklık kuralını kırıp books.json'ın kaydını blokluyordu.
+    final seriesBookCount = ref
+        .read(contentStateProvider)
+        .books
+        .where((b) => b.seriesId == widget.seriesId)
+        .length;
     _bookOrderController = TextEditingController(
-      text: book?.bookOrder.toString() ?? '1',
+      text: book?.bookOrder.toString() ?? '${seriesBookCount + 1}',
     );
     _contentFileController = TextEditingController(
       text: book?.contentFile ?? 'book_${_idController.text}.json',

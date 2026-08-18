@@ -42,8 +42,11 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
       text: series != null ? series.id.toString() : notifier.nextSeriesId.toString(),
     );
     _nameController = TextEditingController(text: series?.name ?? '');
+    // Sıra alanı disabled; sabit 1 ile açılınca ikinci seri ardışıklık
+    // kuralını kırıp series.json'ın kaydını blokluyordu.
+    final seriesCount = ref.read(contentStateProvider).series.length;
     _sortOrderController = TextEditingController(
-      text: series?.sortOrder.toString() ?? '1',
+      text: series?.sortOrder.toString() ?? '${seriesCount + 1}',
     );
     _iconEmojiController = TextEditingController(text: series?.iconEmoji ?? '');
     _descriptionController = TextEditingController(text: series?.description ?? '');

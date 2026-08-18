@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/hadith_model.dart';
 import '../../providers/content_providers.dart';
+import '../../providers/history_providers.dart';
 import '../../widgets/preview/hadith_preview_dialog.dart';
 
 /// Screen displaying all hadiths with CRUD operations.
@@ -17,6 +18,9 @@ class HadithsScreen extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => _HadithFormDialog(
         onSave: (hadith) {
+          ref.read(historyProvider.notifier).pushState(
+                ref.read(contentStateProvider),
+              );
           ref.read(contentStateProvider.notifier).addHadith(hadith);
         },
       ),
@@ -34,6 +38,9 @@ class HadithsScreen extends ConsumerWidget {
       builder: (dialogContext) => _HadithFormDialog(
         hadith: hadith,
         onSave: (updated) {
+          ref.read(historyProvider.notifier).pushState(
+                ref.read(contentStateProvider),
+              );
           ref.read(contentStateProvider.notifier).updateHadith(index, updated);
         },
       ),
@@ -117,6 +124,9 @@ class HadithsScreen extends ConsumerWidget {
                           color: Theme.of(context).colorScheme.error,
                           tooltip: 'Delete hadith',
                           onPressed: () {
+                            ref.read(historyProvider.notifier).pushState(
+                                  ref.read(contentStateProvider),
+                                );
                             final notifier =
                                 ref.read(contentStateProvider.notifier);
                             notifier.deleteHadith(index);

@@ -49,16 +49,30 @@ class ContentNotifier extends StateNotifier<ContentState> {
 
   /// Reorders series by assigning sequential sort_order values (1, 2, 3, ...)
   /// based on the provided list of IDs in the new order.
+  ///
+  /// IDs missing from [newOrder] are kept and appended after the listed ones,
+  /// in their current sort_order. Dropping them would delete series through a
+  /// path that bypasses the [deleteSeries] guard.
   void reorderSeries(List<int> newOrder) {
     final seriesMap = {for (final s in state.series) s.id: s};
+    final placed = <int>{};
     final reordered = <SeriesModel>[];
-    for (var i = 0; i < newOrder.length; i++) {
-      final series = seriesMap[newOrder[i]];
-      if (series != null) {
-        reordered.add(series.copyWith(sortOrder: i + 1));
+    for (final id in newOrder) {
+      final series = seriesMap[id];
+      if (series != null && placed.add(id)) {
+        reordered.add(series);
       }
     }
-    state = state.copyWith(series: reordered);
+    final remaining = state.series.where((s) => !placed.contains(s.id)).toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    reordered.addAll(remaining);
+
+    state = state.copyWith(
+      series: [
+        for (var i = 0; i < reordered.length; i++)
+          reordered[i].copyWith(sortOrder: i + 1),
+      ],
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -102,15 +116,33 @@ class ContentNotifier extends StateNotifier<ContentState> {
 
   /// Reorders books within a series by assigning sequential book_order values
   /// (1, 2, 3, ...) based on the provided list of IDs in the new order.
+  ///
+  /// Books of the series missing from [newOrder] are kept and appended after
+  /// the listed ones. Leaving their old book_order untouched made it collide
+  /// with a freshly assigned one and broke the sequential rule.
   void reorderBooks(int seriesId, List<int> newOrder) {
-    final updatedBooks = state.books.map((b) {
-      final index = newOrder.indexOf(b.id);
-      if (b.seriesId == seriesId && index != -1) {
-        return b.copyWith(bookOrder: index + 1);
+    final seriesBooks = state.books.where((b) => b.seriesId == seriesId).toList()
+      ..sort((a, b) => a.bookOrder.compareTo(b.bookOrder));
+    final booksById = {for (final b in seriesBooks) b.id: b};
+    final placed = <int>{};
+    final ordered = <BookModel>[];
+    for (final id in newOrder) {
+      final book = booksById[id];
+      if (book != null && placed.add(id)) {
+        ordered.add(book);
       }
-      return b;
-    }).toList();
-    state = state.copyWith(books: updatedBooks);
+    }
+    ordered.addAll(seriesBooks.where((b) => !placed.contains(b.id)));
+
+    final orderById = {
+      for (var i = 0; i < ordered.length; i++) ordered[i].id: i + 1,
+    };
+    state = state.copyWith(
+      books: state.books.map((b) {
+        final order = orderById[b.id];
+        return order == null ? b : b.copyWith(bookOrder: order);
+      }).toList(),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -137,30 +169,55 @@ class ContentNotifier extends StateNotifier<ContentState> {
 
   /// Deletes a level and all its questions from the specified content file.
   /// Always succeeds.
+  ///
+  /// Remaining levels are renumbered 1..N: a gap in level_order is an
+  /// error-level validation issue, which would block auto-save for the whole
+  /// content file and keep the deletion from ever reaching disk.
   void deleteLevel(String contentFile, int levelId) {
     final currentLevels = state.contentFiles[contentFile];
     if (currentLevels == null) return;
+    final remaining = currentLevels.where((l) => l.id != levelId).toList();
+    final ranked = [...remaining]
+      ..sort((a, b) => a.levelOrder.compareTo(b.levelOrder));
+    final orderById = {
+      for (var i = 0; i < ranked.length; i++) ranked[i].id: i + 1,
+    };
     final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
-    updatedMap[contentFile] =
-        currentLevels.where((l) => l.id != levelId).toList();
+    updatedMap[contentFile] = [
+      for (final level in remaining)
+        level.copyWith(levelOrder: orderById[level.id]),
+    ];
     state = state.copyWith(contentFiles: updatedMap);
   }
 
   /// Reorders levels within a content file by assigning sequential level_order
   /// values (1, 2, 3, ...) based on the provided list of IDs in the new order.
+  ///
+  /// IDs missing from [newOrder] are kept and appended after the listed ones,
+  /// in their current level_order — dropping them would delete levels (and
+  /// their questions) without any confirmation.
   void reorderLevels(String contentFile, List<int> newOrder) {
     final currentLevels = state.contentFiles[contentFile];
     if (currentLevels == null) return;
     final levelMap = {for (final l in currentLevels) l.id: l};
+    final placed = <int>{};
     final reordered = <LevelModel>[];
-    for (var i = 0; i < newOrder.length; i++) {
-      final level = levelMap[newOrder[i]];
-      if (level != null) {
-        reordered.add(level.copyWith(levelOrder: i + 1));
+    for (final id in newOrder) {
+      final level = levelMap[id];
+      if (level != null && placed.add(id)) {
+        reordered.add(level);
       }
     }
+    final remaining =
+        currentLevels.where((l) => !placed.contains(l.id)).toList()
+          ..sort((a, b) => a.levelOrder.compareTo(b.levelOrder));
+    reordered.addAll(remaining);
+
     final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
-    updatedMap[contentFile] = reordered;
+    updatedMap[contentFile] = [
+      for (var i = 0; i < reordered.length; i++)
+        reordered[i].copyWith(levelOrder: i + 1),
+    ];
     state = state.copyWith(contentFiles: updatedMap);
   }
 

@@ -5,6 +5,7 @@ import '../../../data/models/reward_model.dart';
 import '../../../data/services/asset_path_utils.dart';
 import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
+import '../../providers/history_providers.dart';
 import '../../widgets/forms/inline_image_picker.dart';
 import '../../widgets/preview/reward_preview_dialog.dart';
 import '../../../core/constants/asset_server_config.dart';
@@ -118,6 +119,9 @@ class RewardsScreen extends ConsumerWidget {
                               color: Theme.of(context).colorScheme.error,
                               tooltip: 'Delete reward',
                               onPressed: () {
+                                ref.read(historyProvider.notifier).pushState(
+                                      ref.read(contentStateProvider),
+                                    );
                                 ref
                                     .read(contentStateProvider.notifier)
                                     .deleteReward(index);
@@ -141,6 +145,9 @@ class RewardsScreen extends ConsumerWidget {
       builder: (dialogContext) => _RewardFormDialog(
         books: books,
         onSave: (reward) {
+          ref.read(historyProvider.notifier).pushState(
+                ref.read(contentStateProvider),
+              );
           ref.read(contentStateProvider.notifier).addReward(reward);
         },
       ),
@@ -160,6 +167,9 @@ class RewardsScreen extends ConsumerWidget {
         reward: reward,
         books: books,
         onSave: (updated) {
+          ref.read(historyProvider.notifier).pushState(
+                ref.read(contentStateProvider),
+              );
           ref.read(contentStateProvider.notifier).updateReward(index, updated);
         },
       ),
