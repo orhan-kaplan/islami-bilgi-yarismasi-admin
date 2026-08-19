@@ -531,7 +531,7 @@ bool isSaveAllowedForFile(String apiPath, List<ValidationIssue> issues)
 
 ---
 
-## DuplicateDetector (Provider)
+## duplicateCheckProvider
 
 **Dosya**: `lib/presentation/providers/duplicate_check_provider.dart`
 **Pattern**: Riverpod Provider.family
@@ -562,7 +562,7 @@ final duplicateCheckProvider = Provider.family<List<String>, DuplicateCheckParam
 
 ---
 
-## ChangelogProvider
+## changelogProvider
 
 **Dosya**: `lib/presentation/providers/changelog_provider.dart`
 **Pattern**: Riverpod Provider

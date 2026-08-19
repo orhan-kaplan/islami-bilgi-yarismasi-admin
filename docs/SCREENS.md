@@ -77,6 +77,9 @@ Ana sayfa. İçerik durumunu özetler ve import/export işlemlerini başlatır.
 
 **Kullanıcı etkileşimleri:**
 - "Import" butonu → file_picker ile ZIP/JSON seçimi → `ZipImporter` → state güncelleme
+  - ERROR seviyesinde import issue varsa hiçbir şey uygulanmaz ("Import Blocked")
+  - Kaydedilmemiş değişiklik varsa önce onay sorulur: import mevcut state'i ezer
+    **ve** undo geçmişini temizler, iptal edilirse hiçbir şey değişmez
 - "Export ZIP" butonu → `ZipExporter` → tarayıcı indirme
 - "Validate All" butonu → `/validation` sayfasına yönlendirme
 - "Retry" butonu (auto-load başarısız olduğunda) → `performAutoLoad()` tekrar dener
@@ -107,7 +110,8 @@ Column
 
 **Toolbar özellikleri:**
 - Undo/Redo butonları (canUndo/canRedo durumuna göre aktif/pasif)
-- Unsaved changes göstergesi (turuncu nokta + metin)
+- Unsaved changes göstergesi (turuncu nokta + metin) — yalnızca dirty iken
+- "Değişiklikler" butonu (yalnızca dirty iken) → `changelogProvider`'ı listeleyen dialog
 - "Bulk Add Questions" butonu (sadece level seçiliyken görünür)
 - JSON Preview toggle butonu
 
@@ -130,14 +134,47 @@ Column
 - JSON preview görüntüleme
 - Panel genişliği ayarlama (divider sürükleme)
 
+**Silme (edit modundaki formların başlığında kırmızı çöp kutusu):**
+
+| Form | Tooltip | Guard |
+|------|---------|-------|
+| SeriesForm | `Delete series` | Kitabı varsa bloklanır, gerekçe snackbar'da |
+| BookForm | `Delete book` | Level'ı varsa **veya** bir ödül onu açıyorsa bloklanır |
+| LevelForm | `Delete level (cascades to questions)` | Guard yok; kalan level'lar 1..N yeniden numaralanır |
+| QuestionForm | `Delete question` | Guard yok |
+
+- Hepsi `ConfirmDialog` ile onay ister; iptal edilirse state'e de geçmişe de dokunulmaz.
+- Guard bloklarsa undo yığınına hiçbir şey yazılmaz.
+- Silme başarılıysa `_selectedItem` temizlenir ve panel "Select an item to edit"e
+  döner — aksi halde EditPanel aynı `ValueKey`'i koruyup form State'ini yeniden
+  kullanıyor, silinen kayıt eski değerleriyle dolu bir "create" formuna dönüşüyordu.
+- Create modundaki formlarda silme butonu yoktur.
+
+**Formların kaydı bloklayan içeriği engellemesi:**
+- `MultipleChoiceForm`: Option C/D zorunlu değil, ama boş bir şıkkı `correct_option`
+  olarak seçmek reddedilir — bkz. VALIDATION_RULES.md kural 20.
+- `LevelForm` / `BookForm`: inline görsel seçici, yüklemeden sonra ContentState'e
+  yazmadan önce formu `validate()` eder. Form geçersizse görsel sunucuya yüklenmiştir
+  ama modele işlenmez; kullanıcıya alanları düzeltip Save'e basması söylenir.
+  (Eskiden validasyonsuz commit ediliyor, boş zorunlu alanlar diske gidiyordu.)
+
 **SelectedItem sealed class:**
 ```dart
 sealed class SelectedItem {}
+// Mevcut öğe seçimi → EditPanel edit modunda form açar (silme butonu görünür)
 class SelectedSeries extends SelectedItem { final int seriesId; }
 class SelectedBook extends SelectedItem { final int bookId; }
 class SelectedLevel extends SelectedItem { final String contentFile; final int levelId; }
 class SelectedQuestion extends SelectedItem { final String contentFile; final int levelId; final int questionIndex; }
+// Create tetikleyicileri → EditPanel boş form açar (silme butonu yok)
+class CreateSeries extends SelectedItem {}
+class CreateBook extends SelectedItem { final int seriesId; }
+class CreateLevel extends SelectedItem { final String contentFile; final int bookId; }
+class CreateQuestion extends SelectedItem { final String contentFile; final int levelId; }
 ```
+`null` → panel "Select an item to edit" gösterir (başlangıç ve silme sonrası).
+Ağaçtaki `+` butonları (Add Series / Add Book / Add Level / Add Question) ilgili
+`Create*` variant'ını seçer.
 
 **Kullandığı provider'lar:**
 - `contentStateProvider` — CRUD işlemleri
@@ -164,10 +201,13 @@ class SelectedQuestion extends SelectedItem { final String contentFile; final in
 **Kullanıcı etkileşimleri:**
 - Yeni ödül ekleme
 - Mevcut ödülü düzenleme
-- Ödül silme
+- Ödül silme (onay dialogu; iptal edilirse geçmişe de yazılmaz)
+- Ödül önizleme (telefon mockup'ı)
 
 **Kullandığı provider'lar:**
 - `contentStateProvider` — Reward CRUD işlemleri
+- `historyProvider` — Ekleme/güncelleme/silme undo yığınına yazılır
+- `isServerConnectedProvider` — Thumbnail'ları asset sunucudan çekmek için
 
 ---
 
@@ -182,10 +222,12 @@ Hadis listesi ve CRUD yönetimi.
 **Kullanıcı etkileşimleri:**
 - Yeni hadis ekleme (popup: Hadith, Source, Cancel, Save)
 - Mevcut hadisi düzenleme (aynı popup)
-- Hadis silme
+- Hadis silme (onay dialogu; iptal edilirse geçmişe de yazılmaz)
+- Hadis önizleme (telefon mockup'ı)
 
 **Kullandığı provider'lar:**
 - `contentStateProvider` — Hadith CRUD işlemleri
+- `historyProvider` — Ekleme/güncelleme/silme undo yığınına yazılır
 
 ---
 

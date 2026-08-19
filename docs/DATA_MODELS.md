@@ -198,9 +198,13 @@ Tüm içeriği bir arada tutan aggregate state sınıfı. Admin aracının tek v
 
 Content Explorer'da seçili öğeyi temsil eden tip-güvenli union tipi.
 
+Sekiz variant var: dördü mevcut bir öğeyi seçer, dördü EditPanel'de boş bir
+"create" formu açar.
+
 ```dart
 sealed class SelectedItem {}
 
+// Mevcut öğe seçimi — EditPanel edit modunda form açar
 class SelectedSeries extends SelectedItem {
   final int seriesId;
 }
@@ -219,7 +223,27 @@ class SelectedQuestion extends SelectedItem {
   final int levelId;
   final int questionIndex;
 }
+
+// Create tetikleyicileri — EditPanel boş form açar, silme butonu görünmez
+class CreateSeries extends SelectedItem {}
+
+class CreateBook extends SelectedItem {
+  final int seriesId;
+}
+
+class CreateLevel extends SelectedItem {
+  final String contentFile;
+  final int bookId;
+}
+
+class CreateQuestion extends SelectedItem {
+  final String contentFile;
+  final int levelId;
+}
 ```
+
+`_selectedItem` null olduğunda panel "Select an item to edit" gösterir; silme
+sonrası bu duruma döner.
 
 ---
 

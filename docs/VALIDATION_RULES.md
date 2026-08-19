@@ -4,7 +4,12 @@
 
 ## Error-Level Kurallar
 
-Error-level kurallar **export'u bloklar**. Bu hatalar düzeltilmeden ZIP export yapılamaz.
+Error-level kurallar iki yeri birden bloklar:
+
+- **ZIP export** — tek bir error bile tüm export'u durdurur (`ValidationBlockedExportException`).
+- **Per-file auto-save** — `isSaveAllowedForFile()` yalnızca issue'nun `sourceFile`'ına bakar, yani bir content dosyasındaki tek bir error o dosyanın tamamının (içindeki bütün level ve soruların) sunucuya yazılmasını durdurur. Diğer dosyalar kaydedilmeye devam eder.
+
+Warning-level kurallar ikisini de bloklamaz.
 
 | # | Kural Adı | Açıklama | sourceFile | jsonPath Örneği |
 |---|-----------|----------|------------|-----------------|
@@ -27,6 +32,7 @@ Error-level kurallar **export'u bloklar**. Bu hatalar düzeltilmeden ZIP export 
 | 17 | Required fields non-empty | Zorunlu alanlar boş string olmamalı (series.name, book.title/description/content_file, level.title/category_name, question.question_text/option_a/option_b/correct_option, reward.title/description/asset_image, hadith.text/source) | çeşitli | `$[0].title` |
 | 18 | sorting: 4 dolu item | `sorting` tipindeki sorularda `option_c` ve `option_d` boş olamaz (uygulama dört option'ı karıştırıp tüm listeyi karşılaştırır) | `content/book_1.json` | `$.levels[2].questions[0].option_c` |
 | 19 | type whitelist | `type` yalnızca `multiple_choice`, `true_false`, `matching`, `sorting` olabilir (uygulama tanımadığı tipi sessizce çoktan seçmeliye düşürür) | `content/book_1.json` | `$.levels[0].questions[1].type` |
+| 20 | correct_option dolu şıkka işaret etmeli | `correct_option`'ın gösterdiği `option_x` boş string olamaz — uygulama harfi index'e çevirip o option'ı doğru cevap diye render eder, boş string seçilemeyen bir cevaptır. `option_c`/`option_d` zorunlu olmadığı için en sık buradan kaçar | `content/book_1.json` | `$.levels[0].questions[2].correct_option` |
 
 ## Warning-Level Kurallar
 
@@ -71,6 +77,19 @@ class ValidationBlockedExportException implements Exception {
   final List<ValidationIssue> errors;
 }
 ```
+
+## Formda Önlenen Kurallar
+
+Bazı kurallar ContentValidator'a hiç ulaşmadan formda durdurulur — bir dosyanın
+tamamının kaydını bloklayan içeriğin en baştan üretilmemesi için:
+
+| Kural | Nerede durdurulur |
+|-------|-------------------|
+| 20 — correct_option dolu şıkka işaret etmeli | `MultipleChoiceForm` dropdown validator'ı boş `option_x` seçimini reddeder |
+| 17 — zorunlu alanlar boş olamaz (level/kitap) | `LevelForm`/`BookForm` hem Save'de hem görsel seçici commit'inde `validate()` çalıştırır |
+
+Bu kapılar validator'ın yerini almaz; import ve elle düzenlenmiş JSON hâlâ
+yalnızca ContentValidator'dan geçer.
 
 ## Validasyon Sabitleri
 

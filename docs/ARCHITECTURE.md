@@ -67,10 +67,16 @@ core ← data ← presentation
 1. Kullanıcı ZIP veya JSON dosyaları seçer (file_picker)
 2. ZipImporter → ZIP'i açar, dosyaları normalize eder
 3. JsonParser → Her JSON dosyasını ilgili modele parse eder
-4. ContentNotifier.importContent() → ContentState güncellenir
-5. savedBaselineProvider → Import edilen state baseline olarak kaydedilir
-6. HistoryNotifier.clear() → Undo/redo geçmişi temizlenir
-7. Tüm derived provider'lar otomatik yeniden hesaplanır
+4. hasBlockingErrors() → ERROR seviyesinde import issue varsa hiçbir şey
+   uygulanmaz (yarım parse edilmiş state diske yazılıyordu). WARNING bloklamaz
+5. isDirtyProvider true ise → onay dialogu; kullanıcı iptal ederse akış durur
+   (import mevcut state'i ezer ve undo geçmişini de siler, geri dönüşü yok)
+6. mergeImportedSlices() → yalnızca gerçekten gelen dosyaların dilimleri
+   uygulanır; verilmeyen dosyalar mevcut state'ten korunur
+7. ContentNotifier.importContent() → ContentState güncellenir
+8. savedBaselineProvider → Import edilen state baseline olarak kaydedilir
+9. HistoryNotifier.clear() → Undo/redo geçmişi temizlenir
+10. Tüm derived provider'lar otomatik yeniden hesaplanır
 ```
 
 ### Auto-Load Akışı (Asset Server — Birincil)
@@ -100,7 +106,8 @@ core ← data ← presentation
 
 ### Export Akışı (ZIP — Fallback)
 ```
-1. Kullanıcı "Export ZIP" butonuna tıklar (veya Ctrl/Cmd+S kısayolu)
+1. Kullanıcı "Export ZIP" butonuna tıklar (veya Ctrl/Cmd+E; Ctrl/Cmd+S yalnızca
+   sunucu bağlı değilken export eder, bağlıyken pending save'leri flush eder)
 2. ZipExporter → ContentValidator.validateAll() çalıştırır
 3. Error varsa → ValidationBlockedExportException fırlatılır
 4. Error yoksa → JsonSerializer ile tüm modeller JSON'a dönüştürülür

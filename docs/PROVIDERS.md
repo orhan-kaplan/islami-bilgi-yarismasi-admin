@@ -25,7 +25,9 @@ lib/presentation/providers/
 ├── game_config_providers.dart
 ├── game_config_auto_save_providers.dart
 ├── auto_save_providers.dart    ← Debounced auto-save controller
-└── asset_providers.dart        ← Asset dizin listeleme
+├── asset_providers.dart        ← Asset dizin listeleme
+├── changelog_provider.dart     ← Baseline ↔ mevcut state farkı (Değişiklikler dialogu)
+└── duplicate_check_provider.dart ← Soru metni tekrar tespiti (form uyarı banner'ı)
 ```
 
 ## Bağımlılık Grafiği
@@ -38,6 +40,8 @@ contentStateProvider (StateNotifierProvider)
     ├── totalCountsProvider
     ├── isDirtyProvider (← savedBaselineProvider)
     ├── searchResultProvider (← searchQueryProvider)
+    ├── changelogProvider (← savedBaselineProvider)
+    ├── duplicateCheckProvider(params)
     └── validationResultsProvider
             ├── validationErrorsProvider
             ├── validationWarningsProvider
@@ -51,6 +55,9 @@ savedBaselineProvider (StateProvider)
 searchQueryProvider (StateProvider)
 searchFocusNodeProvider (Provider)
 jsonPreviewVisibleProvider (StateProvider)
+
+autoSaveControllerProvider + feedbackAutoSaveProvider + gameConfigAutoSaveProvider
+    └── hasSaveErrorProvider   ← üç kanalın hepsini birden dinler
 
 (Bağımsız)
 └── routerProvider
@@ -76,11 +83,11 @@ jsonPreviewVisibleProvider (StateProvider)
 | Series | `reorderSeries(List<int>)` | Sıralama günceller |
 | Book | `addBook(BookModel)` | Yeni kitap ekler |
 | Book | `updateBook(BookModel)` | Kitabı günceller |
-| Book | `deleteBook(int)` → `bool` | Siler (level'ı varsa bloklanır) |
+| Book | `deleteBook(int)` → `bool` | Siler (level'ı varsa **veya** bir ödül onu açıyorsa bloklanır) |
 | Book | `reorderBooks(int, List<int>)` | Seri içi sıralama |
 | Level | `addLevel(String, LevelModel)` | Yeni level ekler |
 | Level | `updateLevel(String, LevelModel)` | Level'ı günceller |
-| Level | `deleteLevel(String, int)` | Level ve sorularını siler |
+| Level | `deleteLevel(String, int)` | Level ve sorularını siler, kalanları 1..N yeniden numaralar (`level_order` boşluğu error olur ve dosyanın kaydını bloklardı) |
 | Level | `reorderLevels(String, List<int>)` | Level sıralaması |
 | Question | `addQuestion(String, int, QuestionModel)` | Yeni soru ekler |
 | Question | `updateQuestion(String, int, int, QuestionModel)` | Soruyu günceller |
@@ -361,3 +368,65 @@ if (restored != null) {
 - **Dosya**: `validation_providers.dart`
 - **Bağımlılık**: `validationResultsProvider`, `missingAssetValidationProvider`
 - **Açıklama**: Senkron validasyon + async missing asset kontrolünü birleştirir.
+
+
+---
+
+## Changelog / Duplicate Provider'ları
+
+### `changelogProvider`
+- **Tip**: `Provider<List<ChangeEntry>>`
+- **Dosya**: `changelog_provider.dart`
+- **Bağımlılık**: `savedBaselineProvider`, `contentStateProvider`
+- **Açıklama**: Baseline ile mevcut state arasındaki farkı ekle/değiştir/sil olarak listeler. Explorer toolbar'ındaki "Değişiklikler" dialogu bunu gösterir.
+
+### `duplicateCheckProvider`
+- **Tip**: `Provider.family<List<String>, DuplicateCheckParams>`
+- **Dosya**: `duplicate_check_provider.dart`
+- **Parametre**: `DuplicateCheckParams` (soru metni + hariç tutulacak konum)
+- **Bağımlılık**: `contentStateProvider`
+- **Açıklama**: Aynı soru metninin başka nerelerde geçtiğini döndürür. `QuestionForm` bunu amber uyarı banner'ında gösterir; düzenlenen sorunun kendisi hariç tutulur.
+
+---
+
+## Kayıt Durumu Provider'ları
+
+### `hasSaveErrorProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `auto_save_providers.dart`
+- **Bağımlılık**: `saveStatusProvider`, `feedbackSaveStatusProvider`, `gameConfigSaveStatusProvider`
+- **Açıklama**: Üç auto-save kanalından herhangi biri hata durumundaysa true. `AppShell` bunu kırmızı noktaya çevirir. Validasyonla bloklanan yazım yalnızca kendi status provider'ında görünür, o yüzden üç kanalın da burada listelenmesi şart — eksik bırakılan kanal, kullanıcı o ekrandan ayrılır ayrılmaz sessizce kaybolur.
+
+### `feedbackSaveStatusProvider`
+- **Tip**: `Provider<FeedbackSaveStatus>`
+- **Dosya**: `feedback_auto_save_providers.dart`
+- **Açıklama**: `feedback.json` kaydetme durumu
+
+### `gameConfigSaveStatusProvider`
+- **Tip**: `Provider<GameConfigSaveStatus>`
+- **Dosya**: `game_config_auto_save_providers.dart`
+- **Açıklama**: `game_config.json` kaydetme durumu
+
+### `autoLoadStatusProvider`
+- **Tip**: `Provider<AutoLoadStatus>`
+- **Dosya**: `auto_load_providers.dart`
+- **Açıklama**: Auto-load durumunu (`idle`/`loading`/`loaded`/`failed`) notifier'a dokunmadan okumak için kolaylık provider'ı
+
+---
+
+## Feedback İçerik Provider'ları
+
+### `feedbackContentProvider`
+- **Tip**: `StateNotifierProvider<FeedbackContentNotifier, FeedbackContentState>`
+- **Dosya**: `feedback_content_providers.dart`
+- **Açıklama**: `feedback.json` içeriğinin tek kaynağı. Kategori/alt kategori bazlı mesaj ve ünvan CRUD'u. ContentState'ten ayrıdır.
+
+### `feedbackLoadProvider`
+- **Tip**: `StateNotifierProvider`
+- **Dosya**: `feedback_content_providers.dart`
+- **Açıklama**: `feedback.json`'ı asset sunucudan yükler
+
+### `feedbackNeedsInitialDataProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `feedback_content_providers.dart`
+- **Açıklama**: Sunucuda dosya yoksa (404) true — ilk verinin oluşturulması gerektiğini bildirir

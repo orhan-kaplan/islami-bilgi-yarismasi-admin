@@ -48,6 +48,11 @@ lib/
 | `StateNotifierProvider` | Mutable CRUD state | `contentStateProvider` |
 | `Provider` | Derived/computed değerler | `allSeriesProvider`, `healthScoreProvider` |
 | `Provider.family` | Parametrik derived | `booksForSeriesProvider(seriesId)` |
+| `FutureProvider` | Server'a bağlı async okuma | `assetListProvider(path)`, `missingAssetValidationProvider` |
+| `StateProvider` | Tekil UI bayrağı / baseline | `jsonPreviewVisibleProvider`, `savedBaselineProvider` |
+
+Kod generation kullanılmaz — `riverpod_annotation`/`riverpod_generator` bu projede
+yok, tüm provider'lar elle yazılır.
 
 ### İsimlendirme
 
