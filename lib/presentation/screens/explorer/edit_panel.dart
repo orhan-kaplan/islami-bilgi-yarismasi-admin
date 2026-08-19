@@ -13,10 +13,17 @@ import 'content_explorer_screen.dart';
 /// Right panel of the Content Explorer that shows a context-sensitive edit form
 /// based on the currently selected item.
 class EditPanel extends ConsumerWidget {
-  const EditPanel({super.key, required this.selectedItem});
+  const EditPanel({
+    super.key,
+    required this.selectedItem,
+    required this.onDeleted,
+  });
 
   /// The currently selected item, or null if nothing is selected.
   final SelectedItem? selectedItem;
+
+  /// Called after the selected item is deleted so the selection can be cleared.
+  final VoidCallback onDeleted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +63,7 @@ class EditPanel extends ConsumerWidget {
     return SeriesForm(
       key: ValueKey('series_$seriesId'),
       series: series,
+      onDeleted: onDeleted,
     );
   }
 
@@ -65,6 +73,7 @@ class EditPanel extends ConsumerWidget {
     return BookForm(
       key: ValueKey('book_$bookId'),
       book: book,
+      onDeleted: onDeleted,
     );
   }
 
@@ -76,6 +85,7 @@ class EditPanel extends ConsumerWidget {
       key: ValueKey('level_${contentFile}_$levelId'),
       contentFile: contentFile,
       level: level,
+      onDeleted: onDeleted,
     );
   }
 
@@ -101,6 +111,18 @@ class EditPanel extends ConsumerWidget {
       contentFile: contentFile,
       levelId: levelId,
       questionIndex: questionIndex,
+      onDelete: question == null
+          ? null
+          : () {
+              // Push current state to history before applying the delete.
+              ref
+                  .read(historyProvider.notifier)
+                  .pushState(ref.read(contentStateProvider));
+              ref
+                  .read(contentStateProvider.notifier)
+                  .deleteQuestion(contentFile, levelId, questionIndex);
+              onDeleted();
+            },
       onSave: (updatedQuestion) {
         // Push current state to history before applying the change.
         ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));

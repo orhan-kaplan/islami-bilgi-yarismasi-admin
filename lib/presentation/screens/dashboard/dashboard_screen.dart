@@ -467,6 +467,14 @@ class DashboardScreen extends ConsumerWidget {
       return;
     }
 
+    // Import mevcut state'i ezer ve undo yığınını da temizler — kaydedilmemiş
+    // değişiklik varken bu geri alınamaz, o yüzden önce onay iste.
+    if (ref.read(isDirtyProvider)) {
+      if (!context.mounted) return;
+      final proceed = await _confirmOverwrite(context);
+      if (!proceed) return;
+    }
+
     // Yalnızca gerçekten gelen dosyaların dilimlerini uygula; verilmeyenler
     // mevcut state'ten korunur.
     final mergedState = mergeImportedSlices(
@@ -495,6 +503,32 @@ class DashboardScreen extends ConsumerWidget {
         const SnackBar(content: Text('Content imported successfully')),
       );
     }
+  }
+
+  /// Kaydedilmemiş değişiklikler üzerine yazmadan önce onay ister.
+  Future<bool> _confirmOverwrite(BuildContext context) async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard Unsaved Changes?'),
+        content: const Text(
+          'You have unsaved changes. Importing replaces them with the '
+          'selected files and clears the undo history — this cannot be '
+          'undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
   }
 
   /// Import sorunlarını listeler. [blocked] true ise hiçbir değişiklik

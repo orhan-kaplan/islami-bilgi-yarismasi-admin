@@ -29,7 +29,7 @@ const _shortcuts = <_ShortcutEntry>[
   _ShortcutEntry(
     windowsKeys: 'Ctrl + S',
     macKeys: 'Cmd + S',
-    description: 'Export ZIP',
+    description: 'Save to server (Export ZIP when offline)',
   ),
   _ShortcutEntry(
     windowsKeys: 'Ctrl + E',

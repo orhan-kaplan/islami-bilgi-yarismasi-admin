@@ -6,6 +6,7 @@ import '../../../data/models/book_model.dart';
 import '../../providers/asset_server_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
+import '../shared/confirm_dialog.dart';
 import 'inline_image_picker.dart';
 
 /// Form for creating or editing a [BookModel].
@@ -13,13 +14,16 @@ import 'inline_image_picker.dart';
 /// When [book] is null, the form is in "create" mode with auto-ID suggestion.
 /// When [book] is provided, the form is in "edit" mode.
 class BookForm extends ConsumerStatefulWidget {
-  const BookForm({super.key, this.book, this.seriesId});
+  const BookForm({super.key, this.book, this.seriesId, this.onDeleted});
 
   /// The book to edit, or null to create a new one.
   final BookModel? book;
 
   /// Optional series ID to pre-select when creating a new book.
   final int? seriesId;
+
+  /// Called after the book is deleted so the caller can clear its selection.
+  final VoidCallback? onDeleted;
 
   @override
   ConsumerState<BookForm> createState() => _BookFormState();
@@ -122,6 +126,42 @@ class _BookFormState extends ConsumerState<BookForm> {
     );
   }
 
+  Future<void> _delete() async {
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      title: 'Delete Book',
+      message: 'Are you sure you want to delete this book?',
+      confirmLabel: 'Delete',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    // Guard'ı kırmadan dene: level'ı olan ya da bir ödülün açtığı kitap
+    // silinirse geride dangling referanslar kalırdı.
+    final currentState = ref.read(contentStateProvider);
+    final deleted =
+        ref.read(contentStateProvider.notifier).deleteBook(widget.book!.id);
+
+    if (!deleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot delete: this book still has levels, or a reward unlocks '
+            'it. Remove those first.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Silme uygulandıktan sonra geçmişe yaz: guard bloklarsa yığın kirlenmesin.
+    ref.read(historyProvider.notifier).pushState(currentState);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Book deleted')),
+    );
+    widget.onDeleted?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final allSeries = ref.watch(allSeriesProvider);
@@ -133,9 +173,22 @@ class _BookFormState extends ConsumerState<BookForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _isEditing ? 'Edit Book' : 'New Book',
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _isEditing ? 'Edit Book' : 'New Book',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                if (_isEditing)
+                  IconButton(
+                    onPressed: _delete,
+                    icon: const Icon(Icons.delete),
+                    color: Theme.of(context).colorScheme.error,
+                    tooltip: 'Delete book',
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -197,8 +250,21 @@ class _BookFormState extends ConsumerState<BookForm> {
                   targetFileName: 'book_${_idController.text}',
                   onPathChanged: (newPath) {
                     setState(() => _assetImage = newPath);
-                    // Also update ContentState immediately if editing
+                    // Also update ContentState immediately if editing.
+                    // Validasyondan geçmeden commit etmek boş bir zorunlu
+                    // alanı diske yazıp dosyanın kaydını bloklardı.
                     if (_isEditing) {
+                      if (!_formKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Image uploaded. Fix the highlighted fields and '
+                              'press Update Book to apply it.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
                       ref.read(historyProvider.notifier).pushState(
                         ref.read(contentStateProvider),
                       );

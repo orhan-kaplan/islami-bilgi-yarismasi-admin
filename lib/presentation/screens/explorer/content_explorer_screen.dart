@@ -96,6 +96,15 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
     });
   }
 
+  /// Silinen öğenin seçimi panelde asılı kalmamalı: EditPanel aynı ValueKey'i
+  /// koruyup form State'ini yeniden kullanıyor, silinen kayıt eski
+  /// değerleriyle dolu bir "create" formuna dönüşüyordu.
+  void _onItemDeleted() {
+    setState(() {
+      _selectedItem = null;
+    });
+  }
+
   void _handleUndo() {
     final currentState = ref.read(contentStateProvider);
     final restored =
@@ -308,7 +317,10 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
                 ),
               ),
               Expanded(
-                child: EditPanel(selectedItem: _selectedItem),
+                child: EditPanel(
+                  selectedItem: _selectedItem,
+                  onDeleted: _onItemDeleted,
+                ),
               ),
               if (jsonPreviewVisible) ...[
                 const VerticalDivider(thickness: 1, width: 1),

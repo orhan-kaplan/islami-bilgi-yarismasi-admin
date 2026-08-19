@@ -5,6 +5,7 @@ import '../../../data/models/hadith_model.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
 import '../../widgets/preview/hadith_preview_dialog.dart';
+import '../../widgets/shared/confirm_dialog.dart';
 
 /// Screen displaying all hadiths with CRUD operations.
 ///
@@ -45,6 +46,28 @@ class HadithsScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  /// Tek tıkla silme, yanlış tıklamada hadisi diske yazılacak şekilde
+  /// kaldırıyordu; repodaki diğer bütün silmeler gibi burada da onay gerekiyor.
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+  ) async {
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      title: 'Delete Hadith',
+      message: 'Are you sure you want to delete this hadith?',
+      confirmLabel: 'Delete',
+    );
+
+    if (!confirmed) return;
+
+    ref.read(historyProvider.notifier).pushState(
+          ref.read(contentStateProvider),
+        );
+    ref.read(contentStateProvider.notifier).deleteHadith(index);
   }
 
   @override
@@ -123,14 +146,7 @@ class HadithsScreen extends ConsumerWidget {
                           icon: const Icon(Icons.delete_outline),
                           color: Theme.of(context).colorScheme.error,
                           tooltip: 'Delete hadith',
-                          onPressed: () {
-                            ref.read(historyProvider.notifier).pushState(
-                                  ref.read(contentStateProvider),
-                                );
-                            final notifier =
-                                ref.read(contentStateProvider.notifier);
-                            notifier.deleteHadith(index);
-                          },
+                          onPressed: () => _confirmDelete(context, ref, index),
                         ),
                       ],
                     ),

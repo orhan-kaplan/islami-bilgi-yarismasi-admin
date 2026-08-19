@@ -167,6 +167,18 @@ class _MultipleChoiceFormState extends State<MultipleChoiceForm> {
               if (value == null || !['A', 'B', 'C', 'D'].contains(value)) {
                 return 'Correct option must be A, B, C, or D';
               }
+              // Option C/D zorunlu değil; boş bir şıkkı doğru cevap yapmak
+              // ContentValidator'da ERROR üretip content dosyasının tamamının
+              // kaydını bloklar. Formda durdur.
+              final target = {
+                'A': _optionAController,
+                'B': _optionBController,
+                'C': _optionCController,
+                'D': _optionDController,
+              }[value]!;
+              if (target.text.trim().isEmpty) {
+                return 'Option $value is empty — pick an option that has text';
+              }
               return null;
             },
           ),

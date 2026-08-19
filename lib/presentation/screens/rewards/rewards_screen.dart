@@ -7,6 +7,7 @@ import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
 import '../../widgets/forms/inline_image_picker.dart';
+import '../../widgets/shared/confirm_dialog.dart';
 import '../../widgets/preview/reward_preview_dialog.dart';
 import '../../../core/constants/asset_server_config.dart';
 
@@ -118,14 +119,8 @@ class RewardsScreen extends ConsumerWidget {
                               icon: const Icon(Icons.delete_outline),
                               color: Theme.of(context).colorScheme.error,
                               tooltip: 'Delete reward',
-                              onPressed: () {
-                                ref.read(historyProvider.notifier).pushState(
-                                      ref.read(contentStateProvider),
-                                    );
-                                ref
-                                    .read(contentStateProvider.notifier)
-                                    .deleteReward(index);
-                              },
+                              onPressed: () =>
+                                  _confirmDelete(context, ref, index, reward),
                             ),
                           ],
                         ),
@@ -136,6 +131,29 @@ class RewardsScreen extends ConsumerWidget {
               },
             ),
     );
+  }
+
+  /// Tek tıkla silme, yanlış tıklamada ödülü diske yazılacak şekilde
+  /// kaldırıyordu; repodaki diğer bütün silmeler gibi burada da onay gerekiyor.
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    RewardModel reward,
+  ) async {
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      title: 'Delete Reward',
+      message: 'Are you sure you want to delete "${reward.title}"?',
+      confirmLabel: 'Delete',
+    );
+
+    if (!confirmed) return;
+
+    ref.read(historyProvider.notifier).pushState(
+          ref.read(contentStateProvider),
+        );
+    ref.read(contentStateProvider.notifier).deleteReward(index);
   }
 
   void _showAddRewardDialog(BuildContext context, WidgetRef ref) {

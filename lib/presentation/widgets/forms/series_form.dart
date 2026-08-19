@@ -5,16 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/series_model.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
+import '../shared/confirm_dialog.dart';
 
 /// Form for creating or editing a [SeriesModel].
 ///
 /// When [series] is null, the form is in "create" mode with auto-ID suggestion.
 /// When [series] is provided, the form is in "edit" mode.
 class SeriesForm extends ConsumerStatefulWidget {
-  const SeriesForm({super.key, this.series});
+  const SeriesForm({super.key, this.series, this.onDeleted});
 
   /// The series to edit, or null to create a new one.
   final SeriesModel? series;
+
+  /// Called after the series is deleted so the caller can clear its selection.
+  final VoidCallback? onDeleted;
 
   @override
   ConsumerState<SeriesForm> createState() => _SeriesFormState();
@@ -92,6 +96,41 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
     );
   }
 
+  Future<void> _delete() async {
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      title: 'Delete Series',
+      message: 'Are you sure you want to delete this series?',
+      confirmLabel: 'Delete',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    // Guard'ı kırmadan dene: kitabı olan seri silinmemeli, aksi halde
+    // books.json'daki series_id referansları dangling kalırdı.
+    final currentState = ref.read(contentStateProvider);
+    final deleted =
+        ref.read(contentStateProvider.notifier).deleteSeries(widget.series!.id);
+
+    if (!deleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot delete: this series still has books. Delete them first.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Silme uygulandıktan sonra geçmişe yaz: guard bloklarsa yığın kirlenmesin.
+    ref.read(historyProvider.notifier).pushState(currentState);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Series deleted')),
+    );
+    widget.onDeleted?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -101,9 +140,22 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _isEditing ? 'Edit Series' : 'New Series',
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _isEditing ? 'Edit Series' : 'New Series',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                if (_isEditing)
+                  IconButton(
+                    onPressed: _delete,
+                    icon: const Icon(Icons.delete),
+                    color: Theme.of(context).colorScheme.error,
+                    tooltip: 'Delete series',
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
             TextFormField(

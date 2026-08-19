@@ -51,6 +51,21 @@ void main() {
     return container!;
   }
 
+  /// Silme artık onay ister — tek yanlış tıkla kayıt gitmemeli.
+  Future<void> confirmDelete(WidgetTester tester, String tooltip) async {
+    await tester.tap(find.byTooltip(tooltip));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> cancelDelete(WidgetTester tester, String tooltip) async {
+    await tester.tap(find.byTooltip(tooltip));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+  }
+
   ContentState stateWith({
     List<HadithModel> hadiths = const [],
     List<RewardModel> rewards = const [],
@@ -70,8 +85,7 @@ void main() {
       final c = await pump(
           tester, const HadithsScreen(), stateWith(hadiths: [hadith]));
 
-      await tester.tap(find.byTooltip('Delete hadith'));
-      await tester.pumpAndSettle();
+      await confirmDelete(tester, 'Delete hadith');
 
       expect(c.read(contentStateProvider).hadiths, isEmpty);
       expect(c.read(canUndoProvider), isTrue,
@@ -80,6 +94,17 @@ void main() {
       final restored =
           c.read(historyProvider.notifier).undo(c.read(contentStateProvider));
       expect(restored!.hadiths, [hadith]);
+    });
+
+    testWidgets('onay iptal edilince silinmez', (tester) async {
+      final c = await pump(
+          tester, const HadithsScreen(), stateWith(hadiths: [hadith]));
+
+      await cancelDelete(tester, 'Delete hadith');
+
+      expect(c.read(contentStateProvider).hadiths, [hadith]);
+      expect(c.read(canUndoProvider), isFalse,
+          reason: 'iptal edilen silme geçmişe girmemeli');
     });
 
     testWidgets('ekleme undo yığınına girer', (tester) async {
@@ -117,8 +142,7 @@ void main() {
       final c = await pump(tester, const RewardsScreen(),
           stateWith(rewards: [reward], books: [book]));
 
-      await tester.tap(find.byTooltip('Delete reward'));
-      await tester.pumpAndSettle();
+      await confirmDelete(tester, 'Delete reward');
 
       expect(c.read(contentStateProvider).rewards, isEmpty);
       expect(c.read(canUndoProvider), isTrue,
@@ -127,6 +151,17 @@ void main() {
       final restored =
           c.read(historyProvider.notifier).undo(c.read(contentStateProvider));
       expect(restored!.rewards, [reward]);
+    });
+
+    testWidgets('onay iptal edilince silinmez', (tester) async {
+      final c = await pump(tester, const RewardsScreen(),
+          stateWith(rewards: [reward], books: [book]));
+
+      await cancelDelete(tester, 'Delete reward');
+
+      expect(c.read(contentStateProvider).rewards, [reward]);
+      expect(c.read(canUndoProvider), isFalse,
+          reason: 'iptal edilen silme geçmişe girmemeli');
     });
 
     testWidgets('güncelleme undo yığınına girer', (tester) async {

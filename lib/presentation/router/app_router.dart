@@ -13,6 +13,7 @@ import '../providers/feedback_content_providers.dart';
 import '../providers/game_config_auto_save_providers.dart';
 import '../providers/game_config_providers.dart';
 import '../providers/history_providers.dart';
+import '../providers/search_providers.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/explorer/content_explorer_screen.dart';
 import '../screens/assets/assets_screen.dart';
@@ -390,7 +391,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     }
                   },
                   onFocusSearch: () {
-                    // Will be wired to searchFocusNodeProvider in Task 5
+                    ref.read(searchFocusNodeProvider).requestFocus();
                   },
                   onShowHelp: () => showShortcutsHelpDialog(context),
                   child: AppShell(navigationShell: navigationShell),

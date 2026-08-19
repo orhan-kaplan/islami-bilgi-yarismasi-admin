@@ -18,6 +18,7 @@ class LevelForm extends ConsumerStatefulWidget {
     required this.contentFile,
     this.level,
     this.bookId,
+    this.onDeleted,
   });
 
   /// The content file this level belongs to.
@@ -28,6 +29,9 @@ class LevelForm extends ConsumerStatefulWidget {
 
   /// Optional book ID for create mode (used for image directory default).
   final int? bookId;
+
+  /// Called after the level is deleted so the caller can clear its selection.
+  final VoidCallback? onDeleted;
 
   @override
   ConsumerState<LevelForm> createState() => _LevelFormState();
@@ -129,6 +133,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Level deleted')),
       );
+      widget.onDeleted?.call();
     }
   }
 
@@ -243,8 +248,22 @@ class _LevelFormState extends ConsumerState<LevelForm> {
                   targetFileName: 'level_${_idController.text}',
                   onPathChanged: (newPath) {
                     setState(() => _assetImage = newPath);
-                    // Also update ContentState immediately if editing
+                    // Also update ContentState immediately if editing.
+                    // Validasyondan geçmeden commit etmek boş bir zorunlu
+                    // alanı diske yazıp dosyanın kaydını bloklardı; boş bir
+                    // sayı alanı ise int.parse'ı patlatıyordu.
                     if (_isEditing) {
+                      if (!_formKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Image uploaded. Fix the highlighted fields and '
+                              'press Update Level to apply it.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
                       ref.read(historyProvider.notifier).pushState(
                         ref.read(contentStateProvider),
                       );

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/question_model.dart';
 import '../../providers/duplicate_check_provider.dart';
 import '../preview/question_preview_dialog.dart';
+import '../shared/confirm_dialog.dart';
 import 'matching_form.dart';
 import 'multiple_choice_form.dart';
 import 'sorting_form.dart';
@@ -21,6 +22,7 @@ class QuestionForm extends ConsumerStatefulWidget {
     this.contentFile,
     this.levelId,
     this.questionIndex,
+    this.onDelete,
   });
 
   /// The question to edit, or null to create a new one.
@@ -28,6 +30,10 @@ class QuestionForm extends ConsumerStatefulWidget {
 
   /// Callback when the form is saved with a valid question.
   final ValueChanged<QuestionModel> onSave;
+
+  /// Callback when the question is deleted, or null when deletion is not
+  /// available (create mode).
+  final VoidCallback? onDelete;
 
   /// Content file of the current question (for duplicate exclusion).
   final String? contentFile;
@@ -66,6 +72,22 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
     }
   }
 
+  Future<void> _delete() async {
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      title: 'Delete Question',
+      message: 'Are you sure you want to delete this question?',
+      confirmLabel: 'Delete',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    widget.onDelete!();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Question deleted')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -88,6 +110,13 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
                     context,
                     question: widget.question!,
                   ),
+                ),
+              if (widget.question != null && widget.onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  color: Theme.of(context).colorScheme.error,
+                  tooltip: 'Delete question',
+                  onPressed: _delete,
                 ),
             ],
           ),
