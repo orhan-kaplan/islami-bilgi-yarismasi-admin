@@ -251,6 +251,29 @@ void main() {
       );
     });
 
+    test('rejects lottie path with a leading slash or parent-directory traversal', () {
+      expect(
+        validateGameConfigData(
+          GameConfigState.defaults.copyWith(
+            lottie: GameConfigState.defaults.lottie.copyWith(
+              bookFinish: '/etc/passwd',
+            ),
+          ),
+        ),
+        contains(contains('lottie.book_finish')),
+      );
+      expect(
+        validateGameConfigData(
+          GameConfigState.defaults.copyWith(
+            lottie: GameConfigState.defaults.lottie.copyWith(
+              levelComplete: 'feedback/../../secrets.json',
+            ),
+          ),
+        ),
+        contains(contains('lottie.level_complete')),
+      );
+    });
+
     test('rejects empty copy fields including default_name', () {
       expect(
         validateGameConfigData(

@@ -137,74 +137,13 @@ void main() {
     });
   });
 
-  // ── 10.5 Series IDs ──────────────────────────────────────────────
-
-  group('10.5 — Series IDs unique positive integers', () {
-    test('duplicate series ID produces error', () {
-      final state = _validState().copyWith(
-        series: [_series(id: 1, sortOrder: 1), _series(id: 1, sortOrder: 2)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('Duplicate series ID')), isTrue);
-    });
-
-    test('non-positive series ID produces error', () {
-      final state = _validState().copyWith(
-        series: [_series(id: 0)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('positive integer')), isTrue);
-    });
-  });
-
-  // ── 10.4 Book IDs ───────────────────────────────────────────────
-
-  group('10.4 — Book IDs unique positive integers', () {
-    test('duplicate book ID produces error', () {
-      final state = _validState().copyWith(
-        books: [
-          _book(id: 1, bookOrder: 1),
-          _book(id: 1, bookOrder: 2, contentFile: 'book_2.json'),
-        ],
-        contentFiles: {
-          'book_1.json': [_level()],
-          'book_2.json': [_level(id: 2, bookId: 1)],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('Duplicate book ID')), isTrue);
-    });
-
-    test('non-positive book ID produces error', () {
-      final state = _validState().copyWith(
-        books: [_book(id: -1)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('positive integer') && i.sourceFile == 'books.json'), isTrue);
-    });
-  });
-
   // ── 10.1 Level IDs ──────────────────────────────────────────────
+  //
+  // Non-positive level IDs and cross-book duplicates are covered by
+  // Property 8 (id_uniqueness_positivity_test.dart, sub-properties 8c/8f).
+  // Only the per-file save-gating behavior below is unique to this file.
 
   group('10.1 — Level IDs unique positive integers across all books', () {
-    test('duplicate level ID across books produces error', () {
-      final state = ContentState(
-        series: [_series()],
-        books: [
-          _book(id: 1, bookOrder: 1, contentFile: 'book_1.json'),
-          _book(id: 2, bookOrder: 2, contentFile: 'book_2.json'),
-        ],
-        contentFiles: {
-          'book_1.json': [_level(id: 1, bookId: 1)],
-          'book_2.json': [_level(id: 1, bookId: 2)],
-        },
-        rewards: [],
-        hadiths: [],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('Duplicate level ID')), isTrue);
-    });
-
     test('duplicate level ID is reported against both content files', () {
       // Save gating is per file: it only blocks the file the issue names.
       // Reporting a global collision against whichever file happens to be
@@ -234,225 +173,6 @@ void main() {
             'got: $duplicates',
       );
     });
-
-    test('non-positive level ID produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(id: 0)],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('positive integer') && i.sourceFile.contains('content/')), isTrue);
-    });
-  });
-
-  // ── 10.3 Book → Series FK ──────────────────────────────────────
-
-  group('10.3 — Book series_id references existing series', () {
-    test('broken series_id produces error', () {
-      final state = _validState().copyWith(
-        books: [_book(seriesId: 999)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('series_id')), isTrue);
-    });
-  });
-
-  // ── 10.2 Level → Book FK ──────────────────────────────────────
-
-  group('10.2 — Level book_id references existing book', () {
-    test('broken book_id produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(bookId: 999)],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('book_id') && i.message.contains('non-existent book')), isTrue);
-    });
-  });
-
-  // ── 10.15 Reward → Book FK ────────────────────────────────────
-
-  group('10.15 — Reward unlock_book_id references existing book', () {
-    test('broken unlock_book_id produces error', () {
-      final state = _validState().copyWith(
-        rewards: [_reward(unlockBookId: 999)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('unlock_book_id')), isTrue);
-    });
-  });
-
-  // ── 10.17 Content file book_id consistency ────────────────────
-
-  group('10.17 — Level book_id consistent with referencing book', () {
-    test('inconsistent book_id produces error', () {
-      final state = ContentState(
-        series: [_series()],
-        books: [
-          _book(id: 1, contentFile: 'book_1.json'),
-          _book(id: 2, bookOrder: 2, contentFile: 'book_2.json'),
-        ],
-        contentFiles: {
-          'book_1.json': [_level(id: 1, bookId: 2)], // bookId should be 1
-          'book_2.json': [_level(id: 2, bookId: 2)],
-        },
-        rewards: [],
-        hadiths: [],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('inconsistent')), isTrue);
-    });
-  });
-
-  // ── 10.8 Series sort_order sequential ─────────────────────────
-
-  group('10.8 — Series sort_order sequential from 1', () {
-    test('non-sequential sort_order produces error', () {
-      final state = _validState().copyWith(
-        series: [_series(id: 1, sortOrder: 1), _series(id: 2, sortOrder: 3)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('sort_order')), isTrue);
-    });
-
-    test('sort_order starting from 0 produces error', () {
-      final state = _validState().copyWith(
-        series: [_series(id: 1, sortOrder: 0)],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('sort_order')), isTrue);
-    });
-  });
-
-  // ── 10.7 Book order sequential within series ──────────────────
-
-  group('10.7 — book_order sequential from 1 within series', () {
-    test('non-sequential book_order produces error', () {
-      final state = ContentState(
-        series: [_series()],
-        books: [
-          _book(id: 1, bookOrder: 1, contentFile: 'book_1.json'),
-          _book(id: 2, bookOrder: 3, contentFile: 'book_2.json'),
-        ],
-        contentFiles: {
-          'book_1.json': [_level(id: 1, bookId: 1)],
-          'book_2.json': [_level(id: 2, bookId: 2)],
-        },
-        rewards: [],
-        hadiths: [],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('book_order')), isTrue);
-    });
-  });
-
-  // ── 10.6 Level order sequential within book ───────────────────
-
-  group('10.6 — level_order sequential from 1 within book', () {
-    test('non-sequential level_order produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(id: 1, levelOrder: 1),
-            _level(id: 2, levelOrder: 3),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('level_order')), isTrue);
-    });
-  });
-
-  // ── 10.9 correct_option values ────────────────────────────────
-
-  group('10.9 — correct_option must be A, B, C, or D', () {
-    test('invalid correct_option produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [_question(correctOption: 'E')]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('correct_option') && i.message.contains('A, B, C, D')), isTrue);
-    });
-  });
-
-  // ── 10.10 true_false constraints ──────────────────────────────
-
-  group('10.10 — true_false option_c and option_d must be empty', () {
-    test('non-empty option_c on true_false produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [
-              _question(type: 'true_false', optionC: 'X', optionD: ''),
-            ]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('option_c')), isTrue);
-    });
-
-    test('non-empty option_d on true_false produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [
-              _question(type: 'true_false', optionC: '', optionD: 'Y'),
-            ]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('option_d')), isTrue);
-    });
-  });
-
-  // ── 10.11 matching separator ──────────────────────────────────
-
-  group('10.11 — matching options must contain | separator', () {
-    test('missing separator produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [
-              _question(
-                type: 'matching',
-                optionA: 'left|right',
-                optionB: 'left|right',
-                optionC: 'no separator',
-                optionD: 'left|right',
-              ),
-            ]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('separator')), isTrue);
-    });
-  });
-
-  // ── 10.12 sorting correct_option ──────────────────────────────
-
-  group('10.12 — sorting correct_option must be A', () {
-    test('sorting with correct_option B produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [
-              _question(type: 'sorting', correctOption: 'B'),
-            ]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('sorting') && i.message.contains('"A"')), isTrue);
-    });
   });
 
   // ── 10.18 correct_option must point at a filled option ────────
@@ -479,30 +199,34 @@ void main() {
       );
     });
 
-    test('true_false with correct_option C produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [
-              _question(
-                type: 'true_false',
-                optionA: 'Doğru',
-                optionB: 'Yanlış',
-                optionC: '',
-                optionD: '',
-                correctOption: 'C',
-              ),
-            ]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(
-        issues.any((i) =>
-            i.jsonPath.contains('correct_option') &&
-            i.message.contains('option_c')),
-        isTrue,
-      );
+    test('true_false with correct_option pointing at an empty option produces error', () {
+      const expectedField = {'C': 'option_c', 'D': 'option_d'};
+      for (final correct in ['C', 'D']) {
+        final state = _validState().copyWith(
+          contentFiles: {
+            'book_1.json': [
+              _level(questions: [
+                _question(
+                  type: 'true_false',
+                  optionA: 'Doğru',
+                  optionB: 'Yanlış',
+                  optionC: '',
+                  optionD: '',
+                  correctOption: correct,
+                ),
+              ]),
+            ],
+          },
+        );
+        final issues = _errors(state);
+        expect(
+          issues.any((i) =>
+              i.jsonPath.contains('correct_option') &&
+              i.message.contains(expectedField[correct]!)),
+          isTrue,
+          reason: 'correct_option $correct',
+        );
+      }
     });
 
     test('multiple_choice pointing at a filled option produces no error', () {
@@ -593,150 +317,6 @@ void main() {
     });
   });
 
-  // ── 10.16 Required fields ─────────────────────────────────────
-
-  group('10.16 — Required fields non-empty', () {
-    test('empty series name produces error', () {
-      final state = _validState().copyWith(
-        series: [_series(name: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('name') && i.message.contains('required')), isTrue);
-    });
-
-    test('empty book title produces error', () {
-      final state = _validState().copyWith(
-        books: [_book(title: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('title') && i.sourceFile == 'books.json'), isTrue);
-    });
-
-    test('empty book description produces error', () {
-      final state = _validState().copyWith(
-        books: [_book(description: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('description') && i.sourceFile == 'books.json'), isTrue);
-    });
-
-    test('empty book content_file produces error', () {
-      final state = _validState().copyWith(
-        books: [_book(contentFile: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.message.contains('content_file') && i.message.contains('required')), isTrue);
-    });
-
-    test('empty level title produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(title: '')],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('title') && i.sourceFile.contains('content/')), isTrue);
-    });
-
-    test('empty level category_name produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(categoryName: '')],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('category_name')), isTrue);
-    });
-
-    test('empty question_text produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [_question(questionText: '')]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('question_text')), isTrue);
-    });
-
-    test('empty option_a produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [_question(optionA: '')]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('option_a')), isTrue);
-    });
-
-    test('empty option_b produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [_question(optionB: '')]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('option_b')), isTrue);
-    });
-
-    test('empty correct_option produces error', () {
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [
-            _level(questions: [_question(correctOption: '')]),
-          ],
-        },
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('correct_option')), isTrue);
-    });
-
-    test('empty reward title produces error', () {
-      final state = _validState().copyWith(
-        rewards: [_reward(title: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('title') && i.sourceFile == 'rewards.json'), isTrue);
-    });
-
-    test('empty reward description produces error', () {
-      final state = _validState().copyWith(
-        rewards: [_reward(description: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('description') && i.sourceFile == 'rewards.json'), isTrue);
-    });
-
-    test('empty reward asset_image produces error', () {
-      final state = _validState().copyWith(
-        rewards: [_reward(assetImage: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('asset_image') && i.sourceFile == 'rewards.json'), isTrue);
-    });
-
-    test('empty hadith text produces error', () {
-      final state = _validState().copyWith(
-        hadiths: [_hadith(text: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('text') && i.sourceFile == 'hadiths.json'), isTrue);
-    });
-
-    test('empty hadith source produces error', () {
-      final state = _validState().copyWith(
-        hadiths: [_hadith(source: '')],
-      );
-      final issues = _errors(state);
-      expect(issues.any((i) => i.jsonPath.contains('source') && i.sourceFile == 'hadiths.json'), isTrue);
-    });
-  });
-
   // ── Multiple errors reported together ─────────────────────────
 
   group('Multiple errors reported together', () {
@@ -758,8 +338,75 @@ void main() {
         hadiths: [_hadith(text: '', source: '')],
       );
       final issues = _errors(state);
-      // Should have many errors — at least one per violation category
-      expect(issues.length, greaterThanOrEqualTo(8));
+
+      // Every planted violation must be independently represented, not just
+      // counted — a length check alone would still pass if two categories
+      // silently canceled out and a third fired twice.
+      expect(
+        issues.any((i) => i.message.contains('positive integer') && i.sourceFile == 'series.json'),
+        isTrue,
+        reason: 'non-positive series ID',
+      );
+      expect(
+        issues.any((i) => i.message.contains('name') && i.message.contains('required')),
+        isTrue,
+        reason: 'empty series name',
+      );
+      expect(
+        issues.any((i) => i.message.contains('positive integer') && i.sourceFile == 'books.json'),
+        isTrue,
+        reason: 'non-positive book ID',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('title') && i.sourceFile == 'books.json'),
+        isTrue,
+        reason: 'empty book title',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('series_id')),
+        isTrue,
+        reason: 'broken book → series FK',
+      );
+      expect(
+        issues.any((i) => i.message.contains('positive integer') && i.sourceFile.contains('content/')),
+        isTrue,
+        reason: 'non-positive level ID',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('book_id') && i.message.contains('non-existent book')),
+        isTrue,
+        reason: 'broken level → book FK',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('title') && i.sourceFile.contains('content/')),
+        isTrue,
+        reason: 'empty level title',
+      );
+      expect(
+        issues.any((i) => i.message.contains('correct_option') && i.message.contains('A, B, C, D')),
+        isTrue,
+        reason: 'invalid correct_option',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('unlock_book_id')),
+        isTrue,
+        reason: 'broken reward → book FK',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('title') && i.sourceFile == 'rewards.json'),
+        isTrue,
+        reason: 'empty reward title',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('text') && i.sourceFile == 'hadiths.json'),
+        isTrue,
+        reason: 'empty hadith text',
+      );
+      expect(
+        issues.any((i) => i.jsonPath.contains('source') && i.sourceFile == 'hadiths.json'),
+        isTrue,
+        reason: 'empty hadith source',
+      );
     });
   });
 
@@ -818,98 +465,6 @@ void main() {
       final warnings = _warnings(state);
       expect(
         warnings.any((i) => i.message.contains('empty explanation')),
-        isFalse,
-      );
-    });
-  });
-
-  // ── 11.4 Duplicate question_text ──────────────────────────────
-
-  group('11.4 — Duplicate question_text after normalization', () {
-    test('duplicate question text produces warning', () {
-      final questions = List.generate(
-        10,
-        (i) => _question(
-          questionText: i < 2 ? 'Same question?' : 'Unique Q${i + 1}?',
-          correctOption: ['A', 'B', 'C', 'D'][i % 4],
-        ),
-      );
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(questions: questions)],
-        },
-      );
-      final warnings = _warnings(state);
-      expect(
-        warnings.any((i) => i.message.contains('Duplicate question text')),
-        isTrue,
-      );
-    });
-
-    test('duplicate with different whitespace produces warning', () {
-      final questions = List.generate(
-        10,
-        (i) {
-          if (i == 0) return _question(questionText: 'What is this?', correctOption: 'A');
-          if (i == 1) return _question(questionText: '  What   is  this?  ', correctOption: 'B');
-          return _question(
-            questionText: 'Unique Q${i + 1}?',
-            correctOption: ['A', 'B', 'C', 'D'][i % 4],
-          );
-        },
-      );
-      final state = _validState().copyWith(
-        contentFiles: {
-          'book_1.json': [_level(questions: questions)],
-        },
-      );
-      final warnings = _warnings(state);
-      expect(
-        warnings.any((i) => i.message.contains('Duplicate question text')),
-        isTrue,
-      );
-    });
-
-    test('duplicates across different content files produce warning', () {
-      final questionsBook1 = List.generate(
-        10,
-        (i) => _question(
-          questionText: i == 0 ? 'Shared question?' : 'Book1 Q${i + 1}?',
-          correctOption: ['A', 'B', 'C', 'D'][i % 4],
-        ),
-      );
-      final questionsBook2 = List.generate(
-        10,
-        (i) => _question(
-          questionText: i == 0 ? 'Shared question?' : 'Book2 Q${i + 1}?',
-          correctOption: ['A', 'B', 'C', 'D'][i % 4],
-        ),
-      );
-      final state = ContentState(
-        series: [_series()],
-        books: [
-          _book(id: 1, bookOrder: 1, contentFile: 'book_1.json'),
-          _book(id: 2, bookOrder: 2, contentFile: 'book_2.json'),
-        ],
-        contentFiles: {
-          'book_1.json': [_level(id: 1, bookId: 1, questions: questionsBook1)],
-          'book_2.json': [_level(id: 2, bookId: 2, questions: questionsBook2)],
-        },
-        rewards: [],
-        hadiths: [],
-      );
-      final warnings = _warnings(state);
-      expect(
-        warnings.any((i) => i.message.contains('Duplicate question text')),
-        isTrue,
-      );
-    });
-
-    test('unique question texts produce no duplicate warning', () {
-      final state = _validState();
-      final warnings = _warnings(state);
-      expect(
-        warnings.any((i) => i.message.contains('Duplicate question text')),
         isFalse,
       );
     });
