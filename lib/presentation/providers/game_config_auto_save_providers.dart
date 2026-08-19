@@ -45,9 +45,10 @@ class GameConfigAutoSaveController extends StateNotifier<GameConfigSaveStatus> {
     });
   }
 
+  /// Bağlantı yokken de pending işaretlenir; yazma [_saveFile] içinde yine
+  /// bağlantıya bakar. Aksi halde bağlantı kopukken yapılan düzenleme hiç
+  /// kuyruğa girmiyor, yeniden bağlanınca da kaydedilmiyordu.
   void _onContentChanged() {
-    if (!_ref.read(isServerConnectedProvider)) return;
-
     _hasPendingChange = true;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDuration, () {
@@ -94,6 +95,9 @@ class GameConfigAutoSaveController extends StateNotifier<GameConfigSaveStatus> {
         });
       }
     } catch (_) {
+      // Yazım başarısız oldu: değişikliği kuyrukta tut, yoksa sonraki flush
+      // "pending yok" diye hemen döner ve düzenleme tarayıcı belleğinde kalır.
+      _hasPendingChange = true;
       if (mounted) {
         state = GameConfigSaveStatus.error;
       }

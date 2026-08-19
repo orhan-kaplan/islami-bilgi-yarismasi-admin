@@ -610,6 +610,15 @@ class FeedbackLoadNotifier extends StateNotifier<FeedbackLoadStatus> {
     }
   }
 
+  /// Sunucuda `feedback.json` yokken kullanıcı ilk veriyi oluşturduğunda
+  /// çağrılır: status [FeedbackLoadStatus.empty]'de kalırsa ekran boş-durum
+  /// placeholder'ını göstermeye devam eder ve sekmeler hiç açılmaz.
+  void markLoaded() {
+    if (!mounted) return;
+    _hasLoadedOnce = true;
+    state = FeedbackLoadStatus.loaded;
+  }
+
   /// Whether the feedback data has been loaded successfully at least once.
   bool get hasLoadedOnce => _hasLoadedOnce;
 }

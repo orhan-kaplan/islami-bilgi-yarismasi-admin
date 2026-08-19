@@ -103,6 +103,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     final isDirty = ref.watch(isDirtyProvider);
     final connectivity = ref.watch(serverConnectivityProvider);
     final isConnected = connectivity == ServerConnectivity.connected;
+    // Kayıt hatası hiçbir yerde görünmüyordu: validasyon nedeniyle bloklanan
+    // ya da sunucunun reddettiği bir yazım sessizce kayboluyordu.
+    final hasSaveError = ref.watch(saveStatusProvider) == SaveStatus.error ||
+        ref.watch(feedbackSaveStatusProvider) == FeedbackSaveStatus.error;
 
     // Listen for connectivity state changes and show snackbar notifications.
     ref.listen<ServerConnectivity>(serverConnectivityProvider, (previous, next) {
@@ -150,19 +154,23 @@ class _AppShellState extends ConsumerState<AppShell> {
               padding: const EdgeInsets.only(top: 8, bottom: 4),
               child: _ConnectivityIndicator(isConnected: isConnected),
             ),
-            trailing: isDirty
+            trailing: (isDirty || hasSaveError)
                 ? Expanded(
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Tooltip(
-                          message: 'Unsaved changes',
+                          message: hasSaveError
+                              ? 'Save failed — changes are still only in this '
+                                  'browser. Check the Validation screen.'
+                              : 'Unsaved changes',
                           child: Container(
                             width: 12,
                             height: 12,
-                            decoration: const BoxDecoration(
-                              color: Colors.orange,
+                            decoration: BoxDecoration(
+                              color:
+                                  hasSaveError ? Colors.red : Colors.orange,
                               shape: BoxShape.circle,
                             ),
                           ),

@@ -384,6 +384,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
       titles: [const PlayerTitleModel(title: 'İlim Yolcusu', icon: '🌱', requiredBooks: 0, profileImage: '')],
       learned: {for (final k in ['100', '75', '50', '25', '0']) k: [msg]},
     ));
+    // Status 'empty' kalırsa ekran boş-durum ekranında takılır ve auto-save
+    // dinlemeye başlamaz.
+    ref.read(feedbackLoadProvider.notifier).markLoaded();
   }
 
   Map<String, List<FeedbackMessageModel>> _getMessageMap(FeedbackContentState state, String category) {

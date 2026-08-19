@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../data/models/content_state.dart';
+import '../../../data/models/feedback_models.dart';
+import '../../../data/models/game_config_models.dart';
 import '../../../data/services/file_download_web.dart';
 import '../../../data/services/zip_exporter.dart';
 import '../../../data/services/zip_importer.dart';
@@ -421,6 +423,9 @@ class DashboardScreen extends ConsumerWidget {
     final importer = ZipImporter();
     ContentState? importedState;
     List<ImportIssue> issues = [];
+    Set<String> providedFiles = {};
+    FeedbackContentState? importedFeedback;
+    GameConfigState? importedGameConfig;
 
     if (zipFiles.isNotEmpty) {
       // Import from the first ZIP file
@@ -429,12 +434,9 @@ class DashboardScreen extends ConsumerWidget {
       final bundle = importer.importAll(zipFile.bytes!);
       importedState = bundle.content;
       issues = bundle.issues;
-      if (bundle.feedback != null) {
-        ref.read(feedbackContentProvider.notifier).importContent(bundle.feedback!);
-      }
-      if (bundle.gameConfig != null) {
-        ref.read(gameConfigProvider.notifier).importContent(bundle.gameConfig!);
-      }
+      providedFiles = bundle.providedFiles;
+      importedFeedback = bundle.feedback;
+      importedGameConfig = bundle.gameConfig;
     } else if (jsonFiles.isNotEmpty) {
       // Import individual JSON files
       final Map<String, Uint8List> fileMap = {};
@@ -447,64 +449,109 @@ class DashboardScreen extends ConsumerWidget {
       final (state, fileIssues) = importer.importFiles(fileMap);
       importedState = state;
       issues = fileIssues;
+      providedFiles = fileMap.keys.toSet();
       final extras = importer.parseExtras(fileMap);
       issues = [...issues, ...extras.issues];
-      if (extras.feedback != null) {
-        ref.read(feedbackContentProvider.notifier).importContent(extras.feedback!);
-      }
-      if (extras.gameConfig != null) {
-        ref.read(gameConfigProvider.notifier).importContent(extras.gameConfig!);
-      }
+      importedFeedback = extras.feedback;
+      importedGameConfig = extras.gameConfig;
     } else {
       return;
     }
 
-    ref.read(contentStateProvider.notifier).importContent(importedState);
-    ref.read(savedBaselineProvider.notifier).state = importedState;
+    // ERROR seviyesindeki sorunlar import'u bloklar — aksi halde yarım parse
+    // edilmiş (boş) bir state uygulanıyor ve auto-save onu diske yazıyordu.
+    // WARNING bloklamaz.
+    if (hasBlockingErrors(issues)) {
+      if (!context.mounted) return;
+      _showImportIssues(context, issues, blocked: true);
+      return;
+    }
+
+    // Yalnızca gerçekten gelen dosyaların dilimlerini uygula; verilmeyenler
+    // mevcut state'ten korunur.
+    final mergedState = mergeImportedSlices(
+      ref.read(contentStateProvider),
+      importedState,
+      providedFiles,
+    );
+
+    if (importedFeedback != null) {
+      ref.read(feedbackContentProvider.notifier).importContent(importedFeedback);
+    }
+    if (importedGameConfig != null) {
+      ref.read(gameConfigProvider.notifier).importContent(importedGameConfig);
+    }
+
+    ref.read(contentStateProvider.notifier).importContent(mergedState);
+    ref.read(savedBaselineProvider.notifier).state = mergedState;
     ref.read(historyProvider.notifier).clear();
 
     if (!context.mounted) return;
 
     if (issues.isNotEmpty) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Import Issues'),
-          content: SizedBox(
-            width: 400,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: issues.length,
-              itemBuilder: (_, index) {
-                final issue = issues[index];
-                return ListTile(
-                  leading: Icon(
-                    issue.severity == ImportIssueSeverity.error
-                        ? Icons.error
-                        : Icons.warning,
-                    color: issue.severity == ImportIssueSeverity.error
-                        ? Colors.red
-                        : Colors.orange,
-                  ),
-                  title: Text(issue.fileName),
-                  subtitle: Text(issue.message),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      _showImportIssues(context, issues);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Content imported successfully')),
       );
     }
+  }
+
+  /// Import sorunlarını listeler. [blocked] true ise hiçbir değişiklik
+  /// uygulanmamıştır ve başlık bunu söyler.
+  void _showImportIssues(
+    BuildContext context,
+    List<ImportIssue> issues, {
+    bool blocked = false,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(blocked ? 'Import Blocked' : 'Import Issues'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (blocked) ...[
+                const Text(
+                  'Nothing was imported — the existing content is unchanged.',
+                ),
+                const SizedBox(height: 12),
+              ],
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: issues.length,
+                  itemBuilder: (_, index) {
+                    final issue = issues[index];
+                    return ListTile(
+                      leading: Icon(
+                        issue.severity == ImportIssueSeverity.error
+                            ? Icons.error
+                            : Icons.warning,
+                        color: issue.severity == ImportIssueSeverity.error
+                            ? Colors.red
+                            : Colors.orange,
+                      ),
+                      title: Text(issue.fileName),
+                      subtitle: Text(issue.message),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _handleExport(BuildContext context, WidgetRef ref) async {

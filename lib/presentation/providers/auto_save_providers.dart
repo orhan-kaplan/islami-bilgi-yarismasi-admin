@@ -50,6 +50,12 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
   final Ref _ref;
   final Map<String, Timer> _debounceTimers = {};
   final Set<String> _pendingFiles = {};
+
+  /// Validasyon ya da yazım hatası nedeniyle diske gitmemiş dosyalar.
+  ///
+  /// [_pendingFiles] debounce bekleyenleri de içerdiği için, "kaydedildi"
+  /// durumunu yalnızca bu küme boşken göstermek gerekiyor.
+  final Set<String> _blockedFiles = {};
   final JsonSerializer _serializer = JsonSerializer();
 
   static const Duration _debounceDuration = Duration(seconds: 2);
@@ -81,10 +87,12 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
   }
 
   /// Determines which files changed and schedules debounced saves.
+  ///
+  /// Değişiklikler bağlantı yokken de kuyruğa alınır. Bağlantı kopukken
+  /// bunları hiç kaydetmemek, yeniden bağlanınca yapılan flush'ın sessizce
+  /// boşa çıkmasına — düzenlemenin yalnızca tarayıcı belleğinde kalmasına —
+  /// yol açıyordu. Asıl yazma [_saveFile] içinde yine bağlantıya bakar.
   void _onContentChanged(ContentState previous, ContentState current) {
-    // Don't schedule saves if server is not connected
-    if (!_ref.read(isServerConnectedProvider)) return;
-
     final changedFiles = getChangedFiles(previous, current);
 
     for (final filePath in changedFiles) {
@@ -112,6 +120,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     if (!isSaveAllowedForFile(apiPath, validationIssues)) {
       // Keep the file in pending so it can be retried later
       _pendingFiles.add(apiPath);
+      _blockedFiles.add(apiPath);
       if (mounted) {
         state = SaveStatus.error;
       }
@@ -119,6 +128,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     }
 
     _pendingFiles.remove(apiPath);
+    _blockedFiles.remove(apiPath);
 
     if (mounted) {
       state = SaveStatus.saving;
@@ -133,6 +143,11 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
       }
 
       if (mounted) {
+        // Başka bir dosya hâlâ bloklanmışsa "kaydedildi" demek yanlış olur.
+        if (_blockedFiles.isNotEmpty) {
+          state = SaveStatus.error;
+          return;
+        }
         state = SaveStatus.saved;
         // Reset to idle after a brief delay
         Future.delayed(const Duration(seconds: 2), () {
@@ -145,6 +160,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
       // Keep the file pending so a later flush can retry it. Dropping it here
       // would strand the edit in browser memory with no way to re-save.
       _pendingFiles.add(apiPath);
+      _blockedFiles.add(apiPath);
       if (mounted) {
         state = SaveStatus.error;
       }
@@ -238,14 +254,15 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     }
     _debounceTimers.clear();
 
+    if (_pendingFiles.isEmpty) return;
+
+    // Bağlantı yoksa kuyruğu olduğu gibi bırak. Burada temizlemek, bağlantı
+    // gelince yapılacak flush'ta kaydedilecek hiçbir şey kalmaması demekti.
+    if (!_ref.read(isServerConnectedProvider)) return;
+
     // Collect all pending files and clear the set
     final filesToSave = Set<String>.from(_pendingFiles);
     _pendingFiles.clear();
-
-    if (filesToSave.isEmpty) return;
-
-    // Don't save if server is not connected
-    if (!_ref.read(isServerConnectedProvider)) return;
 
     // Filter out files that have ERROR-level validation issues
     final validationIssues = _ref.read(validationResultsProvider);
@@ -258,6 +275,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
 
     // Keep blocked files in pending for later retry
     _pendingFiles.addAll(blockedFiles);
+    _blockedFiles.addAll(blockedFiles);
     final allowedFiles = filesToSave.difference(blockedFiles);
 
     if (allowedFiles.isEmpty) {
@@ -280,6 +298,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
         if (await _writeFile(client, apiPath, contentState)) {
           _mergeSavedFileIntoBaseline(apiPath, contentState);
         }
+        _blockedFiles.remove(apiPath);
       } catch (_) {
         // One rejected file must not cancel the rest of the batch.
         failedFiles.add(apiPath);
@@ -288,10 +307,11 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
 
     // Failed writes stay pending so the next flush retries them.
     _pendingFiles.addAll(failedFiles);
+    _blockedFiles.addAll(failedFiles);
 
     if (!mounted) return;
 
-    if (failedFiles.isNotEmpty) {
+    if (_blockedFiles.isNotEmpty) {
       state = SaveStatus.error;
       return;
     }
@@ -311,6 +331,7 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     }
     _debounceTimers.clear();
     _pendingFiles.clear();
+    _blockedFiles.clear();
     super.dispose();
   }
 }

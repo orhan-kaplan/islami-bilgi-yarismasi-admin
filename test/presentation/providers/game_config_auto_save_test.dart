@@ -80,6 +80,50 @@ void main() {
       );
     });
 
+    test('a failed PUT is retried by the next flush', () async {
+      var failNext = true;
+      final mockClient = MockClient((request) async {
+        capturedRequests.add(request);
+        if (request.url.path == '/api/files/data/game_config.json') {
+          if (failNext) {
+            failNext = false;
+            return http.Response('{"error":"disk full"}', 500);
+          }
+          return http.Response('', 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createLoadedContainer(mockClient: mockClient);
+      container.read(gameConfigAutoSaveProvider);
+
+      container.read(gameConfigProvider.notifier).importContent(
+            GameConfigState.fromJson({
+              'quiz': {'lives': 4},
+            }),
+          );
+
+      await container.read(gameConfigAutoSaveProvider.notifier).flushPendingSave();
+      expect(
+        container.read(gameConfigAutoSaveProvider),
+        GameConfigSaveStatus.error,
+      );
+
+      // Başarısız yazım değişikliği düşürmemeli; ikinci flush yeniden denemeli.
+      await container.read(gameConfigAutoSaveProvider.notifier).flushPendingSave();
+
+      final puts = capturedRequests
+          .where((r) =>
+              r.method == 'PUT' &&
+              r.url.path == '/api/files/data/game_config.json')
+          .toList();
+      expect(puts.length, 2);
+      expect(
+        container.read(gameConfigAutoSaveProvider),
+        GameConfigSaveStatus.saved,
+      );
+    });
+
     test('invalid config blocks PUT and marks error', () async {
       final mockClient = MockClient((request) async {
         capturedRequests.add(request);

@@ -26,7 +26,7 @@ enum FeedbackSaveStatus { idle, saving, saved, error }
 /// then serializes and saves `data/feedback.json` to the asset server.
 ///
 /// The controller:
-/// 1. Only starts listening AFTER [feedbackLoadProvider] is loaded
+/// 1. Only starts listening AFTER [feedbackLoadProvider] is loaded or empty
 /// 2. Only saves when [isServerConnectedProvider] is true
 /// 3. On state change: starts/resets a 2-second debounce timer
 /// 4. When timer fires: validates data, then serializes and PUTs to server
@@ -46,20 +46,25 @@ class FeedbackAutoSaveController extends StateNotifier<FeedbackSaveStatus> {
   /// Initializes the controller by waiting for feedback load to complete,
   /// then starts listening to feedback content state changes.
   void _init() {
-    final loadStatus = _ref.read(feedbackLoadProvider);
-    if (loadStatus == FeedbackLoadStatus.loaded) {
+    if (_isReady(_ref.read(feedbackLoadProvider))) {
       _startListening();
       return;
     }
 
     // Wait for feedback load to complete
     _ref.listen<FeedbackLoadStatus>(feedbackLoadProvider, (previous, next) {
-      if (next == FeedbackLoadStatus.loaded &&
-          previous != FeedbackLoadStatus.loaded) {
+      if (_isReady(next) && !_isReady(previous)) {
         _startListening();
       }
     });
   }
+
+  /// Sunucudan okuma bittiğinde auto-save dinlemeye başlayabilir.
+  ///
+  /// [FeedbackLoadStatus.empty] de hazır sayılır: `feedback.json` sunucuda
+  /// yokken kullanıcının oluşturduğu ilk veri aksi halde hiç kaydedilmiyordu.
+  bool _isReady(FeedbackLoadStatus? status) =>
+      status == FeedbackLoadStatus.loaded || status == FeedbackLoadStatus.empty;
 
   /// Starts listening to feedback content state changes.
   void _startListening() {
@@ -71,10 +76,11 @@ class FeedbackAutoSaveController extends StateNotifier<FeedbackSaveStatus> {
   }
 
   /// Schedules a debounced save when content changes.
+  ///
+  /// Bağlantı yokken de işaretlenir; yazma [_saveFile] içinde yine bağlantıya
+  /// bakar. Aksi halde bağlantı kopukken yapılan düzenleme hiç kuyruğa
+  /// girmiyor, yeniden bağlanınca da kaydedilmiyordu.
   void _onContentChanged() {
-    // Don't schedule saves if server is not connected
-    if (!_ref.read(isServerConnectedProvider)) return;
-
     _hasPendingChange = true;
     // Cancel existing timer and start a new one
     _debounceTimer?.cancel();
@@ -128,6 +134,9 @@ class FeedbackAutoSaveController extends StateNotifier<FeedbackSaveStatus> {
         });
       }
     } catch (_) {
+      // Yazım başarısız oldu: değişikliği kuyrukta tut, yoksa sonraki flush
+      // "pending yok" diye hemen döner ve düzenleme tarayıcı belleğinde kalır.
+      _hasPendingChange = true;
       if (mounted) {
         state = FeedbackSaveStatus.error;
       }

@@ -320,6 +320,50 @@ void main() {
           container.read(feedbackAutoSaveProvider), FeedbackSaveStatus.idle);
     });
 
+    test('a failed PUT is retried by the next flush', () async {
+      var failNext = true;
+      final mockClient = MockClient((request) async {
+        capturedRequests.add(request);
+        if (request.url.path == '/api/files/data/feedback.json') {
+          if (failNext) {
+            failNext = false;
+            return http.Response('{"error":"disk full"}', 500);
+          }
+          return http.Response('', 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createLoadedContainer(mockClient: mockClient);
+      container.read(feedbackAutoSaveProvider);
+
+      container.read(feedbackContentProvider.notifier).addMessage(
+            'comeback',
+            null,
+            const FeedbackMessageModel(
+              title: 'Retry me',
+              message: 'Must survive a failed write',
+              emoji: '🔁',
+              shouldRepeat: true,
+            ),
+          );
+
+      await container.read(feedbackAutoSaveProvider.notifier).flushPendingSave();
+      expect(container.read(feedbackAutoSaveProvider), FeedbackSaveStatus.error);
+
+      // Başarısız yazım değişikliği düşürmemeli; ikinci flush yeniden denemeli.
+      await container.read(feedbackAutoSaveProvider.notifier).flushPendingSave();
+
+      final okPuts = capturedRequests
+          .where((r) =>
+              r.method == 'PUT' &&
+              r.url.path == '/api/files/data/feedback.json')
+          .toList();
+      expect(okPuts.length, 2);
+      expect(okPuts.last.body, contains('Retry me'));
+      expect(container.read(feedbackAutoSaveProvider), FeedbackSaveStatus.saved);
+    });
+
     test('transitions to error on server failure', () async {
       final mockClient = MockClient((request) async {
         capturedRequests.add(request);
@@ -444,4 +488,7 @@ class _AlreadyLoadedNotifier extends StateNotifier<FeedbackLoadStatus>
 
   @override
   Future<void> performLoad() async {}
+
+  @override
+  void markLoaded() => state = FeedbackLoadStatus.loaded;
 }

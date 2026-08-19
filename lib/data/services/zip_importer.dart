@@ -52,12 +52,61 @@ class ZipImportBundle {
   final FeedbackContentState? feedback;
   final GameConfigState? gameConfig;
 
+  /// Arşivde gerçekten bulunan üst seviye dosya adları (`series.json` gibi).
+  ///
+  /// Arşivde olmayan bir dosyanın dilimi mevcut state'ten korunur; bkz.
+  /// [mergeImportedSlices].
+  final Set<String> providedFiles;
+
   const ZipImportBundle({
     required this.content,
     required this.issues,
     this.feedback,
     this.gameConfig,
+    this.providedFiles = const {},
   });
+}
+
+/// Import'u bloklayan bir sorun var mı.
+///
+/// ERROR bloklar, WARNING bloklamaz — ZIP export ve per-file auto-save ile
+/// aynı kural.
+bool hasBlockingErrors(List<ImportIssue> issues) {
+  return issues.any((i) => i.severity == ImportIssueSeverity.error);
+}
+
+/// [imported] içinden yalnızca [providedFiles] ile gelen dilimleri [current]
+/// üzerine yazar.
+///
+/// Import edilen dosya kümesi eksik olabilir (tek bir `books.json` seçmek ya da
+/// yalnız birkaç dosya içeren bir ZIP). Tüm state'i [imported] ile değiştirmek,
+/// verilmeyen dosyaları boşaltıyor ve auto-save bu boşluğu diske yazıyordu.
+/// Verilmeyen dosyalar burada olduğu gibi korunur; boş ama *verilmiş* bir dosya
+/// (`[]`) kendi dilimini temizler.
+///
+/// `contentFiles` anahtar bazında birleştirilir: import edilen anahtarlar
+/// üzerine yazar, arşivde olmayan anahtarlar korunur.
+ContentState mergeImportedSlices(
+  ContentState current,
+  ContentState imported,
+  Set<String> providedFiles,
+) {
+  return ContentState(
+    series: providedFiles.contains('series.json')
+        ? imported.series
+        : current.series,
+    books:
+        providedFiles.contains('books.json') ? imported.books : current.books,
+    rewards: providedFiles.contains('rewards.json')
+        ? imported.rewards
+        : current.rewards,
+    hadiths: providedFiles.contains('hadiths.json')
+        ? imported.hadiths
+        : current.hadiths,
+    contentFiles: imported.contentFiles.isEmpty
+        ? current.contentFiles
+        : {...current.contentFiles, ...imported.contentFiles},
+  );
 }
 
 /// Orchestrates extraction and parsing of ZIP archives and individual files.
@@ -125,6 +174,24 @@ class ZipImporter {
 
     // Expected top-level files
     const expectedFiles = ['series.json', 'books.json', 'rewards.json', 'hadiths.json'];
+
+    // Arşivde dosya var ama hiçbiri tanınmıyorsa (örn. export ZIP'i fazladan bir
+    // klasöre sarılmış), prefix normalizasyonu tutmamıştır. Bunu yalnızca
+    // "dosya bulunamadı" uyarılarıyla geçmek, boş bir state'in diske yazılması
+    // demek; import'u bloklamak gerekir.
+    final recognizedAny = expectedFiles.any(fileMap.containsKey) ||
+        fileMap.keys
+            .any((k) => k.startsWith('content/') && k.endsWith('.json'));
+    if (fileMap.isNotEmpty && !recognizedAny) {
+      issues.add(ImportIssue(
+        fileName: 'archive',
+        message: 'No recognized content files found in the archive. Expected '
+            '${expectedFiles.join(', ')} or content/*.json at the archive root '
+            '(optionally under data/ or assets/data/). Found: '
+            '${fileMap.keys.take(5).join(', ')}',
+        severity: ImportIssueSeverity.error,
+      ));
+    }
 
     for (final expected in expectedFiles) {
       if (!fileMap.containsKey(expected)) {
@@ -300,6 +367,7 @@ class ZipImporter {
       issues: extraIssues,
       feedback: feedback,
       gameConfig: gameConfig,
+      providedFiles: fileMap.keys.toSet(),
     );
   }
 
