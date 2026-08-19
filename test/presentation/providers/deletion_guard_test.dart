@@ -3,6 +3,7 @@ import 'package:glados/glados.dart' hide expect, group, test;
 import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/content_providers.dart';
 
@@ -293,5 +294,69 @@ void main() {
             reason: 'Deleting book with no content file entry should succeed');
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Book deletion is blocked while a reward still unlocks the book
+  //
+  // The reward → book FK is reported against rewards.json, but deleting a book
+  // only makes books.json dirty. Per-file save gating therefore never sees the
+  // dangling reference: books.json is written and rewards.json keeps pointing
+  // at a book that no longer exists.
+  // ---------------------------------------------------------------------------
+
+  group('deleteBook guards the reward foreign key', () {
+    ContentNotifier notifierWithReward({required int unlockBookId}) =>
+        ContentNotifier(ContentState(
+          series: const [],
+          books: const [
+            BookModel(
+              id: 1,
+              title: 'Book 1',
+              description: 'Description',
+              assetImage: 'assets/images/book_1/book_1.png',
+              bookOrder: 1,
+              seriesId: 1,
+              contentFile: 'book_1.json',
+            ),
+          ],
+          contentFiles: const {'book_1.json': []},
+          rewards: [
+            RewardModel(
+              title: 'Reward',
+              description: 'Description',
+              assetImage: 'assets/images/rewards/r.webp',
+              unlockBookId: unlockBookId,
+            ),
+          ],
+          hadiths: const [],
+        ));
+
+    test('deleteBook returns false when a reward unlocks the book', () {
+      final notifier = notifierWithReward(unlockBookId: 1);
+
+      expect(
+        notifier.deleteBook(1),
+        isFalse,
+        reason: 'deleting a book a reward still unlocks would leave a dangling '
+            'unlock_book_id in rewards.json',
+      );
+    });
+
+    test('state is unchanged when the deletion is blocked', () {
+      final notifier = notifierWithReward(unlockBookId: 1);
+      final before = notifier.state;
+
+      notifier.deleteBook(1);
+
+      expect(notifier.state, before);
+    });
+
+    test('deleteBook still succeeds when no reward unlocks the book', () {
+      final notifier = notifierWithReward(unlockBookId: 99);
+
+      expect(notifier.deleteBook(1), isTrue);
+      expect(notifier.state.books, isEmpty);
+    });
   });
 }

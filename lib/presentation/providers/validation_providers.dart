@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/content_state.dart';
 import '../../data/services/asset_path_utils.dart';
+import '../../data/services/asset_server_client.dart';
 import '../../data/services/asset_reference_detector.dart';
 import '../../data/services/content_validator.dart';
 import 'asset_server_providers.dart';
@@ -47,6 +48,12 @@ final missingAssetValidationProvider =
 
   // Build existence index by listing each directory once
   final existingFiles = <String>{};
+  // Directories we could not read at all. A 404 means the directory is gone,
+  // so everything inside it really is missing; any other failure only means
+  // "could not check" and must not be reported as a missing asset — it would
+  // turn one transient server error into a warning per reference and sink the
+  // health score.
+  final uncheckedDirectories = <String>{};
   for (final dir in directoriesToList) {
     try {
       final entries = await client.listDirectory(dir);
@@ -54,15 +61,17 @@ final missingAssetValidationProvider =
         // entry.path is in API_Path format
         existingFiles.add(AssetPathUtils.apiPathToAppPath(entry.path));
       }
+    } on AssetServerException catch (e) {
+      if (e.statusCode != 404) uncheckedDirectories.add(dir);
     } catch (_) {
-      // If a directory doesn't exist or listing fails, skip it.
-      // Files in that directory will be reported as missing.
+      uncheckedDirectories.add(dir);
     }
   }
 
   // Compare referenced paths against existing files
   final issues = <ValidationIssue>[];
   for (final appPath in referencedPaths) {
+    if (uncheckedDirectories.contains(_parentDirectory(appPath))) continue;
     if (!existingFiles.contains(appPath)) {
       // Determine source file for this reference
       final sourceFile = _findSourceFileForAsset(state, appPath);
@@ -77,6 +86,14 @@ final missingAssetValidationProvider =
 
   return issues;
 });
+
+/// The API_Path directory holding [appPath], matching how the listing index
+/// above is keyed.
+String? _parentDirectory(String appPath) {
+  final apiPath = AssetPathUtils.appPathToApiPath(appPath);
+  final lastSlash = apiPath.lastIndexOf('/');
+  return lastSlash > 0 ? apiPath.substring(0, lastSlash) : null;
+}
 
 /// Finds the source file that references the given asset path.
 String _findSourceFileForAsset(
@@ -116,7 +133,11 @@ final allValidationResultsProvider = Provider<List<ValidationIssue>>((ref) {
   final syncResults = ref.watch(validationResultsProvider);
   final asyncResults = ref.watch(missingAssetValidationProvider);
 
+  // The asset check re-runs on every content mutation. Dropping its findings
+  // while it reloads makes the health score jump on every edit, so keep the
+  // last answer until a new one arrives.
   return asyncResults.when(
+    skipLoadingOnReload: true,
     data: (missingAssetIssues) => [...syncResults, ...missingAssetIssues],
     loading: () => syncResults,
     error: (_, _) => syncResults,

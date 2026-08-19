@@ -13,6 +13,8 @@ import 'asset_server_providers.dart';
 import 'auto_load_providers.dart';
 import 'connectivity_providers.dart';
 import 'content_providers.dart';
+import 'feedback_auto_save_providers.dart';
+import 'game_config_auto_save_providers.dart';
 import 'history_providers.dart';
 import 'validation_providers.dart';
 
@@ -349,4 +351,15 @@ final autoSaveControllerProvider =
 /// Convenience provider exposing just the save status.
 final saveStatusProvider = Provider<SaveStatus>((ref) {
   return ref.watch(autoSaveControllerProvider);
+});
+
+/// Whether any auto-save channel is currently failing.
+///
+/// A write blocked by validation is only reported through its own status
+/// provider, so every channel has to be listed here — a missing one fails
+/// silently as soon as the user leaves the screen that owns it.
+final hasSaveErrorProvider = Provider<bool>((ref) {
+  return ref.watch(saveStatusProvider) == SaveStatus.error ||
+      ref.watch(feedbackSaveStatusProvider) == FeedbackSaveStatus.error ||
+      ref.watch(gameConfigSaveStatusProvider) == GameConfigSaveStatus.error;
 });

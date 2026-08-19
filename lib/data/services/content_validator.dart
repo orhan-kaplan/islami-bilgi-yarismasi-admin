@@ -131,7 +131,20 @@ class ContentValidator {
   // 10.1  Level IDs — unique positive integers across ALL books
   // ──────────────────────────────────────────────────────────────────
   void _validateLevelIds(ContentState state, List<ValidationIssue> issues) {
-    final seen = <int>{};
+    // Remember where each ID was first seen. Save gating only blocks the file
+    // an issue names, so reporting a collision against the file that happens
+    // to be iterated second would let the other one be written to disk.
+    final firstSeen = <int, (String sourceFile, int index)>{};
+    final reportedFirst = <int>{};
+
+    ValidationIssue duplicate(String sourceFile, int index, int id) =>
+        ValidationIssue(
+          severity: ValidationSeverity.error,
+          sourceFile: sourceFile,
+          jsonPath: '\$.levels[$index].id',
+          message: 'Duplicate level ID across all books: $id',
+        );
+
     for (final entry in state.contentFiles.entries) {
       final fileName = 'content/${entry.key}';
       final levels = entry.value;
@@ -145,15 +158,15 @@ class ContentValidator {
             message: 'Level ID must be a positive integer, got ${level.id}',
           ));
         }
-        if (!seen.add(level.id)) {
-          issues.add(ValidationIssue(
-            severity: ValidationSeverity.error,
-            sourceFile: fileName,
-            jsonPath: '\$.levels[$i].id',
-            message:
-                'Duplicate level ID across all books: ${level.id}',
-          ));
+        final first = firstSeen[level.id];
+        if (first == null) {
+          firstSeen[level.id] = (fileName, i);
+          continue;
         }
+        if (reportedFirst.add(level.id)) {
+          issues.add(duplicate(first.$1, first.$2, level.id));
+        }
+        issues.add(duplicate(fileName, i, level.id));
       }
     }
   }
@@ -351,6 +364,20 @@ class ContentValidator {
           final q = level.questions[qi];
           final qPath = '\$.levels[$li].questions[$qi]';
 
+          // 10.19 — type must be one of the four the app can render. Anything
+          // else falls back to multiple choice there and skips every
+          // type-specific rule here.
+          if (!ValidationRules.validQuestionTypes.contains(q.type)) {
+            issues.add(ValidationIssue(
+              severity: ValidationSeverity.error,
+              sourceFile: fileName,
+              jsonPath: '$qPath.type',
+              message:
+                  'Unknown question type "${q.type}" — must be one of '
+                  '${ValidationRules.validQuestionTypes.join(', ')}',
+            ));
+          }
+
           // 10.9 — correct_option must be A, B, C, or D
           if (!ValidationRules.validCorrectOptions.contains(q.correctOption)) {
             issues.add(ValidationIssue(
@@ -408,7 +435,9 @@ class ContentValidator {
             }
           }
 
-          // 10.11 — matching: each option must contain the | separator
+          // 10.11 — matching: each option must split into exactly one
+          // left/right pair. The app renders anything else as "Hata", so a
+          // second separator is just as broken as a missing one.
           if (q.type == 'matching') {
             for (final optEntry in {
               'option_a': q.optionA,
@@ -416,14 +445,15 @@ class ContentValidator {
               'option_c': q.optionC,
               'option_d': q.optionD,
             }.entries) {
-              if (!optEntry.value
-                  .contains(ValidationRules.matchingSeparator)) {
+              final parts =
+                  optEntry.value.split(ValidationRules.matchingSeparator);
+              if (parts.length != 2) {
                 issues.add(ValidationIssue(
                   severity: ValidationSeverity.error,
                   sourceFile: fileName,
                   jsonPath: '$qPath.${optEntry.key}',
                   message:
-                      'matching question option must contain the "|" '
+                      'matching question option must contain exactly one "|" '
                       'separator — got "${optEntry.value}"',
                 ));
               }
@@ -441,6 +471,26 @@ class ContentValidator {
                   'sorting question must have correct_option "A", '
                   'got "${q.correctOption}"',
             ));
+          }
+
+          // 10.20 — sorting: the app shuffles all four options and compares
+          // the whole list, so an empty item is an unsolvable question.
+          if (q.type == 'sorting') {
+            for (final optEntry in {
+              'option_c': q.optionC,
+              'option_d': q.optionD,
+            }.entries) {
+              if (optEntry.value.isEmpty) {
+                issues.add(ValidationIssue(
+                  severity: ValidationSeverity.error,
+                  sourceFile: fileName,
+                  jsonPath: '$qPath.${optEntry.key}',
+                  message:
+                      'sorting question must have four non-empty items — '
+                      '${optEntry.key} is empty',
+                ));
+              }
+            }
           }
         }
       }

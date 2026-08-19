@@ -128,3 +128,8 @@ final gameConfigAutoSaveProvider =
     StateNotifierProvider<GameConfigAutoSaveController, GameConfigSaveStatus>(
   (ref) => GameConfigAutoSaveController(ref),
 );
+
+/// Convenience provider exposing just the game config save status.
+final gameConfigSaveStatusProvider = Provider<GameConfigSaveStatus>((ref) {
+  return ref.watch(gameConfigAutoSaveProvider);
+});

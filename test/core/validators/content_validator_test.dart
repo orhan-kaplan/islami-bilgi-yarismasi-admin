@@ -205,6 +205,36 @@ void main() {
       expect(issues.any((i) => i.message.contains('Duplicate level ID')), isTrue);
     });
 
+    test('duplicate level ID is reported against both content files', () {
+      // Save gating is per file: it only blocks the file the issue names.
+      // Reporting a global collision against whichever file happens to be
+      // iterated second lets the edited file through and blocks an
+      // untouched one.
+      final state = ContentState(
+        series: [_series()],
+        books: [
+          _book(id: 1, bookOrder: 1, contentFile: 'book_1.json'),
+          _book(id: 2, bookOrder: 2, contentFile: 'book_2.json'),
+        ],
+        contentFiles: {
+          'book_1.json': [_level(id: 7, bookId: 1)],
+          'book_2.json': [_level(id: 7, bookId: 2)],
+        },
+        rewards: [],
+        hadiths: [],
+      );
+      final duplicates = _errors(state)
+          .where((i) => i.message.contains('Duplicate level ID'))
+          .toList();
+
+      expect(
+        duplicates.map((i) => i.sourceFile).toSet(),
+        {'content/book_1.json', 'content/book_2.json'},
+        reason: 'both files carrying level ID 7 must be blocked — '
+            'got: $duplicates',
+      );
+    });
+
     test('non-positive level ID produces error', () {
       final state = _validState().copyWith(
         contentFiles: {

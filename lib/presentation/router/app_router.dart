@@ -105,8 +105,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     final isConnected = connectivity == ServerConnectivity.connected;
     // Kayıt hatası hiçbir yerde görünmüyordu: validasyon nedeniyle bloklanan
     // ya da sunucunun reddettiği bir yazım sessizce kayboluyordu.
-    final hasSaveError = ref.watch(saveStatusProvider) == SaveStatus.error ||
-        ref.watch(feedbackSaveStatusProvider) == FeedbackSaveStatus.error;
+    final hasSaveError = ref.watch(hasSaveErrorProvider);
 
     // Listen for connectivity state changes and show snackbar notifications.
     ref.listen<ServerConnectivity>(serverConnectivityProvider, (previous, next) {

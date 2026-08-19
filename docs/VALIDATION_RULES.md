@@ -10,7 +10,7 @@ Error-level kurallar **export'u bloklar**. Bu hatalar düzeltilmeden ZIP export 
 |---|-----------|----------|------------|-----------------|
 | 1 | Series ID unique | Seri ID'leri pozitif tamsayı ve benzersiz olmalı | `series.json` | `$[0].id` |
 | 2 | Book ID unique | Kitap ID'leri pozitif tamsayı ve benzersiz olmalı | `books.json` | `$[1].id` |
-| 3 | Level ID unique (global) | Level ID'leri tüm kitaplar genelinde benzersiz olmalı | `content/book_1.json` | `$.levels[0].id` |
+| 3 | Level ID unique (global) | Level ID'leri tüm kitaplar genelinde benzersiz olmalı. Çakışma, ID'yi taşıyan **her** content dosyasına ayrı ayrı raporlanır — per-file save gating yalnızca issue'nun adını verdiği dosyayı bloklar | `content/book_1.json` | `$.levels[0].id` |
 | 4 | Book → Series FK | Kitabın `series_id`'si mevcut bir seriye işaret etmeli | `books.json` | `$[0].series_id` |
 | 5 | Level → Book FK | Level'ın `book_id`'si mevcut bir kitaba işaret etmeli | `content/book_1.json` | `$.levels[0].book_id` |
 | 6 | Reward → Book FK | Ödülün `unlock_book_id`'si mevcut bir kitaba işaret etmeli | `rewards.json` | `$[0].unlock_book_id` |
@@ -20,11 +20,13 @@ Error-level kurallar **export'u bloklar**. Bu hatalar düzeltilmeden ZIP export 
 | 10 | Level order sequential | Her content file içinde `level_order` değerleri 1'den başlayarak ardışık olmalı | `content/book_1.json` | `$.levels` |
 | 11 | correct_option valid | `correct_option` sadece "A", "B", "C", "D" değerlerinden biri olabilir | `content/book_1.json` | `$.levels[0].questions[2].correct_option` |
 | 12 | true_false: option_c/d empty | `true_false` tipindeki sorularda `option_c` ve `option_d` boş string olmalı | `content/book_1.json` | `$.levels[0].questions[0].option_c` |
-| 13 | matching: pipe separator | `matching` tipindeki sorularda her option `\|` karakteri içermeli | `content/book_2.json` | `$.levels[1].questions[3].option_a` |
+| 13 | matching: pipe separator | `matching` tipindeki sorularda her option **tam olarak bir** `\|` karakteri içermeli (uygulama option'ı sol/sağ olarak ikiye böler; başka her durumda "Hata" render eder) | `content/book_2.json` | `$.levels[1].questions[3].option_a` |
 | 14 | sorting: correct_option = "A" | `sorting` tipindeki sorularda `correct_option` her zaman "A" olmalı | `content/book_1.json` | `$.levels[2].questions[0].correct_option` |
 | 15 | content_file existence | Kitabın `content_file` alanı sadece dosya adı olmalı (path prefix yok) ve contentFiles map'inde bulunmalı | `books.json` | `$[0].content_file` |
 | 16 | asset_image prefix | `asset_image` yolları "assets/" ile başlamalı (books, levels, rewards) | `books.json` | `$[0].asset_image` |
 | 17 | Required fields non-empty | Zorunlu alanlar boş string olmamalı (series.name, book.title/description/content_file, level.title/category_name, question.question_text/option_a/option_b/correct_option, reward.title/description/asset_image, hadith.text/source) | çeşitli | `$[0].title` |
+| 18 | sorting: 4 dolu item | `sorting` tipindeki sorularda `option_c` ve `option_d` boş olamaz (uygulama dört option'ı karıştırıp tüm listeyi karşılaştırır) | `content/book_1.json` | `$.levels[2].questions[0].option_c` |
+| 19 | type whitelist | `type` yalnızca `multiple_choice`, `true_false`, `matching`, `sorting` olabilir (uygulama tanımadığı tipi sessizce çoktan seçmeliye düşürür) | `content/book_1.json` | `$.levels[0].questions[1].type` |
 
 ## Warning-Level Kurallar
 

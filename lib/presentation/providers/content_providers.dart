@@ -94,8 +94,8 @@ class ContentNotifier extends StateNotifier<ContentState> {
     );
   }
 
-  /// Deletes a book by ID. Returns false if the book's contentFile has levels
-  /// in contentFiles map (blocked).
+  /// Deletes a book by ID. Returns false when the book still has levels in
+  /// the contentFiles map, or when a reward still unlocks it (blocked).
   bool deleteBook(int bookId) {
     final book = state.books.firstWhere(
       (b) => b.id == bookId,
@@ -103,6 +103,10 @@ class ContentNotifier extends StateNotifier<ContentState> {
     );
     final levels = state.contentFiles[book.contentFile];
     if (levels != null && levels.isNotEmpty) return false;
+    // A reward's unlock_book_id error is reported against rewards.json, but
+    // deleting a book only makes books.json dirty — per-file save gating would
+    // never see the dangling reference and would write the deletion to disk.
+    if (state.rewards.any((r) => r.unlockBookId == bookId)) return false;
     final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
     if (levels != null && levels.isEmpty) {
       updatedMap.remove(book.contentFile);

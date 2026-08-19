@@ -329,9 +329,11 @@ void main() {
           contains(contains('assets/images/rewards/reward_1.webp')));
     });
 
-    test('handles directory listing failure gracefully', () async {
+    test('reports nothing when the directory listing itself fails', () async {
+      // A 500 means "could not check", not "file is gone". Reporting every
+      // reference in the directory as missing turns one transient server
+      // error into a pile of warnings that drags the health score down.
       final mockClient = MockClient((request) async {
-        // Simulate server error for directory listing
         return http.Response(
           jsonEncode({'error': 'Internal server error'}),
           500,
@@ -365,7 +367,51 @@ void main() {
       final result =
           await container.read(missingAssetValidationProvider.future);
 
-      // When listing fails, the file is reported as missing
+      expect(
+        result,
+        isEmpty,
+        reason: 'a failed listing says nothing about whether the asset exists',
+      );
+    });
+
+    test('reports assets as missing when the directory does not exist',
+        () async {
+      // A 404 from /api/list is the server telling us the directory is not
+      // there, so everything referenced inside it really is missing.
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({'error': 'Directory not found: images/book_1'}),
+          404,
+        );
+      });
+
+      const state = ContentState(
+        series: [],
+        books: [
+          BookModel(
+            id: 1,
+            title: 'Book 1',
+            description: 'Desc',
+            assetImage: 'assets/images/book_1/cover.webp',
+            bookOrder: 1,
+            seriesId: 1,
+            contentFile: 'book_1.json',
+          ),
+        ],
+        contentFiles: {},
+        rewards: [],
+        hadiths: [],
+      );
+
+      final container = createContainer(
+        mockClient: mockClient,
+        contentState: state,
+        isConnected: true,
+      );
+
+      final result =
+          await container.read(missingAssetValidationProvider.future);
+
       expect(result, hasLength(1));
       expect(result.first.severity, ValidationSeverity.warning);
       expect(
