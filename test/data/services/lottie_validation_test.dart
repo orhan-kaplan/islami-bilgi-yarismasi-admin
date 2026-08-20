@@ -50,6 +50,11 @@ extension LottieGenerators on Any {
 
   /// Generates a random non-empty subset of the required fields to REMOVE,
   /// producing an invalid Lottie map (missing at least one required field).
+  ///
+  /// Shrinks toward the minimal failing case: exactly one field missing
+  /// (the first one the generator happened to remove) and no extra fields,
+  /// so a failing run points straight at a small, readable example instead
+  /// of a random-sized map.
   Generator<Map<String, dynamic>> get invalidLottieMap => simple(
         generate: (random, size) {
           final map = <String, dynamic>{};
@@ -83,7 +88,22 @@ extension LottieGenerators on Any {
           }
           return map;
         },
-        shrink: (input) => [],
+        shrink: (input) {
+          final missing =
+              _requiredFields.where((f) => !input.containsKey(f)).toList();
+          final isMinimal = missing.length == 1 && input.length == 3;
+          if (isMinimal) return [];
+
+          final minimal = <String, dynamic>{
+            'v': '5.0.0',
+            'layers': <dynamic>[
+              {'ty': 1, 'nm': 'layer'},
+            ],
+            'w': 100,
+            'h': 100,
+          }..remove(missing.first);
+          return [minimal];
+        },
       );
 
   /// Generates a random subset (0 to 4) of the required fields to include.

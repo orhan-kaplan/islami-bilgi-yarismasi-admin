@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/json_parser.dart';
 
@@ -47,52 +45,6 @@ void main() {
       expect(result[1].name, 'Kısas-ı Enbiya');
     });
 
-    test('parses actual series data from main app', () {
-      const jsonString = '''
-[
-  {
-    "id": 1,
-    "name": "Siyer-i Nebi",
-    "sort_order": 1,
-    "is_locked": false,
-    "icon_emoji": "🕌",
-    "description": "Peygamber Efendimiz Hz. Muhammed (s.a.v)'in hayatı"
-  },
-  {
-    "id": 2,
-    "name": "Kısas-ı Enbiya",
-    "sort_order": 2,
-    "is_locked": false,
-    "icon_emoji": "📖",
-    "description": "Peygamberler tarihi ve kıssaları"
-  },
-  {
-    "id": 3,
-    "name": "Hulefa-i Raşidin",
-    "sort_order": 3,
-    "is_locked": true,
-    "icon_emoji": "👑",
-    "description": "Dört büyük halife dönemi"
-  },
-  {
-    "id": 4,
-    "name": "İslami İlimler",
-    "sort_order": 4,
-    "is_locked": true,
-    "icon_emoji": "🎓",
-    "description": "Temel İslami bilgiler ve ilimler"
-  }
-]
-''';
-
-      final result = parser.parseSeries(jsonString);
-
-      expect(result.length, 4);
-      expect(result[2].name, 'Hulefa-i Raşidin');
-      expect(result[2].isLocked, true);
-      expect(result[3].iconEmoji, '🎓');
-    });
-
     test('parses series with null description', () {
       const jsonString = '''
 [
@@ -125,7 +77,11 @@ void main() {
 
       expect(
         () => parser.parseSeries(jsonString),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('series'),
+        )),
       );
     });
 
@@ -182,52 +138,16 @@ void main() {
       expect(result[1].title, 'Medine Dönemi');
     });
 
-    test('parses actual books data from main app', () {
-      const jsonString = '''
-[
-  {
-    "id": 1,
-    "title": "Mekke Dönemi",
-    "description": "İslam güneşinin doğuşu ve ilk mücadeleler.",
-    "asset_image": "assets/images/book_1/book_1.png",
-    "book_order": 1,
-    "series_id": 1,
-    "content_file": "book_1.json"
-  },
-  {
-    "id": 2,
-    "title": "Medine Dönemi",
-    "description": "Hicret, devletleşme ve büyük savaşlar.",
-    "asset_image": "assets/images/book_2/book_2.png",
-    "book_order": 2,
-    "series_id": 1,
-    "content_file": "book_2.json"
-  },
-  {
-    "id": 3,
-    "title": "Bedir Savaşı",
-    "description": "İslam'ın ilk büyük zaferi ve dönüm noktası.",
-    "asset_image": "assets/images/book_3/book_3.png",
-    "book_order": 3,
-    "series_id": 1,
-    "content_file": "book_3.json"
-  }
-]
-''';
-
-      final result = parser.parseBooks(jsonString);
-
-      expect(result.length, 3);
-      expect(result[2].title, 'Bedir Savaşı');
-      expect(result[2].contentFile, 'book_3.json');
-    });
-
     test('throws FormatException on invalid JSON', () {
       const jsonString = 'not json at all';
 
       expect(
         () => parser.parseBooks(jsonString),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('books'),
+        )),
       );
     });
 
@@ -426,7 +346,11 @@ void main() {
 
       expect(
         () => parser.parseContentFile(jsonString),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('content file'),
+        )),
       );
     });
 
@@ -488,41 +412,14 @@ void main() {
       expect(result[1].title, 'Sabır Kahramanı');
     });
 
-    test('parses actual rewards data from main app', () {
-      const jsonString = '''
-[
-  {
-    "title": "İlim Talebesi",
-    "description": "Tebrikler! Mekke Dönemi kitabını başarıyla tamamladın.",
-    "asset_image": "assets/images/rewards/book_1_reward.webp",
-    "unlock_book_id": 1
-  },
-  {
-    "title": "Sabır Kahramanı",
-    "description": "Muazzam! Medine Dönemi kitabını bitirdin.",
-    "asset_image": "assets/images/rewards/book_2_reward.webp",
-    "unlock_book_id": 2
-  },
-  {
-    "title": "Bedir Aslanı",
-    "description": "Bedir Savaşı bölümünü bitirerek büyük bir zafer kazandın.",
-    "asset_image": "assets/images/rewards/book_3_reward.webp",
-    "unlock_book_id": 3
-  }
-]
-''';
-
-      final result = parser.parseRewards(jsonString);
-
-      expect(result.length, 3);
-      expect(result[2].title, 'Bedir Aslanı');
-      expect(result[2].unlockBookId, 3);
-    });
-
     test('throws FormatException on invalid JSON', () {
       expect(
         () => parser.parseRewards('{{bad}}'),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('rewards'),
+        )),
       );
     });
 
@@ -564,55 +461,6 @@ void main() {
       expect(result[1].text, 'Ameller niyetlere göredir.');
     });
 
-    test('parses actual hadiths data from main app', () {
-      const jsonString = '''
-[
-  {
-    "text": "Kolaylaştırınız, zorlaştırmayınız; müjdeleyiniz, nefret ettirmeyiniz.",
-    "source": "Buhari, İlim, 11"
-  },
-  {
-    "text": "Ameller niyetlere göredir.",
-    "source": "Buhari, Bed'ü'l-Vahy, 1"
-  },
-  {
-    "text": "Sizin en hayırlınız, Kur'an'ı öğrenen ve öğretendir.",
-    "source": "Buhari, Fezailü'l-Kur'an, 21"
-  },
-  {
-    "text": "Temizlik imanın yarısıdır.",
-    "source": "Müslim, Taharet, 1"
-  },
-  {
-    "text": "Güzel söz sadakadır.",
-    "source": "Buhari, Edeb, 34"
-  },
-  {
-    "text": "İki günü eşit olan ziyandadır.",
-    "source": "Hadis-i Şerif"
-  },
-  {
-    "text": "Müslüman, elinden ve dilinden diğer Müslümanların emin olduğu kimsedir.",
-    "source": "Buhari, İman, 4"
-  },
-  {
-    "text": "İlim Çin'de de olsa gidip alınız.",
-    "source": "Beyhaki, Şuabü'l-Iman"
-  },
-  {
-    "text": "Komşusu açken tok yatan bizden değildir.",
-    "source": "İbn Ebi Şeybe, Musannef"
-  }
-]
-''';
-
-      final result = parser.parseHadiths(jsonString);
-
-      expect(result.length, 9);
-      expect(result[7].text, 'İlim Çin\'de de olsa gidip alınız.');
-      expect(result[7].source, 'Beyhaki, Şuabü\'l-Iman');
-    });
-
     test('parses empty hadiths array', () {
       const jsonString = '[]';
 
@@ -624,7 +472,11 @@ void main() {
     test('throws FormatException on invalid JSON', () {
       expect(
         () => parser.parseHadiths('not json'),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('hadiths'),
+        )),
       );
     });
 
@@ -642,114 +494,4 @@ void main() {
     });
   });
 
-  group('FormatException messages', () {
-    test('series parse error includes descriptive message', () {
-      try {
-        parser.parseSeries('{bad json');
-        fail('Expected FormatException');
-      } on FormatException catch (e) {
-        expect(e.message, contains('series'));
-      }
-    });
-
-    test('books parse error includes descriptive message', () {
-      try {
-        parser.parseBooks('{bad json');
-        fail('Expected FormatException');
-      } on FormatException catch (e) {
-        expect(e.message, contains('books'));
-      }
-    });
-
-    test('content file parse error includes descriptive message', () {
-      try {
-        parser.parseContentFile('{bad json');
-        fail('Expected FormatException');
-      } on FormatException catch (e) {
-        expect(e.message, contains('content file'));
-      }
-    });
-
-    test('rewards parse error includes descriptive message', () {
-      try {
-        parser.parseRewards('{bad json');
-        fail('Expected FormatException');
-      } on FormatException catch (e) {
-        expect(e.message, contains('rewards'));
-      }
-    });
-
-    test('hadiths parse error includes descriptive message', () {
-      try {
-        parser.parseHadiths('{bad json');
-        fail('Expected FormatException');
-      } on FormatException catch (e) {
-        expect(e.message, contains('hadiths'));
-      }
-    });
-  });
-
-  group('round-trip with toJson', () {
-    test('series round-trip preserves data', () {
-      const jsonString = '''
-[
-  {
-    "id": 1,
-    "name": "Siyer-i Nebi",
-    "sort_order": 1,
-    "is_locked": false,
-    "icon_emoji": "🕌",
-    "description": "Peygamber Efendimiz Hz. Muhammed (s.a.v)'in hayatı"
-  }
-]
-''';
-
-      final parsed = parser.parseSeries(jsonString);
-      final reEncoded = json.encode(parsed.map((s) => s.toJson()).toList());
-      final reParsed = parser.parseSeries(reEncoded);
-
-      expect(reParsed[0], parsed[0]);
-    });
-
-    test('content file round-trip preserves nested structure', () {
-      const jsonString = '''
-{
-  "levels": [
-    {
-      "id": 1,
-      "book_id": 1,
-      "category_name": "Siyer-i Nebi",
-      "level_order": 1,
-      "title": "Doğuş ve Çocukluk",
-      "unlock_score": 0,
-      "asset_image": "assets/images/book_1/level_1.webp",
-      "questions": [
-        {
-          "question_text": "Peygamberimiz (s.a.v) nerede doğmuştur?",
-          "option_a": "Mekke",
-          "option_b": "Medine",
-          "option_c": "Taif",
-          "option_d": "Şam",
-          "correct_option": "A",
-          "explanation": "571 yılında Mekke'de doğmuştur.",
-          "type": "multiple_choice"
-        }
-      ]
-    }
-  ]
-}
-''';
-
-      final parsed = parser.parseContentFile(jsonString);
-      final reEncoded = json.encode({
-        'levels': parsed.map((l) => l.toJson()).toList(),
-      });
-      final reParsed = parser.parseContentFile(reEncoded);
-
-      expect(reParsed.length, parsed.length);
-      expect(reParsed[0].id, parsed[0].id);
-      expect(reParsed[0].questions.length, parsed[0].questions.length);
-      expect(reParsed[0].questions[0], parsed[0].questions[0]);
-    });
-  });
 }

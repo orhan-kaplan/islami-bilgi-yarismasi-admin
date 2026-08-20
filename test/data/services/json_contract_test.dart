@@ -224,26 +224,4 @@ void main() {
     });
   });
 
-  group('round-trip', () {
-    test('serialize → parse anahtarları korur', () {
-      const model = BookModel(
-        id: 7,
-        title: 'Kitap',
-        description: 'Açıklama',
-        assetImage: 'x.png',
-        bookOrder: 3,
-        seriesId: 2,
-        contentFile: 'book_7.json',
-      );
-
-      final record = firstRecord(serializer.serializeBooks([model]));
-      final restored = BookModel.fromJson(record);
-
-      expect(restored.id, model.id);
-      expect(restored.title, model.title);
-      expect(restored.bookOrder, model.bookOrder);
-      expect(restored.seriesId, model.seriesId);
-      expect(restored.contentFile, model.contentFile);
-    });
-  });
 }

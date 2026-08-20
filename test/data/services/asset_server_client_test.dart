@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -48,6 +49,20 @@ void main() {
           throwsA(isA<AssetServerException>()
               .having((e) => e.statusCode, 'statusCode', 503)
               .having((e) => e.message, 'message', 'Service unavailable')),
+        );
+      });
+
+      test('rethrows network errors without wrapping them', () async {
+        final mockClient = MockClient((request) async {
+          throw const SocketException('Connection refused');
+        });
+
+        final client =
+            AssetServerClient(baseUrl: 'http://localhost:8080', client: mockClient);
+
+        expect(
+          () => client.health(),
+          throwsA(isA<SocketException>()),
         );
       });
     });

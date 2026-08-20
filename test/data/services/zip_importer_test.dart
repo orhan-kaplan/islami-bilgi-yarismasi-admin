@@ -254,28 +254,25 @@ void main() {
       expect(errors[0].message, contains('Parse error'));
     });
 
-    test('reports error for invalid ZIP data', () {
-      // Use bytes that are clearly not a valid ZIP (random binary)
+    test('reports missing-file warnings for non-ZIP binary data', () {
+      // This specific byte sequence is too short to contain a ZIP end-of-
+      // central-directory record, so ZipDecoder returns an empty archive
+      // instead of throwing (verified directly against package:archive).
+      // With an empty archive, every expected top-level file is reported
+      // missing as a warning; no archive-level error is raised.
       final invalidZipBytes = Uint8List.fromList([0, 1, 2, 3, 4, 5, 6, 7, 8]);
 
       final (state, issues) = importer.importZip(invalidZipBytes);
 
-      // The archive package may throw or return empty archive.
-      // Either way, we should get issues reported.
-      expect(issues, isNotEmpty);
-
-      // If it threw, we get a single error about invalid ZIP.
-      // If it didn't throw, we get warnings about missing files.
-      final hasArchiveError = issues.any(
-        (i) =>
-            i.severity == ImportIssueSeverity.error &&
-            i.message.contains('not a valid ZIP archive'),
+      expect(state, equals(ContentState.empty()));
+      expect(
+        issues.every((i) => i.severity == ImportIssueSeverity.warning),
+        isTrue,
       );
-      final hasMissingFileWarnings = issues.any(
-        (i) => i.severity == ImportIssueSeverity.warning,
+      expect(
+        issues.map((i) => i.fileName).toSet(),
+        equals({'series.json', 'books.json', 'rewards.json', 'hadiths.json'}),
       );
-
-      expect(hasArchiveError || hasMissingFileWarnings, isTrue);
     });
 
     test('strips content/ prefix from content file keys', () {

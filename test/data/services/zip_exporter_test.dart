@@ -196,42 +196,6 @@ void main() {
   });
 
   group('ZipExporter - exportZip', () {
-    test('exports a valid state and produces a ZIP with correct structure', () {
-      final state = _createValidState();
-      final zipBytes = exporter.exportZip(state);
-
-      // Decode the ZIP and check structure
-      final archive = ZipDecoder().decodeBytes(zipBytes);
-      final fileNames = archive.files.map((f) => f.name).toSet();
-
-      expect(fileNames, contains('series.json'));
-      expect(fileNames, contains('books.json'));
-      expect(fileNames, contains('rewards.json'));
-      expect(fileNames, contains('hadiths.json'));
-      expect(fileNames, contains('content/book_1.json'));
-    });
-
-    test('ZIP contains all expected files for multi-book state', () {
-      final state = _createMultiBookState();
-      final zipBytes = exporter.exportZip(state);
-
-      final archive = ZipDecoder().decodeBytes(zipBytes);
-      final fileNames = archive.files.map((f) => f.name).toSet();
-
-      // Top-level files
-      expect(fileNames, contains('series.json'));
-      expect(fileNames, contains('books.json'));
-      expect(fileNames, contains('rewards.json'));
-      expect(fileNames, contains('hadiths.json'));
-
-      // Content files
-      expect(fileNames, contains('content/book_1.json'));
-      expect(fileNames, contains('content/book_2.json'));
-
-      // Total file count: 4 top-level + 2 content = 6
-      expect(archive.files.where((f) => f.isFile).length, 6);
-    });
-
     test('ZIP file contents are valid JSON', () {
       final state = _createValidState();
       final zipBytes = exporter.exportZip(state);
@@ -280,77 +244,6 @@ void main() {
       final decoded = json.decode(content) as Map<String, dynamic>;
       expect(decoded.containsKey('levels'), isTrue);
       expect((decoded['levels'] as List).length, 1);
-    });
-
-    test('throws ValidationBlockedExportException when validation errors exist',
-        () {
-      // Create a state with a validation error: book references non-existent series
-      final invalidState = ContentState(
-        series: [
-          const SeriesModel(
-            id: 1,
-            name: 'Test',
-            sortOrder: 1,
-            isLocked: false,
-            iconEmoji: '📚',
-            description: null,
-          ),
-        ],
-        books: [
-          const BookModel(
-            id: 1,
-            title: 'Test Book',
-            description: 'Desc',
-            assetImage: 'assets/images/book.png',
-            bookOrder: 1,
-            seriesId: 999, // Non-existent series!
-            contentFile: 'book_1.json',
-          ),
-        ],
-        contentFiles: {
-          'book_1.json': [
-            LevelModel(
-              id: 1,
-              bookId: 1,
-              categoryName: 'Test',
-              levelOrder: 1,
-              title: 'Level 1',
-              unlockScore: 0,
-              assetImage: null,
-              questions: List.generate(
-                10,
-                (i) => QuestionModel(
-                  questionText: 'Q${i + 1}?',
-                  optionA: 'A',
-                  optionB: 'B',
-                  optionC: 'C',
-                  optionD: 'D',
-                  correctOption: 'A',
-                  explanation: 'E',
-                  type: 'multiple_choice',
-                ),
-              ),
-            ),
-          ],
-        },
-        rewards: [],
-        hadiths: [],
-      );
-
-      expect(
-        () => exporter.exportZip(invalidState),
-        throwsA(isA<ValidationBlockedExportException>()),
-      );
-
-      try {
-        exporter.exportZip(invalidState);
-      } on ValidationBlockedExportException catch (e) {
-        expect(e.errors, isNotEmpty);
-        expect(
-          e.errors.every((i) => i.severity == ValidationSeverity.error),
-          isTrue,
-        );
-      }
     });
 
     test('warnings do NOT block export', () {

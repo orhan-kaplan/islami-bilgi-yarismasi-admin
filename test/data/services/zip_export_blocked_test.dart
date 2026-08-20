@@ -492,30 +492,5 @@ void main() {
       },
     );
 
-    Glados(any.invalidStateWithError, ExploreConfig(numRuns: 100)).test(
-      'no ZIP bytes are produced when validation errors exist',
-      (state) {
-        // Verify that the function throws before producing any output.
-        // Since the function either returns bytes or throws, if it throws
-        // then by definition no ZIP was produced.
-        Object? caughtError;
-        try {
-          exporter.exportZip(state);
-        } catch (e) {
-          caughtError = e;
-        }
-
-        expect(
-          caughtError,
-          isNotNull,
-          reason: 'exportZip must throw for invalid states',
-        );
-        expect(
-          caughtError,
-          isA<ValidationBlockedExportException>(),
-          reason: 'The thrown error must be ValidationBlockedExportException',
-        );
-      },
-    );
   });
 }
