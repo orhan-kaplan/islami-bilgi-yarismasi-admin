@@ -28,6 +28,7 @@ class ContentNotifier extends StateNotifier<ContentState> {
   // ---------------------------------------------------------------------------
 
   void addSeries(SeriesModel series) {
+    if (state.series.any((s) => s.id == series.id)) return;
     state = state.copyWith(series: [...state.series, series]);
   }
 
@@ -38,12 +39,15 @@ class ContentNotifier extends StateNotifier<ContentState> {
   }
 
   /// Deletes a series by ID. Returns false if the series has books (blocked).
+  ///
+  /// Remaining series are renumbered 1..N: a gap in sort_order is an
+  /// error-level validation issue, which would block auto-save for
+  /// series.json and keep the deletion from ever reaching disk.
   bool deleteSeries(int seriesId) {
     final hasBooks = state.books.any((b) => b.seriesId == seriesId);
     if (hasBooks) return false;
-    state = state.copyWith(
-      series: state.series.where((s) => s.id != seriesId).toList(),
-    );
+    final remaining = state.series.where((s) => s.id != seriesId).toList();
+    state = state.copyWith(series: _compactSeriesSortOrder(remaining));
     return true;
   }
 
@@ -80,6 +84,7 @@ class ContentNotifier extends StateNotifier<ContentState> {
   // ---------------------------------------------------------------------------
 
   void addBook(BookModel book) {
+    if (state.books.any((b) => b.id == book.id)) return;
     final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
     updatedMap.putIfAbsent(book.contentFile, () => const []);
     state = state.copyWith(
@@ -89,9 +94,23 @@ class ContentNotifier extends StateNotifier<ContentState> {
   }
 
   void updateBook(BookModel updated) {
-    state = state.copyWith(
-      books: state.books.map((b) => b.id == updated.id ? updated : b).toList(),
-    );
+    final existing =
+        state.books.where((b) => b.id == updated.id).firstOrNull;
+    var next = updated;
+    if (existing != null && existing.seriesId != updated.seriesId) {
+      final destCount = state.books
+          .where((b) => b.id != updated.id && b.seriesId == updated.seriesId)
+          .length;
+      next = updated.copyWith(bookOrder: destCount + 1);
+    }
+    var books = [
+      for (final b in state.books) b.id == updated.id ? next : b,
+    ];
+    if (existing != null && existing.seriesId != updated.seriesId) {
+      books = _compactBookOrder(books, existing.seriesId);
+      books = _compactBookOrder(books, next.seriesId);
+    }
+    state = state.copyWith(books: books);
   }
 
   /// Deletes a book by ID. Returns false when the book still has levels in
@@ -111,8 +130,12 @@ class ContentNotifier extends StateNotifier<ContentState> {
     if (levels != null && levels.isEmpty) {
       updatedMap.remove(book.contentFile);
     }
+    // Remaining books in this series are renumbered 1..N: a gap in
+    // book_order is an error-level validation issue, which would block
+    // auto-save for books.json and keep the deletion from ever reaching disk.
+    final remaining = state.books.where((b) => b.id != bookId).toList();
     state = state.copyWith(
-      books: state.books.where((b) => b.id != bookId).toList(),
+      books: _compactBookOrder(remaining, book.seriesId),
       contentFiles: updatedMap,
     );
     return true;
@@ -155,6 +178,10 @@ class ContentNotifier extends StateNotifier<ContentState> {
 
   /// Adds a level to the specified content file's level list.
   void addLevel(String contentFile, LevelModel level) {
+    final idTaken = state.contentFiles.values
+        .expand((levels) => levels)
+        .any((l) => l.id == level.id);
+    if (idTaken) return;
     final currentLevels = state.contentFiles[contentFile] ?? [];
     final updatedMap = Map<String, List<LevelModel>>.from(state.contentFiles);
     updatedMap[contentFile] = [...currentLevels, level];
@@ -326,6 +353,33 @@ class ContentNotifier extends StateNotifier<ContentState> {
       newHadiths.removeAt(index);
     }
     state = state.copyWith(hadiths: newHadiths);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Order compaction
+  // ---------------------------------------------------------------------------
+
+  List<SeriesModel> _compactSeriesSortOrder(List<SeriesModel> series) {
+    final ranked = [...series]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final orderById = {
+      for (var i = 0; i < ranked.length; i++) ranked[i].id: i + 1,
+    };
+    return [
+      for (final s in series) s.copyWith(sortOrder: orderById[s.id]),
+    ];
+  }
+
+  List<BookModel> _compactBookOrder(List<BookModel> books, int seriesId) {
+    final seriesBooks = books.where((b) => b.seriesId == seriesId).toList()
+      ..sort((a, b) => a.bookOrder.compareTo(b.bookOrder));
+    final orderById = {
+      for (var i = 0; i < seriesBooks.length; i++) seriesBooks[i].id: i + 1,
+    };
+    return [
+      for (final b in books)
+        orderById.containsKey(b.id) ? b.copyWith(bookOrder: orderById[b.id]) : b,
+    ];
   }
 
   // ---------------------------------------------------------------------------
