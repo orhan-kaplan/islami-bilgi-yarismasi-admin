@@ -65,6 +65,15 @@ FeedbackContentState _createValidState() {
   );
 }
 
+/// A valid state with `quiz.speed_demon`'s single message swapped out — the
+/// other quiz subcategories stay populated so validation doesn't fail on a
+/// "missing subcategory" error instead of the lottie check under test.
+FeedbackContentState _validStateWithSpeedDemonMessage(
+    FeedbackMessageModel msg) {
+  final valid = _createValidState();
+  return valid.copyWith(quiz: {...valid.quiz, 'speed_demon': [msg]});
+}
+
 void main() {
   group('validateFeedbackData', () {
     test('returns empty list for valid state', () async {
@@ -257,58 +266,14 @@ void main() {
 
     test('reports invalid lottie_asset paths that use an assets/ prefix',
         () async {
-      final state = _createValidState().copyWith(quiz: {
-        'speed_demon': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-            lottieAsset: 'assets/lottie/feedback/lightning.json',
-          ),
-        ],
-        'perfect': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'one_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'two_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'good': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'moderate': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'failure': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-      });
+      final state = _validStateWithSpeedDemonMessage(
+        const FeedbackMessageModel(
+          title: 'T',
+          message: 'M',
+          emoji: '⭐',
+          lottieAsset: 'assets/lottie/feedback/lightning.json',
+        ),
+      );
 
       final errors = await validateFeedbackData(state);
 
@@ -321,58 +286,14 @@ void main() {
     });
 
     test('accepts valid lottie_asset paths starting with feedback/', () async {
-      final state = _createValidState().copyWith(quiz: {
-        'speed_demon': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-            lottieAsset: 'feedback/lightning.json',
-          ),
-        ],
-        'perfect': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'one_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'two_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'good': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'moderate': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'failure': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-      });
+      final state = _validStateWithSpeedDemonMessage(
+        const FeedbackMessageModel(
+          title: 'T',
+          message: 'M',
+          emoji: '⭐',
+          lottieAsset: 'feedback/lightning.json',
+        ),
+      );
 
       final errors = await validateFeedbackData(state);
 
@@ -397,58 +318,14 @@ void main() {
         client: mockClient,
       );
 
-      final state = _createValidState().copyWith(quiz: {
-        'speed_demon': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-            lottieAsset: 'feedback/lightning.json',
-          ),
-        ],
-        'perfect': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'one_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'two_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'good': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'moderate': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'failure': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-      });
+      final state = _validStateWithSpeedDemonMessage(
+        const FeedbackMessageModel(
+          title: 'T',
+          message: 'M',
+          emoji: '⭐',
+          lottieAsset: 'feedback/lightning.json',
+        ),
+      );
 
       final errors = await validateFeedbackData(state, client: client);
 
@@ -470,58 +347,14 @@ void main() {
         client: mockClient,
       );
 
-      final state = _createValidState().copyWith(quiz: {
-        'speed_demon': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-            lottieAsset: 'feedback/lightning.json',
-          ),
-        ],
-        'perfect': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'one_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'two_wrong': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'good': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'moderate': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-        'failure': [
-          const FeedbackMessageModel(
-            title: 'T',
-            message: 'M',
-            emoji: '⭐',
-          ),
-        ],
-      });
+      final state = _validStateWithSpeedDemonMessage(
+        const FeedbackMessageModel(
+          title: 'T',
+          message: 'M',
+          emoji: '⭐',
+          lottieAsset: 'feedback/lightning.json',
+        ),
+      );
 
       final errors = await validateFeedbackData(state, client: client);
 

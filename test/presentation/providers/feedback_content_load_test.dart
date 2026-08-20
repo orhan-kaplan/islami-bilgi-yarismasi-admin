@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/feedback_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_server_client.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/asset_server_providers.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/providers/connectivity_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/feedback_content_providers.dart';
 
 /// Sample valid feedback JSON for testing.
@@ -363,11 +364,50 @@ void main() {
       // check and transition to connected, triggering the load.
       container.read(feedbackLoadProvider);
 
-      // Wait for connectivity health check + load sequence
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // Poll instead of a single fixed delay: the connectivity health check
+      // + load sequence has no fixed duration, so a flat sleep can either
+      // be too short (flaky) or needlessly long.
+      var status = container.read(feedbackLoadProvider);
+      var waited = Duration.zero;
+      const step = Duration(milliseconds: 20);
+      const maxWait = Duration(seconds: 2);
+      while (status != FeedbackLoadStatus.loaded && waited < maxWait) {
+        await Future<void>.delayed(step);
+        waited += step;
+        status = container.read(feedbackLoadProvider);
+      }
 
-      final status = container.read(feedbackLoadProvider);
       expect(status, FeedbackLoadStatus.loaded);
     });
   });
+
+  group('FeedbackLoadNotifier.markLoaded', () {
+    test('flips an empty status to loaded', () {
+      final container = ProviderContainer(
+        overrides: [
+          assetServerClientProvider.overrideWithValue(
+            AssetServerClient(
+              baseUrl: 'http://localhost:8080',
+              client: MockClient((_) async => http.Response('Not found', 404)),
+            ),
+          ),
+          serverConnectivityProvider.overrideWith(
+            (ref) => _DisconnectedConnectivity(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(feedbackLoadProvider), FeedbackLoadStatus.idle);
+
+      container.read(feedbackLoadProvider.notifier).markLoaded();
+
+      expect(container.read(feedbackLoadProvider), FeedbackLoadStatus.loaded);
+    });
+  });
+}
+
+class _DisconnectedConnectivity extends StateNotifier<ServerConnectivity>
+    implements ServerConnectivityNotifier {
+  _DisconnectedConnectivity() : super(ServerConnectivity.disconnected);
 }

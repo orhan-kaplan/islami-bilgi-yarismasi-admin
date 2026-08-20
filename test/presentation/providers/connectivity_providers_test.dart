@@ -103,23 +103,22 @@ void main() {
     });
 
     test('stays disconnected when health check times out', () async {
-      // Simulate a timeout by using a completer that never completes
-      final mockClient = MockClient((request) async {
-        // Simulate a request that takes longer than the 5s timeout
-        throw TimeoutException('Connection timed out', const Duration(seconds: 5));
-      });
+      // Never respond, so AssetServerClient's real 5s `.timeout()` fires
+      // instead of a mock-thrown TimeoutException (which would just
+      // duplicate the "network error" case below).
+      final mockClient = MockClient((request) => Completer<http.Response>().future);
 
       final container = createContainer(mockClient);
 
       // Trigger the provider
       container.read(serverConnectivityProvider);
 
-      // Allow the async health check to complete
-      await Future<void>.delayed(Duration.zero);
+      // Wait past the real 5s health-check timeout.
+      await Future<void>.delayed(const Duration(seconds: 6));
 
       final state = container.read(serverConnectivityProvider);
       expect(state, ServerConnectivity.disconnected);
-    });
+    }, timeout: const Timeout(Duration(seconds: 15)));
 
     test(
         'transitions from connected to disconnected when server goes down',

@@ -1,11 +1,15 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/game_config_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_server_client.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/providers/asset_server_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/game_config_providers.dart';
+
+const _healthJson = '{"status": "ok", "assetsRoot": "/tmp/assets", "readWrite": true}';
 
 void main() {
   group('GameConfigNotifier', () {
@@ -83,6 +87,129 @@ void main() {
         ),
         throwsA(isA<AssetServerException>()),
       );
+    });
+  });
+
+  group('GameConfigLoadNotifier', () {
+    ProviderContainer createContainer({required http.Client mockClient}) {
+      final container = ProviderContainer(
+        overrides: [
+          assetServerClientProvider.overrideWithValue(
+            AssetServerClient(
+              baseUrl: 'http://localhost:8080',
+              client: mockClient,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('performLoad transitions to loaded on success', () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') return http.Response(_healthJson, 200);
+        if (path == '/api/files/data/game_config.json') {
+          return http.Response(jsonEncode({'quiz': {'lives': 5}}), 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      final notifier = container.read(gameConfigLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(
+          container.read(gameConfigLoadProvider), GameConfigLoadStatus.loaded);
+      expect(container.read(gameConfigProvider).quiz.lives, 5);
+    });
+
+    test('performLoad transitions to loaded (with defaults) on 404', () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') return http.Response(_healthJson, 200);
+        if (path == '/api/files/data/game_config.json') {
+          return http.Response('{"error": "File not found"}', 404);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      final notifier = container.read(gameConfigLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(
+          container.read(gameConfigLoadProvider), GameConfigLoadStatus.loaded);
+      expect(
+        container.read(gameConfigProvider).toJson(),
+        GameConfigState.defaults.toJson(),
+      );
+    });
+
+    test('performLoad transitions to failed on server error', () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') return http.Response(_healthJson, 200);
+        if (path == '/api/files/data/game_config.json') {
+          return http.Response('{"error": "Internal error"}', 500);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      final notifier = container.read(gameConfigLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(
+          container.read(gameConfigLoadProvider), GameConfigLoadStatus.failed);
+    });
+
+    test('performLoad transitions to failed on network error', () async {
+      final mockClient = MockClient((request) async {
+        throw http.ClientException('Connection refused');
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      final notifier = container.read(gameConfigLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(
+          container.read(gameConfigLoadProvider), GameConfigLoadStatus.failed);
+    });
+
+    test('auto-triggers when connectivity becomes connected', () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') return http.Response(_healthJson, 200);
+        if (path == '/api/files/data/game_config.json') {
+          return http.Response(jsonEncode({'quiz': {'lives': 5}}), 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      // Reading the provider creates the notifier, which listens to
+      // connectivity. The connectivity notifier's health check will
+      // transition to connected, triggering the load.
+      container.read(gameConfigLoadProvider);
+
+      var status = container.read(gameConfigLoadProvider);
+      var waited = Duration.zero;
+      const step = Duration(milliseconds: 20);
+      const maxWait = Duration(seconds: 2);
+      while (status != GameConfigLoadStatus.loaded && waited < maxWait) {
+        await Future<void>.delayed(step);
+        waited += step;
+        status = container.read(gameConfigLoadProvider);
+      }
+
+      expect(status, GameConfigLoadStatus.loaded);
     });
   });
 }

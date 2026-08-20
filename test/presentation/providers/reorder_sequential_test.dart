@@ -72,16 +72,6 @@ extension ReorderGenerators on Any {
             },
             shrink: (input) => const Iterable.empty(),
           );
-
-  /// Generates a random permutation of indices [0..n-1].
-  Generator<List<int>> permutationOf(int n) => simple(
-        generate: (random, size) {
-          final indices = List.generate(n, (i) => i);
-          indices.shuffle(random);
-          return indices;
-        },
-        shrink: (input) => const Iterable.empty(),
-      );
 }
 
 void main() {

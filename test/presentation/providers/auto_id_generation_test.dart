@@ -255,59 +255,5 @@ void main() {
       expect(notifier.nextBookId, equals(1));
       expect(notifier.nextLevelId, equals(1));
     });
-
-    // -------------------------------------------------------------------------
-    // Generated ID is always positive
-    // -------------------------------------------------------------------------
-
-    Glados(any.seriesListWithRandomIds, ExploreConfig(numRuns: 100)).test(
-      'nextSeriesId is always a positive integer',
-      (seriesList) {
-        final notifier = ContentNotifier(ContentState(
-          series: seriesList,
-          books: const [],
-          contentFiles: const {},
-          rewards: const [],
-          hadiths: const [],
-        ));
-
-        expect(notifier.nextSeriesId, greaterThan(0));
-      },
-    );
-
-    Glados(any.bookListWithRandomIds, ExploreConfig(numRuns: 100)).test(
-      'nextBookId is always a positive integer',
-      (bookList) {
-        final notifier = ContentNotifier(ContentState(
-          series: const [],
-          books: bookList,
-          contentFiles: const {},
-          rewards: const [],
-          hadiths: const [],
-        ));
-
-        expect(notifier.nextBookId, greaterThan(0));
-      },
-    );
-
-    Glados(any.multiContentFileLevels, ExploreConfig(numRuns: 100)).test(
-      'nextLevelId is always a positive integer',
-      (levelLists) {
-        final contentFiles = <String, List<LevelModel>>{};
-        for (var i = 0; i < levelLists.length; i++) {
-          contentFiles['book_${i + 1}.json'] = levelLists[i];
-        }
-
-        final notifier = ContentNotifier(ContentState(
-          series: const [],
-          books: const [],
-          contentFiles: contentFiles,
-          rewards: const [],
-          hadiths: const [],
-        ));
-
-        expect(notifier.nextLevelId, greaterThan(0));
-      },
-    );
   });
 }

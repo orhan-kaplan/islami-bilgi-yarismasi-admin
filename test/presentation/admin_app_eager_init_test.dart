@@ -52,6 +52,8 @@ void main() {
       expect(container.exists(autoSaveControllerProvider), isFalse);
       expect(container.exists(feedbackAutoSaveProvider), isFalse);
       expect(container.exists(gameConfigAutoSaveProvider), isFalse);
+      expect(container.exists(autoLoadProvider), isFalse);
+      expect(container.exists(serverConnectivityProvider), isFalse);
     });
 
     testWidgets('AdminApp watches auto-save providers on first build',
@@ -88,6 +90,8 @@ void main() {
       expect(container.exists(autoSaveControllerProvider), isTrue);
       expect(container.exists(feedbackAutoSaveProvider), isTrue);
       expect(container.exists(gameConfigAutoSaveProvider), isTrue);
+      expect(container.exists(autoLoadProvider), isTrue);
+      expect(container.exists(serverConnectivityProvider), isTrue);
     });
   });
 }

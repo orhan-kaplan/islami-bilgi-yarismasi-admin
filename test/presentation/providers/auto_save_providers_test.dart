@@ -317,6 +317,40 @@ void main() {
         'Edited Book',
       );
     });
+
+    test('a blocked file keeps the status at error even after another file saves',
+        () async {
+      final mockClient = MockClient((request) async {
+        capturedRequests.add(request);
+        return http.Response('', 200);
+      });
+      final container = createLoadedContainer(mockClient: mockClient);
+      container.read(autoSaveControllerProvider);
+
+      final notifier = container.read(contentStateProvider.notifier);
+      // Boş başlık books.json için ERROR üretir → o dosya bloklanır.
+      notifier.updateBook(
+        container.read(contentStateProvider).books.first.copyWith(title: ''),
+      );
+      notifier.updateSeries(
+        container.read(contentStateProvider).series.first.copyWith(name: 'Edited'),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 2500));
+
+      final seriesPuts = capturedRequests
+          .where((r) => r.method == 'PUT' && r.url.path.endsWith('data/series.json'));
+      final bookPuts = capturedRequests
+          .where((r) => r.method == 'PUT' && r.url.path.endsWith('data/books.json'));
+
+      expect(seriesPuts, isNotEmpty, reason: 'series.json has no errors');
+      expect(bookPuts, isEmpty, reason: 'books.json has an ERROR issue');
+      expect(
+        container.read(autoSaveControllerProvider),
+        SaveStatus.error,
+        reason: 'a file is still unsaved, so the status must not read as saved',
+      );
+    });
   });
 
   group('AutoSaveController content file removal', () {

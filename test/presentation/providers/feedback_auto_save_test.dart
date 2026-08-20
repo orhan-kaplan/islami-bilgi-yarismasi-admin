@@ -472,6 +472,55 @@ void main() {
       expect(comebackList.length, 4); // original + 3 new
     });
   });
+
+  group('Feedback auto-save with no feedback.json on the server', () {
+    late List<http.Request> capturedRequests;
+
+    ProviderContainer createEmptyContainer({required http.Client mockClient}) {
+      final container = ProviderContainer(
+        overrides: [
+          assetServerClientProvider.overrideWithValue(
+            AssetServerClient(
+              baseUrl: 'http://localhost:8080',
+              client: mockClient,
+            ),
+          ),
+          isServerConnectedProvider.overrideWithValue(true),
+          feedbackLoadProvider.overrideWith((ref) => _EmptyStatusNotifier()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    setUp(() {
+      capturedRequests = [];
+    });
+
+    test('initial data created from the empty state is written to the server',
+        () async {
+      final mockClient = MockClient((request) async {
+        capturedRequests.add(request);
+        return http.Response('', 200);
+      });
+      final container = createEmptyContainer(mockClient: mockClient);
+      container.read(feedbackAutoSaveProvider);
+
+      container
+          .read(feedbackContentProvider.notifier)
+          .importContent(_createValidState());
+
+      await container.read(feedbackAutoSaveProvider.notifier).flushPendingSave();
+
+      final puts = capturedRequests
+          .where((r) =>
+              r.method == 'PUT' &&
+              r.url.path == '/api/files/data/feedback.json')
+          .toList();
+      expect(puts, isNotEmpty);
+      expect(puts.last.body, contains('İlim Yolcusu'));
+    });
+  });
 }
 
 // =============================================================================
@@ -482,6 +531,21 @@ void main() {
 class _AlreadyLoadedNotifier extends StateNotifier<FeedbackLoadStatus>
     implements FeedbackLoadNotifier {
   _AlreadyLoadedNotifier() : super(FeedbackLoadStatus.loaded);
+
+  @override
+  bool get hasLoadedOnce => true;
+
+  @override
+  Future<void> performLoad() async {}
+
+  @override
+  void markLoaded() => state = FeedbackLoadStatus.loaded;
+}
+
+/// feedback.json sunucuda yokken oluşan durum.
+class _EmptyStatusNotifier extends StateNotifier<FeedbackLoadStatus>
+    implements FeedbackLoadNotifier {
+  _EmptyStatusNotifier() : super(FeedbackLoadStatus.empty);
 
   @override
   bool get hasLoadedOnce => true;

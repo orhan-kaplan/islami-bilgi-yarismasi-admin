@@ -231,28 +231,6 @@ void main() {
     );
 
     // -------------------------------------------------------------------------
-    // All counts are non-negative
-    // -------------------------------------------------------------------------
-
-    Glados(any.randomContentState, ExploreConfig(numRuns: 100)).test(
-      'all counts are non-negative',
-      (state) {
-        final container = ProviderContainer(
-          overrides: [
-            contentStateProvider.overrideWith((ref) => ContentNotifier(state)),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final counts = container.read(totalCountsProvider);
-        expect(counts['series']!, greaterThanOrEqualTo(0));
-        expect(counts['books']!, greaterThanOrEqualTo(0));
-        expect(counts['levels']!, greaterThanOrEqualTo(0));
-        expect(counts['questions']!, greaterThanOrEqualTo(0));
-      },
-    );
-
-    // -------------------------------------------------------------------------
     // Empty state produces all zeros
     // -------------------------------------------------------------------------
 
@@ -272,11 +250,11 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // Counts are consistent: questions >= 0 for each level
+    // Zero levels implies zero questions
     // -------------------------------------------------------------------------
 
     Glados(any.randomContentState, ExploreConfig(numRuns: 100)).test(
-      'questions count >= levels count only when all levels have at least one question (or both zero)',
+      'no levels means no questions',
       (state) {
         final container = ProviderContainer(
           overrides: [

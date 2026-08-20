@@ -1,8 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide expect, group, test;
+import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/services/content_validator.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/services/save_gating.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/content_providers.dart';
 
 /// Generators for levels with random question counts.
@@ -266,5 +270,85 @@ void main() {
             reason: 'Total question count should be zero');
       },
     );
+
+    // -------------------------------------------------------------------------
+    // Renumbering does not leave a level_order gap that blocks the save
+    // -------------------------------------------------------------------------
+
+    test(
+        'deleting a level renumbers the rest so the content file save is '
+        'not blocked', () {
+      final notifier = ContentNotifier(const ContentState(
+        series: [
+          SeriesModel(
+            id: 1,
+            name: 'Seri',
+            sortOrder: 1,
+            isLocked: false,
+            iconEmoji: '📚',
+          ),
+        ],
+        books: [
+          BookModel(
+            id: 1,
+            title: 'Kitap',
+            description: 'Açıklama',
+            assetImage: 'assets/images/book_1.png',
+            bookOrder: 1,
+            seriesId: 1,
+            contentFile: 'book_1.json',
+          ),
+        ],
+        contentFiles: {
+          'book_1.json': [
+            LevelModel(
+              id: 1,
+              bookId: 1,
+              categoryName: 'c',
+              levelOrder: 1,
+              title: 'L1',
+              unlockScore: 0,
+              questions: [],
+            ),
+            LevelModel(
+              id: 2,
+              bookId: 1,
+              categoryName: 'c',
+              levelOrder: 2,
+              title: 'L2',
+              unlockScore: 0,
+              questions: [],
+            ),
+            LevelModel(
+              id: 3,
+              bookId: 1,
+              categoryName: 'c',
+              levelOrder: 3,
+              title: 'L3',
+              unlockScore: 0,
+              questions: [],
+            ),
+          ],
+        },
+        rewards: [],
+        hadiths: [],
+      ));
+
+      notifier.deleteLevel('book_1.json', 2);
+
+      final issues = ContentValidator().validateAll(notifier.state);
+      final orderErrors = issues.where(
+        (i) =>
+            i.severity == ValidationSeverity.error &&
+            i.sourceFile == 'content/book_1.json' &&
+            i.message.contains('level_order'),
+      );
+      expect(orderErrors, isEmpty);
+      expect(
+        isSaveAllowedForFile('data/content/book_1.json', issues),
+        isTrue,
+        reason: 'deleting the middle level should not block the save',
+      );
+    });
   });
 }
