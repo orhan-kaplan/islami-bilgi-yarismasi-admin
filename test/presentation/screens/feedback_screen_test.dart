@@ -191,7 +191,7 @@ class _MockFeedbackLoadNotifier extends FeedbackLoadNotifier {
   }
 
   @override
-  Future<void> performLoad() async {
+  Future<void> performLoad({bool force = false}) async {
     // No-op for tests
   }
 }

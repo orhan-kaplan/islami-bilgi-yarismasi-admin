@@ -38,7 +38,7 @@ class GameConfigScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () =>
-                      ref.read(gameConfigLoadProvider.notifier).performLoad(),
+                      ref.read(gameConfigLoadProvider.notifier).performLoad(force: true),
                   child: const Text('Tekrar dene'),
                 ),
               ],

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web/web.dart' as web;
 
-import '../../providers/history_providers.dart';
+import '../../providers/auto_save_providers.dart';
 
 /// Widget that registers a browser `beforeunload` event listener when
-/// there are unsaved changes ([isDirtyProvider] is true).
+/// there are unsaved changes ([hasUnsavedWorkProvider] is true).
 ///
 /// When the state becomes clean, the listener is removed so the browser
 /// tab can close without a confirmation dialog.
@@ -45,7 +45,7 @@ class _BeforeUnloadGuardState extends ConsumerState<BeforeUnloadGuard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDirty = ref.watch(isDirtyProvider);
+    final isDirty = ref.watch(hasUnsavedWorkProvider);
 
     if (isDirty) {
       _addListener();

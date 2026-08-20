@@ -21,6 +21,8 @@ class GameConfigAutoSaveController extends StateNotifier<GameConfigSaveStatus> {
   Timer? _debounceTimer;
   bool _hasPendingChange = false;
 
+  bool get hasPendingChange => _hasPendingChange;
+
   static const Duration _debounceDuration = Duration(seconds: 2);
 
   void _init() {
@@ -104,11 +106,11 @@ class GameConfigAutoSaveController extends StateNotifier<GameConfigSaveStatus> {
     }
   }
 
-  Future<void> flushPendingSave() async {
+  Future<void> flushPendingSave({bool force = false}) async {
     _debounceTimer?.cancel();
     _debounceTimer = null;
 
-    if (!_hasPendingChange) return;
+    if (!force && !_hasPendingChange) return;
 
     if (!_ref.read(isServerConnectedProvider)) return;
 

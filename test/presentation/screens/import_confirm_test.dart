@@ -80,10 +80,11 @@ void main() {
     WidgetTester tester, {
     required ContentState current,
     required ContentState? baseline,
+    bool connected = false,
   }) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
-        isServerConnectedProvider.overrideWithValue(false),
+        isServerConnectedProvider.overrideWithValue(connected),
         // Connectivity notifier gerçek health polling'i başlatıyor; mock
         // client anında dönünce timeout timer'ı da kurulmuyor.
         assetServerClientProvider.overrideWithValue(
@@ -175,6 +176,28 @@ void main() {
     expect(c.read(contentStateProvider).hadiths.single.text,
         'İçe aktarılan hadis',
         reason: 'kaybedilecek bir şey yokken akış kesilmemeli');
+
+    await teardownScope(tester);
+  });
+
+  testWidgets('connected import does not treat the merged tree as already saved',
+      (tester) async {
+    final current = stateWith(const [existing]);
+    final c = await pumpDashboard(
+      tester,
+      current: current,
+      baseline: current,
+      connected: true,
+    );
+    expect(c.read(isDirtyProvider), isFalse);
+
+    await tapImport(tester);
+
+    expect(c.read(contentStateProvider).hadiths.single.text,
+        'İçe aktarılan hadis');
+    expect(c.read(savedBaselineProvider), current);
+    expect(c.read(isDirtyProvider), isTrue,
+        reason: 'baseline must stay on the pre-import tree until a PUT succeeds');
 
     await teardownScope(tester);
   });

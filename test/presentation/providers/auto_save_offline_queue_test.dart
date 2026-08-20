@@ -71,7 +71,16 @@ class _AlreadyLoadedAutoLoad extends StateNotifier<AutoLoadStatus>
   bool get hasLoadedOnce => true;
 
   @override
-  Future<void> performAutoLoad() async {}
+  bool get loadedFromServer => true;
+
+  @override
+  Future<void> performAutoLoad({bool force = false}) async {}
+
+  @override
+  void markSessionLoaded() {}
+
+  @override
+  void markSyncedToServer() {}
 }
 
 void main() {

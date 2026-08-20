@@ -215,7 +215,10 @@ void main() {
   });
 
   group('FeedbackLoadNotifier', () {
-    ProviderContainer createContainer({required http.Client mockClient}) {
+    ProviderContainer createContainer({
+      required http.Client mockClient,
+      List<Override> extraOverrides = const [],
+    }) {
       final container = ProviderContainer(
         overrides: [
           assetServerClientProvider.overrideWithValue(
@@ -224,6 +227,7 @@ void main() {
               client: mockClient,
             ),
           ),
+          ...extraOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -343,6 +347,54 @@ void main() {
       await container.read(feedbackLoadProvider.notifier).performLoad();
 
       expect(container.read(feedbackNeedsInitialDataProvider), isFalse);
+    });
+
+    test('performLoad keeps local ZIP feedback unless force is set', () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') {
+          return http.Response(_healthJson, 200);
+        }
+        if (path == '/api/files/data/feedback.json') {
+          return http.Response(_validFeedbackJson, 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(
+        mockClient: mockClient,
+        extraOverrides: [
+          serverConnectivityProvider.overrideWith(
+            (ref) => _DisconnectedConnectivity(),
+          ),
+        ],
+      );
+
+      const localTitle = PlayerTitleModel(
+        title: 'Yerel Unvan',
+        icon: 'S',
+        requiredBooks: 0,
+        profileImage: 'images/seed/profile_icon_seed.webp',
+      );
+      container.read(feedbackContentProvider.notifier).importContent(
+            FeedbackContentState.empty().copyWith(titles: const [localTitle]),
+          );
+
+      final notifier = container.read(feedbackLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(
+        container.read(feedbackContentProvider).titles.single.title,
+        'Yerel Unvan',
+      );
+      expect(container.read(feedbackLoadProvider), FeedbackLoadStatus.loaded);
+
+      await notifier.performLoad(force: true);
+
+      expect(
+        container.read(feedbackContentProvider).titles.first.title,
+        'Ilim Yolcusu',
+      );
     });
 
     test('auto-triggers when connectivity becomes connected', () async {

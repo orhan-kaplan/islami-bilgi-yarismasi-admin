@@ -14,7 +14,9 @@ import 'auto_load_providers.dart';
 import 'connectivity_providers.dart';
 import 'content_providers.dart';
 import 'feedback_auto_save_providers.dart';
+import 'feedback_content_providers.dart';
 import 'game_config_auto_save_providers.dart';
+import 'game_config_providers.dart';
 import 'history_providers.dart';
 import 'validation_providers.dart';
 
@@ -243,13 +245,32 @@ class AutoSaveController extends StateNotifier<SaveStatus> {
     return Uint8List.fromList(utf8.encode(jsonString));
   }
 
+  /// Files waiting for a successful PUT (debounce, validation, or retry).
+  bool get hasPendingSaves =>
+      _pendingFiles.isNotEmpty || _blockedFiles.isNotEmpty;
+
+  /// Enqueues every populated JSON path so a reconnect Save can PUT the
+  /// in-memory tree even when auto-save never saw the import as a change.
+  void queueAllFiles() {
+    final current = _ref.read(contentStateProvider);
+    for (final path in getChangedFiles(ContentState.empty(), current)) {
+      _pendingFiles.add(path);
+    }
+  }
+
   /// Flushes all pending debounced saves immediately.
   ///
   /// Called by Ctrl/Cmd+S to force-save all pending changes without
   /// waiting for debounce timers to expire.
   ///
+  /// [allFiles] also enqueues slices that never entered the debounce map
+  /// (ZIP import while listening was off).
+  ///
   /// Files with ERROR-level validation issues are skipped and remain pending.
-  Future<void> flushPendingSaves() async {
+  Future<void> flushPendingSaves({bool allFiles = false}) async {
+    if (allFiles) {
+      queueAllFiles();
+    }
     // Cancel all timers
     for (final timer in _debounceTimers.values) {
       timer.cancel();
@@ -362,4 +383,42 @@ final hasSaveErrorProvider = Provider<bool>((ref) {
   return ref.watch(saveStatusProvider) == SaveStatus.error ||
       ref.watch(feedbackSaveStatusProvider) == FeedbackSaveStatus.error ||
       ref.watch(gameConfigSaveStatusProvider) == GameConfigSaveStatus.error;
+});
+
+/// Anything that must not be discarded without a prompt.
+///
+/// [isDirtyProvider] only compares quiz [ContentState] to the baseline, so
+/// feedback / game_config pending writes and a never-baselined local tree
+/// were invisible to beforeunload and the reconnect dialog.
+final hasUnsavedWorkProvider = Provider<bool>((ref) {
+  if (ref.watch(isDirtyProvider)) return true;
+  if (ref.watch(hasSaveErrorProvider)) return true;
+
+  final baseline = ref.watch(savedBaselineProvider);
+  final content = ref.watch(contentStateProvider);
+  if (baseline == null && content.hasAnyContent) return true;
+
+  ref.watch(saveStatusProvider);
+  ref.watch(feedbackSaveStatusProvider);
+  ref.watch(gameConfigSaveStatusProvider);
+  ref.watch(feedbackContentProvider);
+  ref.watch(gameConfigProvider);
+
+  if (ref.read(autoSaveControllerProvider.notifier).hasPendingSaves) {
+    return true;
+  }
+  if (ref.read(feedbackAutoSaveProvider.notifier).hasPendingChange) {
+    return true;
+  }
+  if (ref.read(gameConfigAutoSaveProvider.notifier).hasPendingChange) {
+    return true;
+  }
+  return false;
+});
+
+/// ZIP / keep-local session that has not been GET-loaded from the server.
+final hasUnsyncedLocalSessionProvider = Provider<bool>((ref) {
+  ref.watch(autoLoadProvider);
+  final notifier = ref.read(autoLoadProvider.notifier);
+  return notifier.hasLoadedOnce && !notifier.loadedFromServer;
 });

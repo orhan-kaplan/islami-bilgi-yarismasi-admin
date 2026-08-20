@@ -7,6 +7,8 @@ import '../models/content_state.dart';
 import '../models/feedback_models.dart';
 import '../models/game_config_models.dart';
 import 'content_validator.dart';
+import 'feedback_validator.dart';
+import 'game_config_validator.dart';
 import 'json_serializer.dart';
 
 /// Exception thrown when export is blocked due to validation errors.
@@ -65,11 +67,33 @@ class ZipExporter {
     FeedbackContentState? feedback,
     GameConfigState? gameConfig,
   }) {
-    // Run validation
-    final issues = _validator.validateAll(state);
-    final errors = issues
+    // Run validation. Sidecars use the same ERROR-blocks / WARNING-does-not
+    // rule as quiz content — omitting them keeps the original ZIP shape.
+    final errors = _validator
+        .validateAll(state)
         .where((i) => i.severity == ValidationSeverity.error)
         .toList();
+
+    if (feedback != null) {
+      for (final message in validateFeedbackSchema(feedback)) {
+        errors.add(ValidationIssue(
+          severity: ValidationSeverity.error,
+          sourceFile: 'feedback.json',
+          jsonPath: r'$',
+          message: message,
+        ));
+      }
+    }
+    if (gameConfig != null) {
+      for (final message in validateGameConfigData(gameConfig)) {
+        errors.add(ValidationIssue(
+          severity: ValidationSeverity.error,
+          sourceFile: 'game_config.json',
+          jsonPath: r'$',
+          message: message,
+        ));
+      }
+    }
 
     if (errors.isNotEmpty) {
       throw ValidationBlockedExportException(errors);

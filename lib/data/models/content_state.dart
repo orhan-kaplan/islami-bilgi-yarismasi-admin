@@ -36,6 +36,18 @@ class ContentState {
     );
   }
 
+  /// Whether any quiz-content slice has been populated.
+  ///
+  /// Used to decide whether a first auto-load would clobber ZIP / in-memory
+  /// work. Counts hadiths and rewards too — a hadiths-only import is still
+  /// local content.
+  bool get hasAnyContent =>
+      series.isNotEmpty ||
+      books.isNotEmpty ||
+      contentFiles.isNotEmpty ||
+      rewards.isNotEmpty ||
+      hadiths.isNotEmpty;
+
   ContentState copyWith({
     List<SeriesModel>? series,
     List<BookModel>? books,

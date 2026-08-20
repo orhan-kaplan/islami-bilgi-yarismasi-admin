@@ -37,6 +37,16 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
 
   final Ref _ref;
   bool _hasLoadedOnce = false;
+  bool _loadedFromServer = false;
+
+  /// Whether the auto-load has completed successfully at least once.
+  bool get hasLoadedOnce => _hasLoadedOnce;
+
+  /// Whether the in-memory session came from GET, not a ZIP / local keep.
+  ///
+  /// First connect after a ZIP import must not look like a cold start: the
+  /// reconnect dialog uses this to offer Save vs Reload.
+  bool get loadedFromServer => _loadedFromServer;
 
   /// Listens for the first time server connectivity becomes connected.
   void _listenForConnection() {
@@ -60,13 +70,43 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
 
   /// Performs the full auto-load sequence.
   ///
-  /// Can also be called explicitly to retry a failed load.
-  Future<void> performAutoLoad() async {
-    await _performAutoLoad();
+  /// [force] is for Retry / "Reload from Server". Without it, an in-memory
+  /// ZIP or locally created tree is left alone so the first `connected`
+  /// transition cannot wipe the fallback session.
+  Future<void> performAutoLoad({bool force = false}) async {
+    await _performAutoLoad(force: force);
   }
 
-  Future<void> _performAutoLoad() async {
+  /// Marks the session as loaded without fetching (ZIP import / keep-local).
+  ///
+  /// Enables auto-save and hides the failed banner. Does not claim the
+  /// bytes on disk match memory — [loadedFromServer] stays false.
+  void markSessionLoaded() {
+    _hasLoadedOnce = true;
+    if (mounted) {
+      state = AutoLoadStatus.loaded;
+    }
+  }
+
+  /// After a successful flush of local work onto the server.
+  void markSyncedToServer() {
+    _hasLoadedOnce = true;
+    _loadedFromServer = true;
+    if (mounted && state != AutoLoadStatus.loading) {
+      state = AutoLoadStatus.loaded;
+    }
+  }
+
+  Future<void> _performAutoLoad({bool force = false}) async {
     if (state == AutoLoadStatus.loading) return;
+
+    if (!force && _ref.read(contentStateProvider).hasAnyContent) {
+      _hasLoadedOnce = true;
+      if (mounted) {
+        state = AutoLoadStatus.loaded;
+      }
+      return;
+    }
 
     state = AutoLoadStatus.loading;
 
@@ -121,6 +161,7 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
       _ref.read(historyProvider.notifier).clear();
 
       _hasLoadedOnce = true;
+      _loadedFromServer = true;
 
       if (mounted) {
         state = AutoLoadStatus.loaded;
@@ -131,9 +172,6 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
       }
     }
   }
-
-  /// Whether the auto-load has completed successfully at least once.
-  bool get hasLoadedOnce => _hasLoadedOnce;
 }
 
 // =============================================================================

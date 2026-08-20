@@ -67,12 +67,24 @@ class GameConfigLoadNotifier extends StateNotifier<GameConfigLoadStatus> {
     );
   }
 
-  Future<void> performLoad() async {
-    await _performLoad();
+  Future<void> performLoad({bool force = false}) async {
+    await _performLoad(force: force);
   }
 
-  Future<void> _performLoad() async {
+  Future<void> _performLoad({bool force = false}) async {
     if (state == GameConfigLoadStatus.loading) return;
+
+    if (!force) {
+      final current = _ref.read(gameConfigProvider);
+      if (jsonEncode(current.toJson()) !=
+          jsonEncode(GameConfigState.defaults.toJson())) {
+        _hasLoadedOnce = true;
+        if (mounted) {
+          state = GameConfigLoadStatus.loaded;
+        }
+        return;
+      }
+    }
 
     state = GameConfigLoadStatus.loading;
 
@@ -92,6 +104,13 @@ class GameConfigLoadNotifier extends StateNotifier<GameConfigLoadStatus> {
         state = GameConfigLoadStatus.failed;
       }
     }
+  }
+
+  /// ZIP import: keep local config so first connect does not overwrite it.
+  void markLoaded() {
+    if (!mounted) return;
+    _hasLoadedOnce = true;
+    state = GameConfigLoadStatus.loaded;
   }
 }
 

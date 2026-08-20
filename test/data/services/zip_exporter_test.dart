@@ -465,10 +465,46 @@ void main() {
       expect(names.contains('game_config.json'), isFalse);
     });
 
+    test('empty feedback sidecar blocks export', () {
+      expect(
+        () => exporter.exportZip(
+          _createValidState(),
+          feedback: FeedbackContentState.empty(),
+          gameConfig: GameConfigState.defaults,
+        ),
+        throwsA(
+          isA<ValidationBlockedExportException>().having(
+            (e) => e.errors.any((i) => i.sourceFile == 'feedback.json'),
+            'feedback.json error',
+            isTrue,
+          ),
+        ),
+      );
+    });
+
+    test('invalid game_config lives blocks export', () {
+      expect(
+        () => exporter.exportZip(
+          _createValidState(),
+          feedback: _validFeedback(),
+          gameConfig: GameConfigState.defaults.copyWith(
+            quiz: GameConfigState.defaults.quiz.copyWith(lives: 0),
+          ),
+        ),
+        throwsA(
+          isA<ValidationBlockedExportException>().having(
+            (e) => e.errors.any((i) => i.sourceFile == 'game_config.json'),
+            'game_config.json error',
+            isTrue,
+          ),
+        ),
+      );
+    });
+
     test('export with extras includes sidecars and importAll roundtrips', () {
       final zipBytes = exporter.exportZip(
         _createValidState(),
-        feedback: FeedbackContentState.empty(),
+        feedback: _validFeedback(),
         gameConfig: GameConfigState.defaults,
       );
       final names = ZipDecoder()
@@ -483,6 +519,7 @@ void main() {
 
       final bundle = ZipImporter().importAll(zipBytes);
       expect(bundle.feedback, isNotNull);
+      expect(bundle.feedback!.titles.single.title, 'İlim Yolcusu');
       expect(bundle.gameConfig?.quiz.lives, 3);
       expect(
         bundle.issues.where(
@@ -518,4 +555,62 @@ void main() {
       );
     });
   });
+}
+
+FeedbackContentState _validFeedback() {
+  FeedbackMessageModel msg(String title) => FeedbackMessageModel(
+        title: title,
+        message: 'Test message',
+        emoji: '🎉',
+        shouldRepeat: true,
+      );
+
+  return FeedbackContentState(
+    quiz: {
+      'speed_demon': [msg('Speed')],
+      'perfect': [msg('Perfect')],
+      'one_wrong': [msg('One Wrong')],
+      'two_wrong': [msg('Two Wrong')],
+      'good': [msg('Good')],
+      'moderate': [msg('Moderate')],
+      'failure': [msg('Failure')],
+    },
+    speedQuiz: {
+      'combo_master': [msg('Combo')],
+      'high_score': [msg('High')],
+      'time_expired': [msg('Expired')],
+      'moderate': [msg('Moderate')],
+      'low': [msg('Low')],
+    },
+    time: {
+      'seher': [msg('Seher')],
+      'morning': [msg('Morning')],
+      'noon': [msg('Noon')],
+      'afternoon': [msg('Afternoon')],
+      'evening': [msg('Evening')],
+      'night': [msg('Night')],
+      'teheccud': [msg('Teheccud')],
+    },
+    comeback: [msg('Comeback')],
+    streak: {
+      '3': [msg('3 days')],
+      '7': [msg('7 days')],
+      '30': [msg('30 days')],
+    },
+    titles: const [
+      PlayerTitleModel(
+        title: 'İlim Yolcusu',
+        icon: '🌱',
+        requiredBooks: 0,
+        profileImage: 'images/seed/profile_icon_seed.webp',
+      ),
+    ],
+    learned: {
+      '100': [msg('100%')],
+      '75': [msg('75%')],
+      '50': [msg('50%')],
+      '25': [msg('25%')],
+      '0': [msg('0%')],
+    },
+  );
 }

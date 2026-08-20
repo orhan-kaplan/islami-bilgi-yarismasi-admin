@@ -536,7 +536,7 @@ class _AlreadyLoadedNotifier extends StateNotifier<FeedbackLoadStatus>
   bool get hasLoadedOnce => true;
 
   @override
-  Future<void> performLoad() async {}
+  Future<void> performLoad({bool force = false}) async {}
 
   @override
   void markLoaded() => state = FeedbackLoadStatus.loaded;
@@ -551,7 +551,7 @@ class _EmptyStatusNotifier extends StateNotifier<FeedbackLoadStatus>
   bool get hasLoadedOnce => true;
 
   @override
-  Future<void> performLoad() async {}
+  Future<void> performLoad({bool force = false}) async {}
 
   @override
   void markLoaded() => state = FeedbackLoadStatus.loaded;

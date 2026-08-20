@@ -12,6 +12,8 @@ import '../../../data/services/file_download_web.dart';
 import '../../../data/services/zip_exporter.dart';
 import '../../../data/services/zip_importer.dart';
 import '../../providers/auto_load_providers.dart';
+import '../../providers/auto_save_providers.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/feedback_content_providers.dart';
@@ -140,8 +142,14 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
-                    onPressed: () {
-                      ref.read(autoLoadProvider.notifier).performAutoLoad();
+                    onPressed: () async {
+                      if (ref.read(contentStateProvider).hasAnyContent) {
+                        final proceed = await _confirmReloadFromServer(context);
+                        if (!proceed) return;
+                      }
+                      ref
+                          .read(autoLoadProvider.notifier)
+                          .performAutoLoad(force: true);
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
@@ -469,7 +477,7 @@ class DashboardScreen extends ConsumerWidget {
 
     // Import mevcut state'i ezer ve undo yığınını da temizler — kaydedilmemiş
     // değişiklik varken bu geri alınamaz, o yüzden önce onay iste.
-    if (ref.read(isDirtyProvider)) {
+    if (ref.read(hasUnsavedWorkProvider)) {
       if (!context.mounted) return;
       final proceed = await _confirmOverwrite(context);
       if (!proceed) return;
@@ -483,16 +491,27 @@ class DashboardScreen extends ConsumerWidget {
       providedFiles,
     );
 
+    // Auto-save only subscribes after a loaded session. Mark first so the
+    // import itself is queued instead of sitting only in memory.
+    if (ref.read(autoLoadProvider) != AutoLoadStatus.loaded) {
+      ref.read(autoLoadProvider.notifier).markSessionLoaded();
+    }
+
     if (importedFeedback != null) {
+      ref.read(feedbackLoadProvider.notifier).markLoaded();
       ref.read(feedbackContentProvider.notifier).importContent(importedFeedback);
     }
     if (importedGameConfig != null) {
+      ref.read(gameConfigLoadProvider.notifier).markLoaded();
       ref.read(gameConfigProvider.notifier).importContent(importedGameConfig);
     }
 
     ref.read(contentStateProvider.notifier).importContent(mergedState);
-    ref.read(savedBaselineProvider.notifier).state = mergedState;
+    if (!ref.read(isServerConnectedProvider)) {
+      ref.read(savedBaselineProvider.notifier).state = mergedState;
+    }
     ref.read(historyProvider.notifier).clear();
+    ref.read(autoSaveControllerProvider.notifier).queueAllFiles();
 
     if (!context.mounted) return;
 
@@ -524,6 +543,31 @@ class DashboardScreen extends ConsumerWidget {
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
+  }
+
+  /// Retry after a failed auto-load would otherwise replace ZIP work.
+  Future<bool> _confirmReloadFromServer(BuildContext context) async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reload from Server?'),
+        content: const Text(
+          'This browser already has content. Reloading replaces it with '
+          'the files on the asset server and cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Reload'),
           ),
         ],
       ),

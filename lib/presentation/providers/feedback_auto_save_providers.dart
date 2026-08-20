@@ -41,6 +41,8 @@ class FeedbackAutoSaveController extends StateNotifier<FeedbackSaveStatus> {
   Timer? _debounceTimer;
   bool _hasPendingChange = false;
 
+  bool get hasPendingChange => _hasPendingChange;
+
   static const Duration _debounceDuration = Duration(seconds: 2);
 
   /// Initializes the controller by waiting for feedback load to complete,
@@ -147,11 +149,13 @@ class FeedbackAutoSaveController extends StateNotifier<FeedbackSaveStatus> {
   ///
   /// Called by Ctrl/Cmd+S to force-save pending changes without
   /// waiting for the debounce timer to expire.
-  Future<void> flushPendingSave() async {
+  /// [force] writes even when no debounce flag is set (reconnect Save after
+  /// a ZIP import that auto-save never observed).
+  Future<void> flushPendingSave({bool force = false}) async {
     _debounceTimer?.cancel();
     _debounceTimer = null;
 
-    if (!_hasPendingChange) return;
+    if (!force && !_hasPendingChange) return;
 
     // Don't save if server is not connected
     if (!_ref.read(isServerConnectedProvider)) return;

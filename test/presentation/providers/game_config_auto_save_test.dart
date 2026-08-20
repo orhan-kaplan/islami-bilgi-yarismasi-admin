@@ -17,7 +17,7 @@ class _AlreadyLoadedGameConfigLoad extends GameConfigLoadNotifier {
   }
 
   @override
-  Future<void> performLoad() async {}
+  Future<void> performLoad({bool force = false}) async {}
 }
 
 void main() {

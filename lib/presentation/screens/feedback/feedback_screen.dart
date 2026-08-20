@@ -287,7 +287,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
               const Text('Feedback verisi yüklenemedi.', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: () => ref.read(feedbackLoadProvider.notifier).performLoad(),
+                onPressed: () => ref.read(feedbackLoadProvider.notifier).performLoad(force: true),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Tekrar Dene'),
               ),

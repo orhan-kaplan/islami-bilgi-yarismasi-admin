@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/hadith_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_server_client.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/asset_server_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/auto_load_providers.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/providers/auto_save_providers.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/providers/connectivity_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/content_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/history_providers.dart';
 
@@ -66,6 +69,7 @@ void main() {
     /// Creates a [ProviderContainer] with mocked HTTP client.
     ProviderContainer createContainer({
       required http.Client mockClient,
+      List<Override> extraOverrides = const [],
     }) {
       final container = ProviderContainer(
         overrides: [
@@ -75,6 +79,7 @@ void main() {
               client: mockClient,
             ),
           ),
+          ...extraOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -137,6 +142,7 @@ void main() {
 
       final status = container.read(autoLoadProvider);
       expect(status, AutoLoadStatus.loaded);
+      expect(notifier.loadedFromServer, isTrue);
     });
 
     test('populates ContentState after successful load', () async {
@@ -263,6 +269,7 @@ void main() {
       await notifier.performAutoLoad();
 
       expect(notifier.hasLoadedOnce, isFalse);
+      expect(notifier.loadedFromServer, isFalse);
     });
 
     test('retry via performAutoLoad works after initial failure', () async {
@@ -335,5 +342,99 @@ void main() {
       final status = container.read(autoLoadProvider);
       expect(status, AutoLoadStatus.loaded);
     });
+
+    test('markSessionLoaded does not claim the bytes came from GET', () {
+      final connectivity = _ManualConnectivity();
+      final container = createContainer(
+        mockClient: createSuccessfulMockClient(),
+        extraOverrides: [
+          serverConnectivityProvider.overrideWith((ref) => connectivity),
+        ],
+      );
+
+      final notifier = container.read(autoLoadProvider.notifier);
+      notifier.markSessionLoaded();
+
+      expect(container.read(autoLoadProvider), AutoLoadStatus.loaded);
+      expect(notifier.hasLoadedOnce, isTrue);
+      expect(notifier.loadedFromServer, isFalse);
+      expect(container.read(hasUnsyncedLocalSessionProvider), isTrue);
+    });
+
+    test('first connect does not overwrite in-memory ZIP content', () async {
+      final connectivity = _ManualConnectivity();
+      var seriesGets = 0;
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') {
+          return http.Response(_healthJson, 200);
+        }
+        if (path == '/api/files/data/series.json') {
+          seriesGets++;
+          return http.Response(_seriesJson, 200);
+        }
+        if (path == '/api/files/data/books.json') {
+          return http.Response(_booksJson, 200);
+        }
+        if (path == '/api/files/data/rewards.json') {
+          return http.Response(_rewardsJson, 200);
+        }
+        if (path == '/api/files/data/hadiths.json') {
+          return http.Response(_hadithsJson, 200);
+        }
+        if (path == '/api/list/data/content') {
+          return http.Response(_contentDirListing, 200);
+        }
+        if (path == '/api/files/data/content/book_1.json') {
+          return http.Response(_contentFileJson, 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(
+        mockClient: mockClient,
+        extraOverrides: [
+          serverConnectivityProvider.overrideWith((ref) => connectivity),
+        ],
+      );
+
+      const local = HadithModel(text: 'ZIP hadisi', source: 'Yerel');
+      container.read(contentStateProvider.notifier).importContent(
+            ContentState.empty().copyWith(hadiths: const [local]),
+          );
+
+      final notifier = container.read(autoLoadProvider.notifier);
+      connectivity.connect();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(contentStateProvider).hadiths.single.text, 'ZIP hadisi');
+      expect(container.read(contentStateProvider).series, isEmpty);
+      expect(container.read(autoLoadProvider), AutoLoadStatus.loaded);
+      expect(notifier.loadedFromServer, isFalse);
+      expect(seriesGets, 0);
+      expect(container.read(hasUnsyncedLocalSessionProvider), isTrue);
+
+      await notifier.performAutoLoad();
+      expect(
+        container.read(contentStateProvider).hadiths.single.text,
+        'ZIP hadisi',
+        reason: 'Retry without force must still keep the local tree',
+      );
+      expect(seriesGets, 0);
+
+      await notifier.performAutoLoad(force: true);
+      expect(container.read(contentStateProvider).series.first.name, 'Test Series');
+      expect(container.read(contentStateProvider).hadiths.single.text, 'Test hadith');
+      expect(notifier.loadedFromServer, isTrue);
+      expect(seriesGets, 1);
+      expect(container.read(hasUnsyncedLocalSessionProvider), isFalse);
+    });
   });
+}
+
+class _ManualConnectivity extends StateNotifier<ServerConnectivity>
+    implements ServerConnectivityNotifier {
+  _ManualConnectivity() : super(ServerConnectivity.disconnected);
+
+  void connect() => state = ServerConnectivity.connected;
 }

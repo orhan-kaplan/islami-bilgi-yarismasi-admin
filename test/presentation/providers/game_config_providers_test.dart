@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/game_config_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_server_client.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/asset_server_providers.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/providers/connectivity_providers.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/providers/game_config_providers.dart';
 
 const _healthJson = '{"status": "ok", "assetsRoot": "/tmp/assets", "readWrite": true}';
@@ -91,7 +92,10 @@ void main() {
   });
 
   group('GameConfigLoadNotifier', () {
-    ProviderContainer createContainer({required http.Client mockClient}) {
+    ProviderContainer createContainer({
+      required http.Client mockClient,
+      List<Override> extraOverrides = const [],
+    }) {
       final container = ProviderContainer(
         overrides: [
           assetServerClientProvider.overrideWithValue(
@@ -100,6 +104,7 @@ void main() {
               client: mockClient,
             ),
           ),
+          ...extraOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -211,5 +216,49 @@ void main() {
 
       expect(status, GameConfigLoadStatus.loaded);
     });
+
+    test('performLoad keeps a non-default local config unless force is set',
+        () async {
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') return http.Response(_healthJson, 200);
+        if (path == '/api/files/data/game_config.json') {
+          return http.Response(jsonEncode({'quiz': {'lives': 5}}), 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(
+        mockClient: mockClient,
+        extraOverrides: [
+          serverConnectivityProvider.overrideWith(
+            (ref) => _DisconnectedConnectivity(),
+          ),
+        ],
+      );
+
+      container.read(gameConfigProvider.notifier).importContent(
+            GameConfigState.fromJson({
+              'quiz': {'lives': 9},
+            }),
+          );
+
+      final notifier = container.read(gameConfigLoadProvider.notifier);
+      await notifier.performLoad();
+
+      expect(container.read(gameConfigProvider).quiz.lives, 9);
+      expect(
+        container.read(gameConfigLoadProvider),
+        GameConfigLoadStatus.loaded,
+      );
+
+      await notifier.performLoad(force: true);
+      expect(container.read(gameConfigProvider).quiz.lives, 5);
+    });
   });
+}
+
+class _DisconnectedConnectivity extends StateNotifier<ServerConnectivity>
+    implements ServerConnectivityNotifier {
+  _DisconnectedConnectivity() : super(ServerConnectivity.disconnected);
 }

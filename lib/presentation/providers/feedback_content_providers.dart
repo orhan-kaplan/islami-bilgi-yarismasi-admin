@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/feedback_models.dart';
 import '../../data/services/asset_server_client.dart';
-import '../../data/services/feedback_validator.dart' show isValidLottieShortPath;
+import '../../data/services/feedback_validator.dart';
 import 'asset_server_providers.dart';
 import 'connectivity_providers.dart';
 
@@ -298,36 +298,6 @@ class FeedbackContentNotifier extends StateNotifier<FeedbackContentState> {
 // Schema Validation
 // =============================================================================
 
-/// Required subcategories for each feedback category.
-const Map<String, List<String>> _requiredSubcategories = {
-  'quiz': [
-    'speed_demon',
-    'perfect',
-    'one_wrong',
-    'two_wrong',
-    'good',
-    'moderate',
-    'failure',
-  ],
-  'speed_quiz': [
-    'combo_master',
-    'high_score',
-    'time_expired',
-    'moderate',
-    'low',
-  ],
-  'time': [
-    'seher',
-    'morning',
-    'noon',
-    'afternoon',
-    'evening',
-    'night',
-    'teheccud',
-  ],
-  'learned': ['100', '75', '50', '25', '0'],
-};
-
 /// Validates a [FeedbackContentState] for schema correctness.
 ///
 /// Checks:
@@ -341,135 +311,13 @@ Future<List<String>> validateFeedbackData(
   FeedbackContentState state, {
   AssetServerClient? client,
 }) async {
-  final errors = <String>[];
-
-  // --- Check top-level categories ---
-
-  // quiz
-  if (state.quiz.isEmpty) {
-    errors.add('Missing or empty top-level category: quiz');
-  }
-
-  // speedQuiz (maps to speed_quiz in JSON)
-  if (state.speedQuiz.isEmpty) {
-    errors.add('Missing or empty top-level category: speed_quiz');
-  }
-
-  // time
-  if (state.time.isEmpty) {
-    errors.add('Missing or empty top-level category: time');
-  }
-
-  // comeback
-  if (state.comeback.isEmpty) {
-    errors.add('Missing or empty top-level category: comeback');
-  }
-
-  // streak
-  if (state.streak.isEmpty) {
-    errors.add('Missing or empty top-level category: streak');
-  }
-
-  // titles
-  if (state.titles.isEmpty) {
-    errors.add('Missing or empty top-level category: titles');
-  }
-
-  // learned
-  if (state.learned.isEmpty) {
-    errors.add('Missing or empty top-level category: learned');
-  }
-
-  // --- Check subcategories have at least one message ---
-
-  _validateSubcategories(state.quiz, 'quiz', errors);
-  _validateSubcategories(state.speedQuiz, 'speed_quiz', errors);
-  _validateSubcategories(state.time, 'time', errors);
-  _validateStreakSubcategories(state.streak, errors);
-  _validateSubcategories(state.learned, 'learned', errors);
-
-  // --- Check lottie_asset paths format ---
-
-  _validateLottiePaths(state, errors);
-
-  // --- Optionally check lottie file existence on server ---
+  final errors = validateFeedbackSchema(state);
 
   if (client != null) {
     await _validateLottieFilesExist(state, client, errors);
   }
 
   return errors;
-}
-
-/// Validates that all required subcategories exist and have at least one message.
-void _validateSubcategories(
-  Map<String, List<FeedbackMessageModel>> map,
-  String categoryName,
-  List<String> errors,
-) {
-  final required = _requiredSubcategories[categoryName];
-  if (required == null) return;
-
-  for (final subcategory in required) {
-    final list = map[subcategory];
-    if (list == null) {
-      errors.add('$categoryName: missing subcategory "$subcategory"');
-    } else if (list.isEmpty) {
-      errors.add(
-          '$categoryName: subcategory "$subcategory" has no messages');
-    }
-  }
-}
-
-void _validateStreakSubcategories(
-  Map<String, List<FeedbackMessageModel>> map,
-  List<String> errors,
-) {
-  for (final entry in map.entries) {
-    final days = int.tryParse(entry.key);
-    if (days == null || days <= 0) {
-      errors.add('streak: key "${entry.key}" must be a positive integer');
-    }
-    if (entry.value.isEmpty) {
-      errors.add('streak: subcategory "${entry.key}" has no messages');
-    }
-  }
-}
-
-/// Validates that all lottie_asset paths are relative to `assets/lottie/` if set.
-void _validateLottiePaths(FeedbackContentState state, List<String> errors) {
-  void checkMessages(List<FeedbackMessageModel> messages, String context) {
-    for (var i = 0; i < messages.length; i++) {
-      final asset = messages[i].lottieAsset;
-      if (asset != null &&
-          asset.isNotEmpty &&
-          !isValidLottieShortPath(asset)) {
-        errors.add(
-            '$context[$i]: lottie_asset "$asset" must not start with "assets/" '
-            '(use a lottie-relative path, e.g. feedback/foo.json)');
-      }
-    }
-  }
-
-  // Check all map-based categories
-  for (final entry in state.quiz.entries) {
-    checkMessages(entry.value, 'quiz.${entry.key}');
-  }
-  for (final entry in state.speedQuiz.entries) {
-    checkMessages(entry.value, 'speed_quiz.${entry.key}');
-  }
-  for (final entry in state.time.entries) {
-    checkMessages(entry.value, 'time.${entry.key}');
-  }
-  for (final entry in state.streak.entries) {
-    checkMessages(entry.value, 'streak.${entry.key}');
-  }
-  for (final entry in state.learned.entries) {
-    checkMessages(entry.value, 'learned.${entry.key}');
-  }
-
-  // Check flat categories
-  checkMessages(state.comeback, 'comeback');
 }
 
 /// Validates that lottie files referenced in the state exist on the asset server.
@@ -572,13 +420,25 @@ class FeedbackLoadNotifier extends StateNotifier<FeedbackLoadStatus> {
 
   /// Performs the feedback data load from the asset server.
   ///
-  /// Can also be called explicitly to retry a failed load.
-  Future<void> performLoad() async {
-    await _performLoad();
+  /// [force] is the Retry / Reload button. Without it, in-memory ZIP content
+  /// is kept so the first `connected` fetch cannot wipe it.
+  Future<void> performLoad({bool force = false}) async {
+    await _performLoad(force: force);
   }
 
-  Future<void> _performLoad() async {
+  Future<void> _performLoad({bool force = false}) async {
     if (state == FeedbackLoadStatus.loading) return;
+
+    if (!force) {
+      final current = _ref.read(feedbackContentProvider);
+      if (current != FeedbackContentState.empty()) {
+        _hasLoadedOnce = true;
+        if (mounted) {
+          state = FeedbackLoadStatus.loaded;
+        }
+        return;
+      }
+    }
 
     state = FeedbackLoadStatus.loading;
 

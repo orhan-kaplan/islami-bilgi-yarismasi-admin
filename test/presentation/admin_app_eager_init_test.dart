@@ -109,5 +109,14 @@ class _IdleAutoLoad extends StateNotifier<AutoLoadStatus>
   bool get hasLoadedOnce => false;
 
   @override
-  Future<void> performAutoLoad() async {}
+  bool get loadedFromServer => false;
+
+  @override
+  Future<void> performAutoLoad({bool force = false}) async {}
+
+  @override
+  void markSessionLoaded() {}
+
+  @override
+  void markSyncedToServer() {}
 }

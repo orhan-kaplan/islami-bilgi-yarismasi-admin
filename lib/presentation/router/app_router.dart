@@ -68,7 +68,9 @@ class _AppShellState extends ConsumerState<AppShell> {
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                ref.read(autoLoadProvider.notifier).performAutoLoad();
+                ref.read(autoLoadProvider.notifier).performAutoLoad(force: true);
+                ref.read(feedbackLoadProvider.notifier).performLoad(force: true);
+                ref.read(gameConfigLoadProvider.notifier).performLoad(force: true);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Reloading content from server...'),
@@ -81,9 +83,16 @@ class _AppShellState extends ConsumerState<AppShell> {
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                ref.read(autoSaveControllerProvider.notifier).flushPendingSaves();
-                ref.read(feedbackAutoSaveProvider.notifier).flushPendingSave();
-                ref.read(gameConfigAutoSaveProvider.notifier).flushPendingSave();
+                ref
+                    .read(autoSaveControllerProvider.notifier)
+                    .flushPendingSaves(allFiles: true);
+                ref
+                    .read(feedbackAutoSaveProvider.notifier)
+                    .flushPendingSave(force: true);
+                ref
+                    .read(gameConfigAutoSaveProvider.notifier)
+                    .flushPendingSave(force: true);
+                ref.read(autoLoadProvider.notifier).markSyncedToServer();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Saving changes to server...'),
@@ -101,7 +110,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isDirty = ref.watch(isDirtyProvider);
+    final isDirty = ref.watch(hasUnsavedWorkProvider);
     final connectivity = ref.watch(serverConnectivityProvider);
     final isConnected = connectivity == ServerConnectivity.connected;
     // Kayıt hatası hiçbir yerde görünmüyordu: validasyon nedeniyle bloklanan
@@ -116,8 +125,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       if (next == ServerConnectivity.connected &&
           previous == ServerConnectivity.disconnected) {
         // Reconnected — check for unsaved changes
-        final hasDirtyChanges = ref.read(isDirtyProvider);
-        if (hasDirtyChanges) {
+        final hasLocalWork = ref.read(hasUnsavedWorkProvider) ||
+            ref.read(hasUnsyncedLocalSessionProvider);
+        if (hasLocalWork) {
           _showReconnectionDialog(context, ref);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -311,13 +321,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                       // Connected: flush pending saves to server
                       ref
                           .read(autoSaveControllerProvider.notifier)
-                          .flushPendingSaves();
+                          .flushPendingSaves(allFiles: true);
                       ref
                           .read(feedbackAutoSaveProvider.notifier)
-                          .flushPendingSave();
+                          .flushPendingSave(force: true);
                       ref
                           .read(gameConfigAutoSaveProvider.notifier)
-                          .flushPendingSave();
+                          .flushPendingSave(force: true);
+                      ref.read(autoLoadProvider.notifier).markSyncedToServer();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Saving...'),
