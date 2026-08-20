@@ -53,48 +53,6 @@ FeedbackMessageModel _generateModel(
   );
 }
 
-extension PlaceholderGenerators on Any {
-  /// Generates a FeedbackMessageModel with an empty title and non-empty message.
-  Generator<FeedbackMessageModel> get modelWithEmptyTitle => simple(
-        generate: (random, size) => _generateModel(
-          random,
-          emptyTitle: true,
-          emptyMessage: false,
-        ),
-        shrink: (input) => const Iterable.empty(),
-      );
-
-  /// Generates a FeedbackMessageModel with a non-empty title and empty message.
-  Generator<FeedbackMessageModel> get modelWithEmptyMessage => simple(
-        generate: (random, size) => _generateModel(
-          random,
-          emptyTitle: false,
-          emptyMessage: true,
-        ),
-        shrink: (input) => const Iterable.empty(),
-      );
-
-  /// Generates a FeedbackMessageModel with both title and message empty.
-  Generator<FeedbackMessageModel> get modelWithBothEmpty => simple(
-        generate: (random, size) => FeedbackMessageModel(
-          title: '',
-          message: '',
-          emoji: _randomEmoji(random),
-        ),
-        shrink: (input) => const Iterable.empty(),
-      );
-
-  /// Generates a FeedbackMessageModel with both title and message non-empty.
-  Generator<FeedbackMessageModel> get modelWithBothFilled => simple(
-        generate: (random, size) => _generateModel(
-          random,
-          emptyTitle: false,
-          emptyMessage: false,
-        ),
-        shrink: (input) => const Iterable.empty(),
-      );
-}
-
 // =============================================================================
 // Tests
 // =============================================================================

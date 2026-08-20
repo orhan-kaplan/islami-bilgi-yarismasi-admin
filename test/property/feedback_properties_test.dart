@@ -70,6 +70,15 @@ const _learnedSubcategories = ['100', '75', '50', '25', '0'];
 /// Required Lottie fields.
 const _requiredLottieFields = ['v', 'layers', 'w', 'h'];
 
+/// Maps each required Lottie field to the exact label
+/// `UploadValidator.validateLottieStructure` reports it under.
+const _lottieFieldLabels = {
+  'v': 'v (version)',
+  'layers': 'layers',
+  'w': 'w (width)',
+  'h': 'h (height)',
+};
+
 /// Extension on [Any] providing generators for feedback models.
 extension FeedbackGenerators on Any {
   /// Generates a non-empty Turkish string with special characters.
@@ -751,9 +760,13 @@ void main() {
       /// **Validates: Requirements 12.4**
 
       Glados(any.nonEmptyMessageList, ExploreConfig(numRuns: 100)).test(
-        'random selection always returns an element from the list',
+        'index-based random selection always returns an element from the list',
         (messages) {
-          // Simulate the random selection logic from MessageFactory
+          // MessageFactory itself lives in the mobile app package (a separate
+          // repo/pubspec from this admin tool) and can't be imported here.
+          // This only verifies the `list[Random().nextInt(list.length)]`
+          // pattern it relies on never indexes out of bounds or returns a
+          // foreign element — not MessageFactory's own behavior.
           final random = Random();
           final selected = messages[random.nextInt(messages.length)];
 
@@ -789,6 +802,17 @@ void main() {
           expect(result, isNotNull,
               reason:
                   'validateLottieStructure should reject maps missing fields: $missingFields');
+
+          // Not just "rejected" — the message must actually name every
+          // field that was removed, or a wrong/incomplete report would
+          // pass this check just as easily as a correct one.
+          for (final field in missingFields) {
+            final label = _lottieFieldLabels[field]!;
+            expect(result, contains(label),
+                reason:
+                    'validateLottieStructure result should mention missing field '
+                    '"$label": $result');
+          }
         },
       );
     },

@@ -74,7 +74,6 @@ void main() {
       final container = tester.widget<Container>(find.byType(Container).first);
       final decoration = container.decoration! as BoxDecoration;
 
-      expect(decoration.boxShadow, isNotNull);
       expect(decoration.boxShadow!.length, 1);
 
       final shadow = decoration.boxShadow!.first;
