@@ -7,6 +7,7 @@ import 'package:islami_bilgi_yarismasi_admin/data/models/question_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/series_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/content_validator.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/services/save_gating.dart';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -284,6 +285,59 @@ void main() {
       );
       final issues = _errors(state);
       expect(issues.any((i) => i.message.contains('No content file found')), isTrue);
+    });
+  });
+
+  // ── 10.17 content-file book_id consistency ────────────────────
+
+  group('10.17 — content-file book_id consistency', () {
+    /// Two books, one file, levels tagged with the *last* book's id.
+    /// Last-write-wins on the expected-id map used to miss this entirely.
+    ContentState sharedFileMatchingLastBook() => _validState().copyWith(
+          books: [
+            _book(id: 1, bookOrder: 1, contentFile: 'book_1.json'),
+            _book(
+              id: 2,
+              title: 'Book 2',
+              description: 'Desc 2',
+              assetImage: 'assets/images/b2.png',
+              bookOrder: 2,
+              contentFile: 'book_1.json',
+            ),
+          ],
+          contentFiles: {
+            'book_1.json': [
+              _level(id: 1, bookId: 2, questions: _tenQuestions()),
+            ],
+          },
+        );
+
+    test(
+        'two books sharing a content_file produce a books.json error even '
+        'when levels match the last referencing book', () {
+      final issues = _errors(sharedFileMatchingLastBook());
+      expect(
+        issues.where((i) =>
+            i.sourceFile == 'books.json' &&
+            i.jsonPath.contains('content_file') &&
+            i.message.contains('book_1.json') &&
+            i.message.contains('multiple books')),
+        isNotEmpty,
+        reason: 'rule 7 cannot hold for two different book IDs on one file — '
+            'got: $issues',
+      );
+    });
+
+    test(
+        'shared content_file blocks auto-save of books.json '
+        '(seeder would insert the same level PK twice)', () {
+      final issues = _errors(sharedFileMatchingLastBook());
+      expect(
+        isSaveAllowedForFile('data/books.json', issues),
+        isFalse,
+        reason: 'per-file gating only looks at the issue sourceFile; an error '
+            'only on the content file would still write the dual mapping',
+      );
     });
   });
 

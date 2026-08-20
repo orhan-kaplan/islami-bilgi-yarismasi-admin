@@ -240,32 +240,52 @@ class ContentValidator {
   // ──────────────────────────────────────────────────────────────────
   void _validateContentFileBookIdConsistency(
       ContentState state, List<ValidationIssue> issues) {
-    // Build a map: contentFile → book ID
-    final contentFileToBookId = <String, int>{};
-    for (final book in state.books) {
-      contentFileToBookId[book.contentFile] = book.id;
+    // Every book that names a file must be checked. A Map<file, bookId>
+    // keeps only the last writer, so a second book pointing at the same
+    // file (with levels tagged for that last id) used to look consistent
+    // and books.json would still save — the seeder then inserts the same
+    // level PK once per book.
+    final refs = <String, List<(int index, int id)>>{};
+    for (var i = 0; i < state.books.length; i++) {
+      final b = state.books[i];
+      refs.putIfAbsent(b.contentFile, () => []).add((i, b.id));
+    }
+
+    for (final entry in refs.entries) {
+      if (entry.value.length < 2) continue;
+      for (final (index, _) in entry.value) {
+        issues.add(ValidationIssue(
+          severity: ValidationSeverity.error,
+          sourceFile: 'books.json',
+          jsonPath: '\$[$index].content_file',
+          message:
+              'content_file "${entry.key}" is referenced by multiple books',
+        ));
+      }
     }
 
     for (final entry in state.contentFiles.entries) {
       final contentFileName = entry.key;
       final levels = entry.value;
-      final expectedBookId = contentFileToBookId[contentFileName];
-      if (expectedBookId == null) {
+      final books = refs[contentFileName];
+      if (books == null) {
         // This is handled by content file existence check (10.13) — skip here.
         continue;
       }
-      for (var i = 0; i < levels.length; i++) {
-        final level = levels[i];
-        if (level.bookId != expectedBookId) {
-          issues.add(ValidationIssue(
-            severity: ValidationSeverity.error,
-            sourceFile: 'content/$contentFileName',
-            jsonPath: '\$.levels[$i].book_id',
-            message:
-                'Level book_id (${level.bookId}) is inconsistent with the '
-                'book (ID $expectedBookId) that references content file '
-                '"$contentFileName"',
-          ));
+      for (final (_, expectedBookId) in books) {
+        for (var i = 0; i < levels.length; i++) {
+          final level = levels[i];
+          if (level.bookId != expectedBookId) {
+            issues.add(ValidationIssue(
+              severity: ValidationSeverity.error,
+              sourceFile: 'content/$contentFileName',
+              jsonPath: '\$.levels[$i].book_id',
+              message:
+                  'Level book_id (${level.bookId}) is inconsistent with the '
+                  'book (ID $expectedBookId) that references content file '
+                  '"$contentFileName"',
+            ));
+          }
         }
       }
     }
