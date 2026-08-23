@@ -14,6 +14,24 @@ import 'history_providers.dart';
 /// Status of the auto-load sequence.
 enum AutoLoadStatus { idle, loading, loaded, failed }
 
+/// Neden başarısız olduğu — banner aksi halde her hatayı "sunucu kapalı"
+/// diye gösterip kullanıcıyı yanlış yere yolluyordu.
+///
+/// [serverReachable] true ise `/api/health` cevap vermiştir: sorun sunucunun
+/// kapalı olması değil, okunan dosyalardan biridir.
+class AutoLoadFailure {
+  final bool serverReachable;
+  final String message;
+
+  const AutoLoadFailure({
+    required this.serverReachable,
+    required this.message,
+  });
+}
+
+/// Son auto-load denemesinin hata detayı; başarıda null'a döner.
+final autoLoadErrorProvider = StateProvider<AutoLoadFailure?>((ref) => null);
+
 // =============================================================================
 // Auto-Load Notifier
 // =============================================================================
@@ -110,12 +128,17 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
 
     state = AutoLoadStatus.loading;
 
+    // Health'i geçtiysek sunucu ayaktadır; banner'ın doğru şeyi söylemesi
+    // buna bakıyor.
+    var serverReachable = false;
+
     try {
       final client = _ref.read(assetServerClientProvider);
       final parser = JsonParser();
 
       // 1. Check health
       await client.health();
+      serverReachable = true;
 
       // 2. Fetch core data files
       final seriesJson = await client.getFileAsString('data/series.json');
@@ -162,11 +185,18 @@ class AutoLoadNotifier extends StateNotifier<AutoLoadStatus> {
 
       _hasLoadedOnce = true;
       _loadedFromServer = true;
+      _ref.read(autoLoadErrorProvider.notifier).state = null;
 
       if (mounted) {
         state = AutoLoadStatus.loaded;
       }
     } catch (e) {
+      // Hatayı yutmak, bozuk bir içerik dosyasını da "sunucu kapalı" gibi
+      // gösteriyordu; detayı sakla ki banner doğru şeyi söylesin.
+      _ref.read(autoLoadErrorProvider.notifier).state = AutoLoadFailure(
+        serverReachable: serverReachable,
+        message: e.toString(),
+      );
       if (mounted) {
         state = AutoLoadStatus.failed;
       }

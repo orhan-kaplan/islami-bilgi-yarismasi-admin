@@ -70,26 +70,40 @@ Ana sayfa. İçerik durumunu özetler ve import/export işlemlerini başlatır.
 
 **Gösterilen bilgiler:**
 - Aggregate sayı kartları (Series, Books, Levels, Questions)
-- Health Score (dairesel ilerleme göstergesi, %0–100)
-- Auto-load durumu (loading banner, failed banner with retry)
-- Boş state uyarısı (içerik yüklenmemişse)
-- Kritik hatalar özeti (ilk 5 error)
+- Health Score (dairesel ilerleme göstergesi, %0–100) + skoru düşüren
+  error/warning sayısı ("2 errors · 5 warnings need attention")
+- Auto-load durumu (loading banner, failed banner with retry). Failed banner
+  hatanın kendisini de gösterir; `/api/health` cevap verdiyse "sunucuyu başlat"
+  komutu yerine bozuk dosyayı bildirir (`autoLoadErrorProvider`)
+- Boş state uyarısı — `ContentState.hasAnyContent` false iken (hadis/ödül de
+  içerik sayılır) ve auto-load sürerken gösterilmez
+- Kritik hatalar özeti (ilk 5 error) — **yalnızca error varken**; satırlar ve
+  "... and N more" tıklanınca `/validation`'a gider
 
 **Kullanıcı etkileşimleri:**
 - "Import" butonu → file_picker ile ZIP/JSON seçimi → `ZipImporter` → state güncelleme
   - ERROR seviyesinde import issue varsa hiçbir şey uygulanmaz ("Import Blocked")
   - Kaydedilmemiş değişiklik varsa önce onay sorulur: import mevcut state'i ezer
     **ve** undo geçmişini temizler, iptal edilirse hiçbir şey değişmez
-- "Export ZIP" butonu → `ZipExporter` → tarayıcı indirme
+  - Okunamayan dosya / desteklenmeyen tür / birden çok ZIP seçimi sessizce
+    düşmez: SnackBar ya da "Import Issues" listesinde bildirilir
+  - Sonuçta hangi dosyaların değiştiği ve undo geçmişinin silindiği söylenir
+  - Auto-load sürerken devre dışı (biten yükleme ile yarışmasın)
+- "Export ZIP" butonu → `zipExporterProvider` → tarayıcı indirme
+  - İçerik yokken devre dışı, sebebi tooltip'te
+  - ZIP indirmesi sunucuya yazmaz: yalnız **bağlı değilken** saved baseline'ı
+    ilerletir, aksi halde dirty göstergesi susardı
+  - Validation dışı hatalar "Export Failed" dialogunda gösterilir
 - "Validate All" butonu → `/validation` sayfasına yönlendirme
 - "Retry" butonu (auto-load başarısız olduğunda) → `performAutoLoad()` tekrar dener
 
 **Kullandığı provider'lar:**
-- `autoLoadProvider` — Auto-load durumu (loading/loaded/failed banner)
+- `autoLoadProvider` / `autoLoadErrorProvider` — Auto-load durumu ve hata detayı
 - `totalCountsProvider` — Aggregate sayılar
 - `healthScoreProvider` — Sağlık skoru
-- `validationErrorsProvider` — Error listesi
+- `validationErrorsProvider` / `validationWarningsProvider` — Sorun listeleri
 - `contentStateProvider` — Import/export için state erişimi
+- `zipExporterProvider` — Export servisi
 
 ---
 

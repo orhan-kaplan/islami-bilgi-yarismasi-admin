@@ -224,6 +224,87 @@ void main() {
       expect(status, AutoLoadStatus.failed);
     });
 
+    test('records why the load failed when the server is unreachable',
+        () async {
+      final mockClient = MockClient((request) async {
+        throw http.ClientException('Connection refused');
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      await container.read(autoLoadProvider.notifier).performAutoLoad();
+
+      final failure = container.read(autoLoadErrorProvider);
+      expect(failure, isNotNull, reason: 'hata detayı yutulmamalı');
+      expect(failure!.serverReachable, isFalse);
+      expect(failure.message, contains('Connection refused'));
+    });
+
+    test('a reachable server that serves a broken file is not reported as down',
+        () async {
+      final mockClient = MockClient((request) async {
+        if (request.url.path == '/api/health') {
+          return http.Response(_healthJson, 200);
+        }
+        // series.json 404 — sunucu ayakta, dosya yok.
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+
+      await container.read(autoLoadProvider.notifier).performAutoLoad();
+
+      final failure = container.read(autoLoadErrorProvider);
+      expect(failure, isNotNull);
+      expect(failure!.serverReachable, isTrue,
+          reason: 'health cevap verdiyse "sunucuyu başlat" demek yanlış');
+      expect(failure.message, contains('404'));
+    });
+
+    test('a successful load clears the previous failure detail', () async {
+      var healthCallCount = 0;
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/health') {
+          healthCallCount++;
+          if (healthCallCount <= 2) {
+            throw http.ClientException('Connection refused');
+          }
+          return http.Response(_healthJson, 200);
+        }
+        if (path == '/api/files/data/series.json') {
+          return http.Response(_seriesJson, 200);
+        }
+        if (path == '/api/files/data/books.json') {
+          return http.Response(_booksJson, 200);
+        }
+        if (path == '/api/files/data/rewards.json') {
+          return http.Response(_rewardsJson, 200);
+        }
+        if (path == '/api/files/data/hadiths.json') {
+          return http.Response(_hadithsJson, 200);
+        }
+        if (path == '/api/list/data/content') {
+          return http.Response(_contentDirListing, 200);
+        }
+        if (path == '/api/files/data/content/book_1.json') {
+          return http.Response(_contentFileJson, 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final container = createContainer(mockClient: mockClient);
+      final notifier = container.read(autoLoadProvider.notifier);
+
+      await notifier.performAutoLoad();
+      expect(container.read(autoLoadErrorProvider), isNotNull);
+
+      await notifier.performAutoLoad();
+      expect(container.read(autoLoadProvider), AutoLoadStatus.loaded);
+      expect(container.read(autoLoadErrorProvider), isNull,
+          reason: 'eski hata banner\'da asılı kalmamalı');
+    });
+
     test('autoLoadCompleteProvider returns true after successful load',
         () async {
       final mockClient = createSuccessfulMockClient();

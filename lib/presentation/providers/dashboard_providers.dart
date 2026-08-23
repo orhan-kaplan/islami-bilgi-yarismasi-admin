@@ -1,6 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/services/zip_exporter.dart';
 import 'content_providers.dart';
+
+/// Export'u üreten servis. Dashboard bunu doğrudan kurmak yerine buradan
+/// okur; hata yolunun test edilebilmesi için tek seam.
+final zipExporterProvider = Provider<ZipExporter>((ref) => ZipExporter());
 
 /// Derived provider that computes aggregate counts for the dashboard.
 ///

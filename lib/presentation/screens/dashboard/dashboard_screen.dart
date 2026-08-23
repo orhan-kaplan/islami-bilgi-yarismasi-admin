@@ -32,7 +32,11 @@ class DashboardScreen extends ConsumerWidget {
     final counts = ref.watch(totalCountsProvider);
     final healthScore = ref.watch(healthScoreProvider);
     final errors = ref.watch(validationErrorsProvider);
-    final isEmpty = _isContentEmpty(counts);
+    final warnings = ref.watch(validationWarningsProvider);
+    // Hadis ve ödüller de içeriktir: yalnız quiz dilimlerine bakmak, hadis
+    // dolu bir oturumu "boş" gösterip export'u kilitliyordu.
+    final hasContent = ref.watch(contentStateProvider).hasAnyContent;
+    final isLoading = autoLoadStatus == AutoLoadStatus.loading;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
@@ -42,8 +46,7 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Auto-load loading indicator
-            if (autoLoadStatus == AutoLoadStatus.loading)
-              _buildAutoLoadingBanner(context),
+            if (isLoading) _buildAutoLoadingBanner(context),
 
             // Auto-load failure banner
             if (autoLoadStatus == AutoLoadStatus.failed)
@@ -53,21 +56,28 @@ class DashboardScreen extends ConsumerWidget {
             _buildCountCards(counts),
             const SizedBox(height: 32),
 
-            // Empty state prompt
-            if (isEmpty) _buildEmptyStatePrompt(context, ref),
+            // Empty state prompt — yükleme sürerken "içerik yok" demek yanlış.
+            if (!hasContent && !isLoading) _buildEmptyStatePrompt(context, ref),
 
             // Health score section
-            if (!isEmpty) ...[
-              _buildHealthScore(context, healthScore),
+            if (hasContent) ...[
+              _buildHealthScore(context, healthScore, errors.length,
+                  warnings.length),
               const SizedBox(height: 32),
             ],
 
             // Action buttons (always visible — includes ZIP import)
-            _buildActionButtons(context, ref, isEmpty),
+            _buildActionButtons(
+              context,
+              ref,
+              hasContent: hasContent,
+              isLoading: isLoading,
+            ),
             const SizedBox(height: 32),
 
-            // Critical issues summary (when health < 100%)
-            if (!isEmpty && healthScore < 100.0) _buildCriticalIssues(errors),
+            // Critical issues summary — yalnızca gerçekten error varken.
+            if (hasContent && errors.isNotEmpty)
+              _buildCriticalIssues(context, errors),
           ],
         ),
       ),
@@ -75,10 +85,11 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildAutoLoadingBanner(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Card(
-        color: Colors.blue.shade50,
+        color: scheme.secondaryContainer,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -93,7 +104,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   'Loading content from asset server...',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.blue.shade800,
+                        color: scheme.onSecondaryContainer,
                       ),
                 ),
               ),
@@ -105,10 +116,16 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildAutoLoadFailedBanner(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final failure = ref.watch(autoLoadErrorProvider);
+    // Health cevap verdiyse sunucu ayakta demektir; "sunucuyu başlat" demek
+    // kullanıcıyı bozuk dosyadan uzağa yolluyordu.
+    final serverReachable = failure?.serverReachable ?? false;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Card(
-        color: Colors.orange.shade50,
+        color: scheme.tertiaryContainer,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -116,26 +133,39 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.cloud_off, color: Colors.orange.shade700, size: 28),
+                  Icon(
+                    serverReachable ? Icons.report_problem : Icons.cloud_off,
+                    color: scheme.onTertiaryContainer,
+                    size: 28,
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Asset server unavailable',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade900,
-                              ),
+                          serverReachable
+                              ? 'Content could not be loaded'
+                              : 'Asset server unavailable',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: scheme.onTertiaryContainer,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Could not load content from the server. '
-                          'Start the server or import a ZIP archive instead.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.orange.shade800,
-                              ),
+                          serverReachable
+                              ? 'The asset server answered, but one of the '
+                                  'content files could not be read. Fix the '
+                                  'file below, then retry.'
+                              : 'Could not load content from the server. '
+                                  'Start the server or import a ZIP archive '
+                                  'instead.',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: scheme.onTertiaryContainer,
+                                  ),
                         ),
                       ],
                     ),
@@ -156,32 +186,19 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Server start command
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade900,
-                  borderRadius: BorderRadius.circular(8),
+              if (failure != null) ...[
+                const SizedBox(height: 12),
+                _buildMonospaceBlock(context, failure.message,
+                    icon: Icons.error_outline),
+              ],
+              if (!serverReachable) ...[
+                const SizedBox(height: 12),
+                _buildMonospaceBlock(
+                  context,
+                  'cd islami-bilgi-yarismasi/server && dart run bin/server.dart',
+                  icon: Icons.terminal,
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.terminal, color: Colors.grey.shade400, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        'cd islami-bilgi-yarismasi/server && dart run bin/server.dart',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          color: Colors.green.shade300,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ],
           ),
         ),
@@ -189,21 +206,46 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  bool _isContentEmpty(Map<String, int> counts) {
-    return (counts['series'] ?? 0) == 0 &&
-        (counts['books'] ?? 0) == 0 &&
-        (counts['levels'] ?? 0) == 0 &&
-        (counts['questions'] ?? 0) == 0;
+  Widget _buildMonospaceBlock(BuildContext context, String text,
+      {required IconData icon}) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.inverseSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: scheme.onInverseSurface, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SelectableText(
+              text,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                color: scheme.onInverseSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyStatePrompt(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
-      color: Colors.blue.shade50,
+      color: scheme.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 32),
+            Icon(Icons.info_outline,
+                color: scheme.onSecondaryContainer, size: 32),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -213,14 +255,14 @@ class DashboardScreen extends ConsumerWidget {
                     'No content loaded',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade900,
+                          color: scheme.onSecondaryContainer,
                         ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Import a ZIP archive or individual JSON files to get started.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.blue.shade700,
+                          color: scheme.onSecondaryContainer,
                         ),
                   ),
                 ],
@@ -267,12 +309,29 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthScore(BuildContext context, double score) {
+  Widget _buildHealthScore(
+    BuildContext context,
+    double score,
+    int errorCount,
+    int warningCount,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
     final color = score >= 80
-        ? Colors.green
+        ? scheme.primary
         : score >= 50
-            ? Colors.orange
-            : Colors.red;
+            ? scheme.tertiary
+            : scheme.error;
+
+    // Skoru düşüren warning'ler hiçbir yerde görünmüyordu; "some issues"
+    // demek yerine kaç error / kaç warning olduğunu yaz.
+    final parts = <String>[
+      if (errorCount > 0) '$errorCount ${errorCount == 1 ? 'error' : 'errors'}',
+      if (warningCount > 0)
+        '$warningCount ${warningCount == 1 ? 'warning' : 'warnings'}',
+    ];
+    final summary = parts.isEmpty
+        ? 'All validation checks passing'
+        : '${parts.join(' · ')} need attention';
 
     return Card(
       child: Padding(
@@ -288,7 +347,7 @@ class DashboardScreen extends ConsumerWidget {
                   CircularProgressIndicator(
                     value: score / 100.0,
                     strokeWidth: 8,
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor: scheme.surfaceContainerHighest,
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                   Center(
@@ -304,23 +363,24 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 24),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Health Score',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  score >= 100
-                      ? 'All validation checks passing'
-                      : 'Some issues need attention',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                ),
-              ],
+            // Expanded olmadan dar pencerede satır taşıyordu.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Health Score',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    summary,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -329,7 +389,12 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildActionButtons(
-      BuildContext context, WidgetRef ref, bool isEmpty) {
+    BuildContext context,
+    WidgetRef ref, {
+    required bool hasContent,
+    required bool isLoading,
+  }) {
+    final canExport = hasContent && !isLoading;
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -339,13 +404,21 @@ class DashboardScreen extends ConsumerWidget {
           icon: const Icon(Icons.verified),
           label: const Text('Validate All'),
         ),
-        FilledButton.tonalIcon(
-          onPressed: isEmpty ? null : () => _handleExport(context, ref),
-          icon: const Icon(Icons.file_download),
-          label: const Text('Export ZIP'),
+        Tooltip(
+          message: canExport
+              ? 'Download every content file as a ZIP archive'
+              : isLoading
+                  ? 'Wait for the asset server load to finish'
+                  : 'Nothing to export yet — import content first',
+          child: FilledButton.tonalIcon(
+            onPressed: canExport ? () => _handleExport(context, ref) : null,
+            icon: const Icon(Icons.file_download),
+            label: const Text('Export ZIP'),
+          ),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => _handleImport(context, ref),
+          // Yükleme sürerken import etmek, biten auto-load ile yarışıyor.
+          onPressed: isLoading ? null : () => _handleImport(context, ref),
           icon: const Icon(Icons.file_upload),
           label: const Text('Import'),
         ),
@@ -353,11 +426,12 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCriticalIssues(List<dynamic> errors) {
+  Widget _buildCriticalIssues(BuildContext context, List<dynamic> errors) {
+    final scheme = Theme.of(context).colorScheme;
     final displayErrors = errors.take(5).toList();
 
     return Card(
-      color: Colors.red.shade50,
+      color: scheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -365,50 +439,67 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red.shade700),
+                Icon(Icons.error_outline, color: scheme.onErrorContainer),
                 const SizedBox(width: 8),
-                Text(
-                  'Critical Issues (${errors.length} total)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
+                Expanded(
+                  child: Text(
+                    'Critical Issues (${errors.length} total)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: scheme.onErrorContainer,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            // Hataya gitmenin yolu yoktu; satır tıklanınca rapora götür.
             ...displayErrors.map(
-              (error) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.circle, size: 8, color: Colors.red.shade400),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${error.sourceFile}: ${error.message}',
-                        style: TextStyle(color: Colors.red.shade900),
+              (error) => InkWell(
+                onTap: () => context.go('/validation'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.circle, size: 8, color: scheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${error.sourceFile}: ${error.message}',
+                          style: TextStyle(color: scheme.onErrorContainer),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
             if (errors.length > 5)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '... and ${errors.length - 5} more',
-                  style: TextStyle(
-                    color: Colors.red.shade600,
-                    fontStyle: FontStyle.italic,
+              InkWell(
+                onTap: () => context.go('/validation'),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '... and ${errors.length - 5} more',
+                    style: TextStyle(
+                      color: scheme.onErrorContainer,
+                      fontStyle: FontStyle.italic,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Seçim akışında hiçbir şey olmadığında sessiz kalmamak için.
+  void _notify(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -420,13 +511,23 @@ class DashboardScreen extends ConsumerWidget {
       withData: true,
     );
 
+    // Kullanıcı iptal etti — söylenecek bir şey yok.
     if (result == null || result.files.isEmpty) return;
 
-    // Determine if we have a ZIP file or individual JSON files
     final zipFiles =
-        result.files.where((f) => f.extension?.toLowerCase() == 'zip');
+        result.files.where((f) => f.extension?.toLowerCase() == 'zip').toList();
     final jsonFiles =
-        result.files.where((f) => f.extension?.toLowerCase() == 'json');
+        result.files.where((f) => f.extension?.toLowerCase() == 'json').toList();
+
+    if (zipFiles.isEmpty && jsonFiles.isEmpty) {
+      if (!context.mounted) return;
+      _notify(
+        context,
+        'Unsupported file type: ${result.files.map((f) => f.name).join(', ')} '
+        '— select a .zip archive or .json files.',
+      );
+      return;
+    }
 
     final importer = ZipImporter();
     ContentState? importedState;
@@ -434,26 +535,48 @@ class DashboardScreen extends ConsumerWidget {
     Set<String> providedFiles = {};
     FeedbackContentState? importedFeedback;
     GameConfigState? importedGameConfig;
+    // Seçilip kullanılmayan dosyalar sessizce düşüyordu.
+    final ignoredFiles = <String>[];
 
     if (zipFiles.isNotEmpty) {
       // Import from the first ZIP file
       final zipFile = zipFiles.first;
-      if (zipFile.bytes == null) return;
+      if (zipFile.bytes == null) {
+        if (!context.mounted) return;
+        _notify(
+          context,
+          'Could not read ${zipFile.name} — nothing was imported.',
+        );
+        return;
+      }
+      ignoredFiles.addAll(
+        [...zipFiles.skip(1), ...jsonFiles].map((f) => f.name),
+      );
       final bundle = importer.importAll(zipFile.bytes!);
       importedState = bundle.content;
       issues = bundle.issues;
       providedFiles = bundle.providedFiles;
       importedFeedback = bundle.feedback;
       importedGameConfig = bundle.gameConfig;
-    } else if (jsonFiles.isNotEmpty) {
+    } else {
       // Import individual JSON files
       final Map<String, Uint8List> fileMap = {};
       for (final file in jsonFiles) {
         if (file.bytes != null && file.name.isNotEmpty) {
           fileMap[file.name] = file.bytes!;
+        } else {
+          ignoredFiles.add(file.name);
         }
       }
-      if (fileMap.isEmpty) return;
+      if (fileMap.isEmpty) {
+        if (!context.mounted) return;
+        _notify(
+          context,
+          'Could not read ${jsonFiles.map((f) => f.name).join(', ')} '
+          '— nothing was imported.',
+        );
+        return;
+      }
       final (state, fileIssues) = importer.importFiles(fileMap);
       importedState = state;
       issues = fileIssues;
@@ -462,8 +585,21 @@ class DashboardScreen extends ConsumerWidget {
       issues = [...issues, ...extras.issues];
       importedFeedback = extras.feedback;
       importedGameConfig = extras.gameConfig;
-    } else {
-      return;
+    }
+
+    if (ignoredFiles.isNotEmpty) {
+      issues = [
+        ...issues,
+        for (final name in ignoredFiles)
+          ImportIssue(
+            fileName: name,
+            message: zipFiles.isNotEmpty
+                ? 'Ignored — only the first ZIP archive '
+                    '(${zipFiles.first.name}) was imported.'
+                : 'Ignored — the file could not be read.',
+            severity: ImportIssueSeverity.warning,
+          ),
+      ];
     }
 
     // ERROR seviyesindeki sorunlar import'u bloklar — aksi halde yarım parse
@@ -515,13 +651,24 @@ class DashboardScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
 
+    // Onay sorulmayan (temiz) akışta bile ne olduğu söylenmeli: hangi dosyalar
+    // değişti ve undo yığını silindi.
+    final summary = _importSummary(providedFiles);
     if (issues.isNotEmpty) {
-      _showImportIssues(context, issues);
+      _showImportIssues(context, issues, summary: summary);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Content imported successfully')),
-      );
+      _notify(context, summary);
     }
+  }
+
+  String _importSummary(Set<String> providedFiles) {
+    final names = providedFiles.toList()..sort();
+    final label = names.isEmpty
+        ? 'no files'
+        : names.length <= 3
+            ? names.join(', ')
+            : '${names.length} files';
+    return 'Imported $label — undo history cleared';
   }
 
   /// Kaydedilmemiş değişiklikler üzerine yazmadan önce onay ister.
@@ -581,6 +728,7 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     List<ImportIssue> issues, {
     bool blocked = false,
+    String? summary,
   }) {
     showDialog(
       context: context,
@@ -597,6 +745,9 @@ class DashboardScreen extends ConsumerWidget {
                   'Nothing was imported — the existing content is unchanged.',
                 ),
                 const SizedBox(height: 12),
+              ] else if (summary != null) ...[
+                Text(summary),
+                const SizedBox(height: 12),
               ],
               Flexible(
                 child: ListView.builder(
@@ -610,8 +761,8 @@ class DashboardScreen extends ConsumerWidget {
                             ? Icons.error
                             : Icons.warning,
                         color: issue.severity == ImportIssueSeverity.error
-                            ? Colors.red
-                            : Colors.orange,
+                            ? Theme.of(ctx).colorScheme.error
+                            : Theme.of(ctx).colorScheme.tertiary,
                       ),
                       title: Text(issue.fileName),
                       subtitle: Text(issue.message),
@@ -634,7 +785,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Future<void> _handleExport(BuildContext context, WidgetRef ref) async {
     final state = ref.read(contentStateProvider);
-    final exporter = ZipExporter();
+    final exporter = ref.read(zipExporterProvider);
 
     try {
       final zipBytes = exporter.exportZip(
@@ -646,12 +797,15 @@ class DashboardScreen extends ConsumerWidget {
       // Trigger browser download
       downloadFile(zipBytes, 'content_export.zip');
 
-      ref.read(savedBaselineProvider.notifier).state = state;
+      // ZIP indirmesi sunucuya yazmaz. Bağlıyken baseline'ı ilerletmek,
+      // diskteki dosyalar eskiyken dirty göstergesini ve çıkış uyarısını
+      // susturuyordu.
+      if (!ref.read(isServerConnectedProvider)) {
+        ref.read(savedBaselineProvider.notifier).state = state;
+      }
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export successful — download started')),
-      );
+      _notify(context, 'Export successful — download started');
     } on ValidationBlockedExportException catch (e) {
       if (!context.mounted) return;
       showDialog(
@@ -676,13 +830,42 @@ class DashboardScreen extends ConsumerWidget {
                     itemBuilder: (_, index) {
                       final error = e.errors[index];
                       return ListTile(
-                        leading: const Icon(Icons.error, color: Colors.red),
+                        leading: Icon(Icons.error,
+                            color: Theme.of(ctx).colorScheme.error),
                         title: Text(error.sourceFile),
                         subtitle: Text(error.message),
                       );
                     },
                   ),
                 ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Validation dışı hatalar sessizce yutuluyordu: kullanıcı indirme
+      // başlamadığını hiçbir yerden anlayamıyordu.
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Export Failed'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('The ZIP archive could not be created:'),
+                const SizedBox(height: 12),
+                SelectableText('$e'),
               ],
             ),
           ),
@@ -712,13 +895,14 @@ class _CountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+            Icon(icon, size: 32, color: scheme.primary),
             const SizedBox(height: 8),
             Text(
               '$count',
@@ -730,7 +914,7 @@ class _CountCard extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: scheme.onSurfaceVariant,
                   ),
             ),
           ],
