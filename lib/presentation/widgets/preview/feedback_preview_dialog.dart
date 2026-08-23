@@ -115,7 +115,7 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
                 child: IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close, color: Colors.white70),
-                  tooltip: 'Kapat',
+                  tooltip: 'Close',
                 ),
               ),
               // Asset server warning banner
@@ -150,7 +150,7 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
           Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 18),
           SizedBox(width: 8),
           Text(
-            'Asset sunucusu bağlı değil',
+            'Asset server is not connected',
             style: TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -186,11 +186,22 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
   Widget _buildDeviceTestButton() {
     final bool isDisabled = _checkingServer || !_assetServerConnected;
 
+    // Sunucu kontrolü sürerken (3 saniyeye kadar) buton sebepsiz pasif
+    // duruyordu: ne banner ne de tooltip nedenini söylüyordu.
+    final String tooltip;
+    if (_checkingServer) {
+      tooltip = 'Checking the asset server…';
+    } else if (!_assetServerConnected) {
+      tooltip = 'Asset server is not connected — start it to test on a device';
+    } else {
+      tooltip = 'Sends the preview to the app running on the emulator';
+    }
+
     return Tooltip(
-      message: 'Emülatörde çalışan uygulamaya preview gönderir',
+      message: tooltip,
       child: FilledButton.icon(
         onPressed: isDisabled || _sendingPreview ? null : _sendDevicePreview,
-        icon: _sendingPreview
+        icon: _sendingPreview || _checkingServer
             ? const SizedBox(
                 width: 18,
                 height: 18,
@@ -200,7 +211,7 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
                 ),
               )
             : const Icon(Icons.phone_android),
-        label: const Text('Cihazda Test Et'),
+        label: Text(_checkingServer ? 'Checking server…' : 'Test on device'),
         style: FilledButton.styleFrom(
           backgroundColor: Colors.white24,
           foregroundColor: Colors.white,
@@ -231,13 +242,13 @@ class _FeedbackPreviewDialogState extends State<FeedbackPreviewDialog> {
       switch (result) {
         case PreviewResultSuccess():
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Preview isteği gönderildi')),
+            const SnackBar(content: Text('Preview request sent')),
           );
         case PreviewResultConnectionError():
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Asset sunucusuna bağlanılamadı. Sunucunun çalıştığından emin olun.',
+                'Could not reach the asset server. Make sure it is running.',
               ),
             ),
           );

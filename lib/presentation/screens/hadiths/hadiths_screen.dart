@@ -210,43 +210,47 @@ class _HadithFormDialogState extends State<_HadithFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_isEditing ? 'Edit Hadith' : 'Add Hadith'),
+      // Kısa pencerede (veya klavye açıkken) 4 satırlık metin alanı, kaynak ve
+      // validasyon hataları dialogu taşırıyor, Save erişilemez kalıyordu.
       content: SizedBox(
         width: 500,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _textController,
-                decoration: const InputDecoration(
-                  labelText: 'Hadith',
-                  border: OutlineInputBorder(),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _textController,
+                  decoration: const InputDecoration(
+                    labelText: 'Hadith',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 4,
+                  autofocus: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Hadith text is required';
+                    }
+                    return null;
+                  },
                 ),
-                maxLines: 4,
-                autofocus: true,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Hadith text is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _sourceController,
-                decoration: const InputDecoration(
-                  labelText: 'Source',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _sourceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Source',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Source is required';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Source is required';
-                  }
-                  return null;
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

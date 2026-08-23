@@ -171,12 +171,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // In edit mode, should show text fields with labels
-      expect(find.text('Başlık'), findsOneWidget);
-      expect(find.text('Mesaj'), findsOneWidget);
+      expect(find.text('Title'), findsOneWidget);
+      expect(find.text('Message'), findsOneWidget);
       expect(find.text('Emoji:'), findsOneWidget);
       // Should show save and cancel buttons
-      expect(find.text('Kaydet'), findsOneWidget);
-      expect(find.text('İptal'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      // Admin arayüzü İngilizce (CLAUDE.md); Türkçe kopya kalmamalı.
+      for (final turkish in ['Başlık', 'Mesaj', 'Kaydet', 'İptal']) {
+        expect(find.text(turkish), findsNothing,
+            reason: '$turkish Türkçe kaldı');
+      }
     });
 
     testWidgets('shows repeat icon based on shouldRepeat', (tester) async {
@@ -208,4 +213,243 @@ void main() {
       expect(find.byIcon(Icons.repeat_one), findsOneWidget);
     });
   });
+
+  /// ID1 — kart başka bir mesaja bağlanınca açık düzenleme o mesaja ait
+  /// değildir: silme / sürükleme index'leri kaydırdığında Kaydet yanlış kaydın
+  /// üzerine yazıyordu.
+  group('FeedbackCard rebound to a different message', () {
+    testWidgets('closes the open edit form instead of keeping stale text',
+        (tester) async {
+      final hostKey = GlobalKey<_SwappableMessageHostState>();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            feedbackContentProvider.overrideWith(
+              (ref) => FeedbackContentNotifier(createMinimalState()),
+            ),
+          ],
+          child: MaterialApp(
+            home: _SwappableMessageHost(
+              key: hostKey,
+              initial: const FeedbackMessageModel(
+                title: 'Alpha',
+                message: 'Alpha mesajı',
+                emoji: '🅰️',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Title'),
+        'STALE EDIT',
+      );
+      await tester.pump();
+      expect(find.text('STALE EDIT'), findsOneWidget);
+
+      hostKey.currentState!.swap(
+        const FeedbackMessageModel(
+          title: 'Beta',
+          message: 'Beta mesajı',
+          emoji: '🅱️',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(FilledButton, 'Save'),
+        findsNothing,
+        reason: 'yanlış kayda yazabilecek düzenleme formu açık kalmamalı',
+      );
+      expect(find.text('STALE EDIT'), findsNothing);
+      expect(find.text('Beta'), findsOneWidget);
+    });
+
+    testWidgets('a stale edit cannot be written over the new message',
+        (tester) async {
+      late ProviderContainer container;
+      final hostKey = GlobalKey<_SwappableMessageHostState>();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            feedbackContentProvider.overrideWith(
+              (ref) => FeedbackContentNotifier(createMinimalState()),
+            ),
+          ],
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp(
+                home: _SwappableMessageHost(
+                  key: hostKey,
+                  initial: const FeedbackMessageModel(
+                    title: 'Alpha',
+                    message: 'Alpha mesajı',
+                    emoji: '🅰️',
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Title'),
+        'STALE EDIT',
+      );
+      hostKey.currentState!.swap(
+        const FeedbackMessageModel(
+          title: 'Beta',
+          message: 'Beta mesajı',
+          emoji: '🅱️',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
+      expect(
+        container.read(feedbackContentProvider).comeback.single.title,
+        'Test',
+        reason: 'bayat düzenleme hiçbir kaydı kirletmemeli',
+      );
+    });
+  });
+
+  /// ID3 — düzenleme modundaki Lottie değişikliği anında state'e yazılıyordu;
+  /// "İptal" değişikliği geri almıyor, kullanıcıya iptal ettiğini söyleyip
+  /// dosyaya yeni değeri yazıyordu.
+  group('Lottie edits inside edit mode respect Save / Cancel', () {
+    const withLottie = FeedbackMessageModel(
+      title: 'Lottie Test',
+      message: 'Lottie mesajı',
+      emoji: '🎬',
+      lottieAsset: 'feedback/celebration.json',
+    );
+
+    FeedbackContentState stateWithLottie() => const FeedbackContentState(
+          quiz: {},
+          speedQuiz: {},
+          time: {},
+          comeback: [withLottie],
+          streak: {},
+          titles: [],
+          learned: {},
+        );
+
+    Future<ProviderContainer> pumpCard(WidgetTester tester) async {
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            feedbackContentProvider.overrideWith(
+              (ref) => FeedbackContentNotifier(stateWithLottie()),
+            ),
+          ],
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context);
+              return const MaterialApp(
+                home: Scaffold(
+                  body: SingleChildScrollView(
+                    child: FeedbackCard(
+                      message: withLottie,
+                      index: 0,
+                      category: 'comeback',
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('Cancel keeps the original Lottie', (tester) async {
+      final container = await pumpCard(tester);
+
+      await tester.tap(find.byTooltip('Remove Lottie'));
+      await tester.pumpAndSettle();
+      expect(find.text('No Lottie assigned'), findsOneWidget,
+          reason: 'kaldırma düzenleme formunda görünmeli');
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(feedbackContentProvider).comeback.single.lottieAsset,
+        'feedback/celebration.json',
+        reason: 'İptal Lottie kaldırmasını geri almalı',
+      );
+    });
+
+    testWidgets('Save applies the staged Lottie removal', (tester) async {
+      final container = await pumpCard(tester);
+
+      await tester.tap(find.byTooltip('Remove Lottie'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(feedbackContentProvider).comeback.single.lottieAsset,
+        isNull,
+      );
+    });
+
+    testWidgets('removal is not written to state before Save', (tester) async {
+      final container = await pumpCard(tester);
+
+      await tester.tap(find.byTooltip('Remove Lottie'));
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(feedbackContentProvider).comeback.single.lottieAsset,
+        'feedback/celebration.json',
+        reason: 'kaydedilmeden state kirlenmemeli',
+      );
+    });
+  });
+}
+
+/// Aynı slottaki kartı dışarıdan başka bir mesaja bağlar — silme ve sürükleme
+/// gerçek ekranda tam olarak bunu yapıyor.
+class _SwappableMessageHost extends StatefulWidget {
+  const _SwappableMessageHost({super.key, required this.initial});
+
+  final FeedbackMessageModel initial;
+
+  @override
+  State<_SwappableMessageHost> createState() => _SwappableMessageHostState();
+}
+
+class _SwappableMessageHostState extends State<_SwappableMessageHost> {
+  late FeedbackMessageModel _message = widget.initial;
+
+  void swap(FeedbackMessageModel next) => setState(() => _message = next);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: FeedbackCard(
+          message: _message,
+          index: 0,
+          category: 'comeback',
+        ),
+      ),
+    );
+  }
 }

@@ -105,4 +105,64 @@ void main() {
       expect(container.read(contentStateProvider).hadiths, isEmpty);
     });
   });
+
+  /// Reward dialogu içeriğini kaydırıyordu, hadis dialogu kaydırmıyordu: kısa
+  /// pencerede (veya klavye açıkken) 4 satırlık metin alanı + kaynak + iki
+  /// validasyon hatası AlertDialog'u taşırıyor ve Save butonu erişilemez hale
+  /// geliyordu.
+  group('HadithsScreen add dialog on a short window', () {
+    Future<void> pumpShort(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(900, 300);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: HadithsScreen()),
+        ),
+      );
+      await tester.tap(find.text('Add Hadith'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('does not overflow when the dialog is taller than the window',
+        (tester) async {
+      await pumpShort(tester);
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'dialog içeriği kaydırılabilir olmalı, taşmamalı',
+      );
+    });
+
+    testWidgets('does not overflow once validation errors grow the fields',
+        (tester) async {
+      await pumpShort(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hadith text is required'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the Source field can be scrolled into view', (tester) async {
+      await pumpShort(tester);
+      // Taşma varsa alan görünür alana hiç girmez; kaydırılabilirse girer.
+      await tester.dragUntilVisible(
+        find.widgetWithText(TextFormField, 'Source'),
+        find.byType(AlertDialog),
+        const Offset(0, -40),
+      );
+      await tester.pumpAndSettle();
+
+      final dialogRect = tester.getRect(find.byType(AlertDialog));
+      final sourceRect =
+          tester.getRect(find.widgetWithText(TextFormField, 'Source'));
+      expect(sourceRect.top, greaterThanOrEqualTo(dialogRect.top - 1));
+      expect(sourceRect.bottom, lessThanOrEqualTo(dialogRect.bottom + 1));
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

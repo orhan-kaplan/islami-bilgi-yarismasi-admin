@@ -14,7 +14,7 @@ AppShell (Scaffold + Row) — ConsumerStatefulWidget
 │   ├── Tab 3: Hadiths       (Hadisler)
 │   ├── Tab 4: Assets        (Asset Yönetimi)
 │   ├── Tab 5: Feedback     (Mesajlar)
-│   ├── Tab 6: Oyun         (game_config.json)
+│   ├── Tab 6: Game         (game_config.json)
 │   ├── Tab 7: Validation   (Validasyon Raporu)
 │   └── trailing: Unsaved changes indicator (turuncu nokta, tüm sayfalarda görünür)
 ├── BeforeUnloadGuard (tarayıcı kapatma koruması)
@@ -317,13 +317,17 @@ Scaffold
   - quiz, speed_quiz → QuizResultPreview
   - time, comeback, streak → DashboardPreview
   - learned → LearnedQuizResultPreview
-- "Cihazda Test Et" butonu: Asset sunucu bağlıysa aktif, preview'ı emülatöre gönderir
-- Asset sunucu bağlı değilse uyarı banner'ı gösterilir
+- "Test on device" butonu: Asset sunucu bağlıysa aktif, preview'ı emülatöre gönderir
+- Sunucu kontrol edilirken buton "Checking server…" gösterir; bağlı değilse uyarı banner'ı çıkar ve tooltip nedeni söyler
 
-**Mesaj Ekleme/İptal Davranışı:**
+**Mesaj / Ünvan Ekleme–İptal Davranışı:**
 - "+" butonu → boş mesaj oluşturulur ve edit modunda açılır
 - İptal edilirse → boş mesaj listeden kaldırılır (hiçbir şey oluşmaz)
-- Mevcut mesaj düzenlenip iptal edilirse → eski hali korunur
+- "Add title" de aynı şekilde: boş ünvan kartı edit modunda açılır, iptal edilirse kaldırılır
+- Mevcut kayıt düzenlenip iptal edilirse → eski hali korunur (edit modunda seçilen/kaldırılan Lottie dahil)
+- Kart düzenleme açıkken liste değişip kart başka bir kayda bağlanırsa form kapanır — bayat düzenleme yanlış kaydın üzerine yazamaz
+- Sıralama sürüklemesi uzun basmayla başlar; kısa sürükleme listeyi kaydırır
+- Meta'da tanımlı olmayan alt kategori anahtarları da bölüm olarak listelenir (gizli içerik kalmaz)
 
 **Kullandığı provider'lar:**
 - `feedbackContentProvider` — Feedback CRUD işlemleri
@@ -340,7 +344,9 @@ Streak sekmeleri `feedback.json` anahtarlarından üretilir (`3 gün serisi`); 3
 
 **Bölümler:** Quiz (can, puan, routing), Hızlı quiz süre/eşikler, öğrenilen bantlar, günlük hedef, saat dilimleri, lottie kısa yolları, copy.
 
-Debounced auto-save (`data/game_config.json`). Validasyon hatası kaydı bloklar.
+Debounced auto-save (`data/game_config.json`). Validasyon hatası kaydı bloklar; hata listesi ekranın üstünde kaydırılabilir bir banner'da (tema error token'ları) gösterilir.
+
+Sayısal alanlar parse edilemeyen veya boş girişi sessizce yutmaz — alan altında hata gösterir ve kayıtlı değer korunur. AppBar chip'i bağlantı kopukken "Saved" demez; bekleyen değişiklik varsa "Offline — not saved" gösterir.
 
 **Kullandığı provider'lar:**
 - `gameConfigProvider`

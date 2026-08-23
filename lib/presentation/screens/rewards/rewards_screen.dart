@@ -196,7 +196,12 @@ class RewardsScreen extends ConsumerWidget {
 }
 
 /// Displays the reward image thumbnail from the asset server.
-class _RewardImage extends StatelessWidget {
+///
+/// Cache-buster her `build`'de yeniden hesaplanınca URL de her yeniden çizimde
+/// değişiyor, tüm thumbnail'lar baştan indiriliyor ve liste titriyordu. Damga
+/// artık görsel yolu başına bir kez üretilir: aynı dosya için URL sabit kalır,
+/// yol değişince (veya yeni bir görsel yüklenince) tazelenir.
+class _RewardImage extends StatefulWidget {
   const _RewardImage({
     required this.assetImage,
     required this.isConnected,
@@ -206,7 +211,31 @@ class _RewardImage extends StatelessWidget {
   final bool isConnected;
 
   @override
+  State<_RewardImage> createState() => _RewardImageState();
+}
+
+class _RewardImageState extends State<_RewardImage> {
+  late int _cacheBuster;
+
+  @override
+  void initState() {
+    super.initState();
+    _cacheBuster = AssetServerConfig.now;
+  }
+
+  @override
+  void didUpdateWidget(covariant _RewardImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.assetImage != widget.assetImage) {
+      _cacheBuster = AssetServerConfig.now;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final assetImage = widget.assetImage;
+    final isConnected = widget.isConnected;
+
     if (!isConnected || assetImage.isEmpty) {
       return Container(
         width: 80,
@@ -225,8 +254,7 @@ class _RewardImage extends StatelessWidget {
     }
 
     final apiPath = AssetPathUtils.appPathToApiPath(assetImage);
-    final url =
-        AssetServerConfig.fileUrl(apiPath, cacheBuster: AssetServerConfig.now);
+    final url = AssetServerConfig.fileUrl(apiPath, cacheBuster: _cacheBuster);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),

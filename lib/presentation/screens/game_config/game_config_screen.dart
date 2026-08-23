@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/game_config_models.dart';
 import '../../../data/services/game_config_validator.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../providers/game_config_auto_save_providers.dart';
 import '../../providers/game_config_providers.dart';
 
@@ -15,14 +16,26 @@ class GameConfigScreen extends ConsumerWidget {
     final saveStatus = ref.watch(gameConfigAutoSaveProvider);
     final state = ref.watch(gameConfigProvider);
     final errors = validateGameConfigData(state);
+    final isConnected = ref.watch(isServerConnectedProvider);
+    // Bağlantı yokken auto-save sessizce atlıyor; bekleyen değişikliğin
+    // yeniden hesaplanması için state'i izlemek gerekiyor.
+    ref.watch(gameConfigProvider);
+    final hasPendingChange =
+        ref.read(gameConfigAutoSaveProvider.notifier).hasPendingChange;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Oyun'),
+        title: const Text('Game Config'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Center(child: _SaveStatusChip(status: saveStatus)),
+            child: Center(
+              child: _SaveStatusChip(
+                status: saveStatus,
+                isConnected: isConnected,
+                hasPendingChange: hasPendingChange,
+              ),
+            ),
           ),
         ],
       ),
@@ -34,12 +47,12 @@ class GameConfigScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Oyun ayarları yüklenemedi.'),
+                const Text('Could not load game settings.'),
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () =>
                       ref.read(gameConfigLoadProvider.notifier).performLoad(force: true),
-                  child: const Text('Tekrar dene'),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
@@ -53,17 +66,37 @@ class GameConfigScreen extends ConsumerWidget {
 }
 
 class _SaveStatusChip extends StatelessWidget {
-  const _SaveStatusChip({required this.status});
+  const _SaveStatusChip({
+    required this.status,
+    required this.isConnected,
+    required this.hasPendingChange,
+  });
 
   final GameConfigSaveStatus status;
+  final bool isConnected;
+  final bool hasPendingChange;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    // Bağlantı kopunca yazma sessizce atlanıyor ama chip son "Kaydedildi"de
+    // donuyordu; kullanıcı çevrimdışı düzenlemeye devam edip kaydedildiğini
+    // sanıyordu.
+    if (!isConnected) {
+      return Chip(
+        label: Text(hasPendingChange ? 'Offline — not saved' : 'Offline'),
+        visualDensity: VisualDensity.compact,
+        backgroundColor: (hasPendingChange ? scheme.error : scheme.outline)
+            .withValues(alpha: 0.15),
+      );
+    }
+
     final (label, color) = switch (status) {
-      GameConfigSaveStatus.idle => ('Hazır', Colors.grey),
-      GameConfigSaveStatus.saving => ('Kaydediliyor', Colors.blue),
-      GameConfigSaveStatus.saved => ('Kaydedildi', Colors.green),
-      GameConfigSaveStatus.error => ('Kayıt hatası', Colors.red),
+      GameConfigSaveStatus.idle => ('Idle', Colors.grey),
+      GameConfigSaveStatus.saving => ('Saving', Colors.blue),
+      GameConfigSaveStatus.saved => ('Saved', Colors.green),
+      GameConfigSaveStatus.error => ('Save failed', Colors.red),
     };
     return Chip(
       label: Text(label),
@@ -86,19 +119,42 @@ class _GameConfigForm extends ConsumerWidget {
     return Column(
       children: [
         if (errors.isNotEmpty)
+          // Banner esnek olmayan bir Column çocuğuydu: birkaç alan bozulunca
+          // kısa pencerede formu ezip taşıyordu. Sabit renk yerine tema
+          // token'ları — koyu temada açık pembe zemin okunmuyordu.
           Material(
-            color: Colors.red.shade50,
+            color: Theme.of(context).colorScheme.errorContainer,
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Kayıt bloklandı — hataları düzeltin:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    'Saving is blocked — fix these errors:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  ...errors.map((e) => Text('• $e')),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 132),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: errors
+                            .map((e) => Text(
+                                  '• $e',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onErrorContainer,
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -111,14 +167,14 @@ class _GameConfigForm extends ConsumerWidget {
           title: 'Quiz',
           children: [
             _IntField(
-              label: 'Can (lives)',
+              label: 'Lives',
               value: state.quiz.lives,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(quiz: state.quiz.copyWith(lives: v)),
               ),
             ),
             _IntField(
-              label: 'Doğru cevap puanı',
+              label: 'Points per correct answer',
               value: state.quiz.pointsPerCorrect,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -127,7 +183,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _IntField(
-              label: 'Hız canavarı — soru başı max saniye',
+              label: 'Speed demon — max seconds per question',
               value: state.quiz.speedDemonMaxSecondsPerQuestion,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -138,7 +194,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _DoubleField(
-              label: 'Hız canavarı — min doğruluk (0–1)',
+              label: 'Speed demon — min accuracy (0–1)',
               value: state.quiz.speedDemonMinAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -147,7 +203,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _DoubleField(
-              label: 'Mükemmel — min doğruluk (0–1)',
+              label: 'Perfect — min accuracy (0–1)',
               value: state.quiz.perfectMinAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -156,21 +212,21 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _IntField(
-              label: 'Tek yanlış — yanlış sayısı',
+              label: 'One wrong — wrong count',
               value: state.quiz.oneWrongCount,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(quiz: state.quiz.copyWith(oneWrongCount: v)),
               ),
             ),
             _IntField(
-              label: 'İki yanlış — yanlış sayısı',
+              label: 'Two wrong — wrong count',
               value: state.quiz.twoWrongCount,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(quiz: state.quiz.copyWith(twoWrongCount: v)),
               ),
             ),
             _DoubleField(
-              label: 'İyi performans — min doğruluk (0–1)',
+              label: 'Good — min accuracy (0–1)',
               value: state.quiz.goodMinAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -180,7 +236,7 @@ class _GameConfigForm extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Yönlendirme sırası (failure hariç; sürükleyerek değiştir)',
+              'Routing order (failure excluded; drag to reorder)',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             ReorderableListView(
@@ -209,10 +265,10 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Hızlı Quiz',
+          title: 'Speed Quiz',
           children: [
             _IntField(
-              label: 'Süre (saniye)',
+              label: 'Duration (seconds)',
               value: state.speedQuiz.durationSeconds,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -221,7 +277,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _IntField(
-              label: 'Kombo ustası — min kombo',
+              label: 'Combo master — min combo',
               value: state.speedQuiz.comboMinCombo,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -230,7 +286,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _DoubleField(
-              label: 'Kombo ustası — min doğruluk (0–1)',
+              label: 'Combo master — min accuracy (0–1)',
               value: state.speedQuiz.comboMinAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -240,7 +296,7 @@ class _GameConfigForm extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Süre doldu — timeout tetikler'),
+              title: const Text('Time expired — triggered by timeout'),
               value: state.speedQuiz.timeExpiredOnTimeout,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -249,7 +305,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _DoubleField(
-              label: 'Süre doldu — max doğruluk (0–1)',
+              label: 'Time expired — max accuracy (0–1)',
               value: state.speedQuiz.timeExpiredMaxAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -259,7 +315,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _DoubleField(
-              label: 'Orta — min doğruluk (0–1)',
+              label: 'Moderate — min accuracy (0–1)',
               value: state.speedQuiz.moderateMinAccuracy,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -268,7 +324,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             const Text(
-              'Yüksek skor — herhangi biri (OR of AND)',
+              'High score — any clause (OR of AND)',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             for (var i = 0; i < state.speedQuiz.highScoreAny.length; i++)
@@ -288,7 +344,7 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Öğrenilen bilgi bantları',
+          title: 'Learned bands',
           children: [
             for (var i = 0; i < state.learnedBands.length; i++)
               _LearnedBandRow(
@@ -302,17 +358,17 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Günlük hedef / Geri dönüş',
+          title: 'Daily goal / Comeback',
           children: [
             _IntField(
-              label: 'Geri dönüş min gün',
+              label: 'Comeback min days',
               value: state.comebackMinDays,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(comebackMinDays: v),
               ),
             ),
             _IntField(
-              label: 'Günlük hedef — level',
+              label: 'Daily goal — levels',
               value: state.dailyGoal.targetLevels,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -321,7 +377,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _IntField(
-              label: 'Günlük hedef — soru',
+              label: 'Daily goal — questions',
               value: state.dailyGoal.targetQuestions,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -332,7 +388,7 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Saat dilimleri (dashboard başlığı)',
+          title: 'Time slots (dashboard heading)',
           children: [
             for (var i = 0; i < state.timeSlots.length; i++)
               _TimeSlotRow(
@@ -346,7 +402,7 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Lottie (kısa yol, assets/lottie/ öneki uygulamada eklenir)',
+          title: 'Lottie (short paths; the app adds the assets/lottie/ prefix)',
           children: [
             _StringField(
               label: 'Confetti',
@@ -356,14 +412,14 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Kitap bitiş',
+              label: 'Book finish',
               value: state.lottie.bookFinish,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(lottie: state.lottie.copyWith(bookFinish: v)),
               ),
             ),
             _StringField(
-              label: 'Level tamamlandı',
+              label: 'Level complete',
               value: state.lottie.levelComplete,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -372,7 +428,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Öğrenilen fallback',
+              label: 'Learned fallback',
               value: state.lottie.learnedFallback,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -381,14 +437,14 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Quiz yükleme',
+              label: 'Quiz loading',
               value: state.lottie.quizLoading,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(lottie: state.lottie.copyWith(quizLoading: v)),
               ),
             ),
             _StringField(
-              label: 'Quiz başarısız',
+              label: 'Quiz fail',
               value: state.lottie.quizFail,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(lottie: state.lottie.copyWith(quizFail: v)),
@@ -397,10 +453,10 @@ class _GameConfigForm extends ConsumerWidget {
           ],
         ),
         _Section(
-          title: 'Metinler',
+          title: 'Copy',
           children: [
             _StringField(
-              label: 'Dashboard selamlama',
+              label: 'Dashboard greeting',
               value: state.copy.dashboardGreeting,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -409,7 +465,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Onboarding selamlama',
+              label: 'Onboarding greeting',
               value: state.copy.onboardingGreeting,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -418,7 +474,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Onboarding alt başlık',
+              label: 'Onboarding subtitle',
               value: state.copy.onboardingSubtitle,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -427,7 +483,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Onboarding gövde',
+              label: 'Onboarding body',
               value: state.copy.onboardingBody,
               maxLines: 3,
               onChanged: (v) => notifier.importContent(
@@ -435,7 +491,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'İsim sorusu',
+              label: 'Name prompt',
               value: state.copy.onboardingNamePrompt,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -444,7 +500,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'İsim ipucu',
+              label: 'Name hint',
               value: state.copy.onboardingNameHint,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -453,14 +509,14 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Varsayılan görünen ad (ünvan değil)',
+              label: 'Default display name (not a title)',
               value: state.copy.defaultName,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(copy: state.copy.copyWith(defaultName: v)),
               ),
             ),
             _StringField(
-              label: 'Boş isim uyarısı',
+              label: 'Empty name warning',
               value: state.copy.onboardingEmptyNameHint,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -469,7 +525,7 @@ class _GameConfigForm extends ConsumerWidget {
               ),
             ),
             _StringField(
-              label: 'Başla butonu',
+              label: 'Start button',
               value: state.copy.onboardingStartButton,
               onChanged: (v) => notifier.importContent(
                 state.copyWith(
@@ -513,6 +569,75 @@ class _Section extends StatelessWidget {
   }
 }
 
+const String _emptyValueError = 'Enter a value — the saved value is unchanged.';
+const String _wholeNumberError =
+    'Whole number expected — the saved value is unchanged.';
+const String _numberError = 'Number expected — the saved value is unchanged.';
+const String _clockError =
+    'Use HH:mm between 00:00 and 23:59 — the saved value is unchanged.';
+
+/// Parse edilemeyen giriş sessizce yutuluyordu: alan yeni metni gösteriyor,
+/// state eski değerinde kalıyor ve kullanıcıya hiçbir şey söylenmiyordu.
+/// [onChanged] girişi kabul ederse `null`, etmezse gösterilecek hatayı döner.
+class _ValidatedField extends StatefulWidget {
+  const _ValidatedField({
+    required this.label,
+    required this.initialText,
+    required this.onChanged,
+    this.keyboardType,
+  });
+
+  final String label;
+  final String initialText;
+  final String? Function(String raw) onChanged;
+  final TextInputType? keyboardType;
+
+  @override
+  State<_ValidatedField> createState() => _ValidatedFieldState();
+}
+
+class _ValidatedFieldState extends State<_ValidatedField> {
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextFormField(
+        initialValue: widget.initialText,
+        decoration: InputDecoration(
+          labelText: widget.label,
+          errorText: _error,
+          errorMaxLines: 3,
+        ),
+        keyboardType: widget.keyboardType,
+        onChanged: (raw) {
+          final error = widget.onChanged(raw);
+          if (error != _error) setState(() => _error = error);
+        },
+      ),
+    );
+  }
+}
+
+String? _acceptInt(String raw, ValueChanged<int> onParsed) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return _emptyValueError;
+  final parsed = int.tryParse(trimmed);
+  if (parsed == null) return _wholeNumberError;
+  onParsed(parsed);
+  return null;
+}
+
+String? _acceptDouble(String raw, ValueChanged<double> onParsed) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return _emptyValueError;
+  final parsed = double.tryParse(trimmed);
+  if (parsed == null) return _numberError;
+  onParsed(parsed);
+  return null;
+}
+
 class _IntField extends StatelessWidget {
   const _IntField({
     required this.label,
@@ -526,17 +651,11 @@ class _IntField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextFormField(
-        initialValue: '$value',
-        decoration: InputDecoration(labelText: label),
-        keyboardType: TextInputType.number,
-        onChanged: (raw) {
-          final parsed = int.tryParse(raw);
-          if (parsed != null) onChanged(parsed);
-        },
-      ),
+    return _ValidatedField(
+      label: label,
+      initialText: '$value',
+      keyboardType: TextInputType.number,
+      onChanged: (raw) => _acceptInt(raw, onChanged),
     );
   }
 }
@@ -554,17 +673,11 @@ class _DoubleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextFormField(
-        initialValue: '$value',
-        decoration: InputDecoration(labelText: label),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (raw) {
-          final parsed = double.tryParse(raw);
-          if (parsed != null) onChanged(parsed);
-        },
-      ),
+    return _ValidatedField(
+      label: label,
+      initialText: '$value',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (raw) => _acceptDouble(raw, onChanged),
     );
   }
 }
@@ -614,35 +727,48 @@ class _HighScoreClauseRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: TextFormField(
-              initialValue: clause.minAccuracy?.toString() ?? '',
-              decoration: InputDecoration(
-                labelText: 'Clause ${index + 1} min doğruluk',
-              ),
+            child: _ValidatedField(
+              label: 'Clause ${index + 1} min accuracy',
+              initialText: clause.minAccuracy?.toString() ?? '',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               onChanged: (raw) {
-                onChanged(
-                  ScoreClause(
-                    minAccuracy: double.tryParse(raw),
-                    minCorrect: clause.minCorrect,
-                  ),
-                );
+                // Boş = "bu koşul yok"; geçersiz metin sessizce boşa
+                // düşmemeli.
+                final trimmed = raw.trim();
+                if (trimmed.isEmpty) {
+                  onChanged(ScoreClause(minCorrect: clause.minCorrect));
+                  return null;
+                }
+                final parsed = double.tryParse(trimmed);
+                if (parsed == null) return _numberError;
+                onChanged(ScoreClause(
+                  minAccuracy: parsed,
+                  minCorrect: clause.minCorrect,
+                ));
+                return null;
               },
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: TextFormField(
-              initialValue: clause.minCorrect?.toString() ?? '',
-              decoration: InputDecoration(
-                labelText: 'Clause ${index + 1} min doğru',
-              ),
+            child: _ValidatedField(
+              label: 'Clause ${index + 1} min correct',
+              initialText: clause.minCorrect?.toString() ?? '',
+              keyboardType: TextInputType.number,
               onChanged: (raw) {
-                onChanged(
-                  ScoreClause(
-                    minAccuracy: clause.minAccuracy,
-                    minCorrect: int.tryParse(raw),
-                  ),
-                );
+                final trimmed = raw.trim();
+                if (trimmed.isEmpty) {
+                  onChanged(ScoreClause(minAccuracy: clause.minAccuracy));
+                  return null;
+                }
+                final parsed = int.tryParse(trimmed);
+                if (parsed == null) return _wholeNumberError;
+                onChanged(ScoreClause(
+                  minAccuracy: clause.minAccuracy,
+                  minCorrect: parsed,
+                ));
+                return null;
               },
             ),
           ),
@@ -666,15 +792,15 @@ class _LearnedBandRow extends StatelessWidget {
         children: [
           SizedBox(width: 48, child: Text(band.key)),
           Expanded(
-            child: TextFormField(
-              initialValue: '${band.minPercent}',
-              decoration: const InputDecoration(labelText: 'min_percent'),
-              onChanged: (raw) {
-                final parsed = double.tryParse(raw);
-                if (parsed != null) {
-                  onChanged(band.copyWith(minPercent: parsed));
-                }
-              },
+            child: _ValidatedField(
+              label: 'min_percent',
+              initialText: '${band.minPercent}',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (raw) => _acceptDouble(
+                raw,
+                (parsed) => onChanged(band.copyWith(minPercent: parsed)),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -706,27 +832,27 @@ class _TimeSlotRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: TextFormField(
-                  initialValue: formatGameConfigHhMm(slot.startMinutes),
-                  decoration: const InputDecoration(labelText: 'Başlangıç (HH:mm)'),
+                child: _ValidatedField(
+                  label: 'Start (HH:mm)',
+                  initialText: formatGameConfigHhMm(slot.startMinutes),
                   onChanged: (raw) {
-                    final parsed = parseGameConfigHhMm(raw);
-                    if (parsed != null) {
-                      onChanged(slot.copyWith(startMinutes: parsed));
-                    }
+                    final parsed = parseGameConfigHhMm(raw.trim());
+                    if (parsed == null) return _clockError;
+                    onChanged(slot.copyWith(startMinutes: parsed));
+                    return null;
                   },
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: TextFormField(
-                  initialValue: formatGameConfigHhMm(slot.endMinutes),
-                  decoration: const InputDecoration(labelText: 'Bitiş (HH:mm)'),
+                child: _ValidatedField(
+                  label: 'End (HH:mm)',
+                  initialText: formatGameConfigHhMm(slot.endMinutes),
                   onChanged: (raw) {
-                    final parsed = parseGameConfigHhMm(raw);
-                    if (parsed != null) {
-                      onChanged(slot.copyWith(endMinutes: parsed));
-                    }
+                    final parsed = parseGameConfigHhMm(raw.trim());
+                    if (parsed == null) return _clockError;
+                    onChanged(slot.copyWith(endMinutes: parsed));
+                    return null;
                   },
                 ),
               ),
@@ -734,7 +860,7 @@ class _TimeSlotRow extends StatelessWidget {
           ),
           TextFormField(
             initialValue: slot.label,
-            decoration: const InputDecoration(labelText: 'Etiket'),
+            decoration: const InputDecoration(labelText: 'Label'),
             onChanged: (v) => onChanged(slot.copyWith(label: v)),
           ),
         ],

@@ -21,6 +21,10 @@ import '../../core/constants/asset_server_config.dart';
 Future<String?> showLottiePickerDialog(BuildContext context) {
   return showDialog<String?>(
     context: context,
+    // Barrier'a kazara tıklamak dialogu kapatıyordu; yükleme sürerken bu,
+    // dosyanın sunucuya yazılıp mesaja hiç bağlanmaması ve kullanıcıya hiçbir
+    // şey söylenmemesi demekti.
+    barrierDismissible: false,
     builder: (context) => const _LottiePickerDialog(),
   );
 }
@@ -64,19 +68,21 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
         });
       }
     } on AssetServerException catch (e) {
+      // `_files = []` atanınca grid "dosya yok" boş durumunu gösteriyor,
+      // kullanıcı hatayı görmüyordu. Hata artık kendi durumu olarak sunulur.
       if (mounted) {
         setState(() {
-          _error = 'Sunucu hatası: ${e.message}';
+          _error = 'Could not load Lottie files — server error: ${e.message}';
           _isLoading = false;
-          _files = [];
+          _files = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Dosyalar yüklenemedi: $e';
+          _error = 'Could not load Lottie files: $e';
           _isLoading = false;
-          _files = [];
+          _files = null;
         });
       }
     }
@@ -95,7 +101,7 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
     final bytes = file.bytes;
     if (bytes == null) {
       if (mounted) {
-        _showError('Dosya okunamadı.');
+        _showError('The file could not be read.');
       }
       return;
     }
@@ -111,6 +117,8 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
 
     // Upload to server
     final fileName = file.name;
+    // Dosya seçici açıkken dialog kapanmış olabilir.
+    if (!mounted) return;
     setState(() {
       _isUploading = true;
     });
@@ -131,14 +139,14 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
         setState(() {
           _isUploading = false;
         });
-        _showError('Yükleme hatası: ${e.message}');
+        _showError('Upload failed: ${e.message}');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isUploading = false;
         });
-        _showError('Yükleme hatası: $e');
+        _showError('Upload failed: $e');
       }
     }
   }
@@ -152,7 +160,7 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
       final content = utf8.decode(bytes);
       final json = jsonDecode(content);
       if (json is! Map<String, dynamic>) {
-        return 'Geçersiz Lottie dosyası: JSON bir nesne olmalıdır.';
+        return 'Invalid Lottie file: the JSON root must be an object.';
       }
 
       final missingFields = <String>[];
@@ -162,14 +170,15 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
       if (!json.containsKey('h')) missingFields.add('h');
 
       if (missingFields.isNotEmpty) {
-        return 'Geçersiz Lottie dosyası: eksik alanlar: ${missingFields.join(', ')}';
+        return 'Invalid Lottie file: missing fields: '
+            '${missingFields.join(', ')}';
       }
 
       return null;
     } on FormatException {
-      return 'Geçersiz dosya: JSON formatı bozuk.';
+      return 'Invalid file: malformed JSON.';
     } catch (e) {
-      return 'Dosya doğrulanamadı: $e';
+      return 'The file could not be validated: $e';
     }
   }
 
@@ -177,12 +186,12 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hata'),
+        title: const Text('Error'),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tamam'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -197,7 +206,7 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Lottie Animasyonu Seç'),
+      title: const Text('Select a Lottie animation'),
       content: SizedBox(
         width: 500,
         height: 400,
@@ -215,20 +224,8 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.upload_file),
-                  label: Text(_isUploading ? 'Yükleniyor...' : 'Yeni Yükle'),
+                  label: Text(_isUploading ? 'Uploading…' : 'Upload new'),
                 ),
-                const Spacer(),
-                if (_error != null)
-                  Flexible(
-                    child: Text(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -244,7 +241,7 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('İptal'),
+          child: const Text('Cancel'),
         ),
       ],
     );
@@ -253,6 +250,36 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
   Widget _buildFileGrid() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    final error = _error;
+    if (error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _loadFiles,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
     }
 
     final files = _files;
@@ -264,14 +291,14 @@ class _LottiePickerDialogState extends ConsumerState<_LottiePickerDialog> {
             const Icon(Icons.animation_outlined, size: 48, color: Colors.grey),
             const SizedBox(height: 8),
             Text(
-              'Henüz Lottie dosyası yok',
+              'No Lottie files yet',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey,
                   ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Yeni bir dosya yükleyin',
+              'Upload a new file to get started',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey,
                   ),

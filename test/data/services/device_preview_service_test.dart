@@ -161,7 +161,7 @@ void main() {
   // ===========================================================================
   // Button integration widget tests
   // ===========================================================================
-  group('FeedbackPreviewDialog — Cihazda Test Et button integration', () {
+  group('FeedbackPreviewDialog — Test on device button integration', () {
     const testMessage = FeedbackMessageModel(
       title: 'Test Mesajı',
       message: 'Bu bir test mesajıdır.',
@@ -232,8 +232,8 @@ void main() {
       await tester.tap(find.text('Önizleme'));
       await tester.pumpAndSettle();
 
-      // Find the "Cihazda Test Et" button
-      final buttonFinder = find.widgetWithText(FilledButton, 'Cihazda Test Et');
+      // Find the "Test on device" button
+      final buttonFinder = find.widgetWithText(FilledButton, 'Test on device');
       expect(buttonFinder, findsOneWidget);
 
       // Button should be disabled (onPressed is null)
@@ -264,7 +264,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to make the button visible and tap it
-      final buttonFinder = find.widgetWithText(FilledButton, 'Cihazda Test Et');
+      final buttonFinder = find.widgetWithText(FilledButton, 'Test on device');
       await tester.ensureVisible(buttonFinder);
       await tester.pumpAndSettle();
 
@@ -272,7 +272,7 @@ void main() {
       final button = tester.widget<FilledButton>(buttonFinder);
       expect(button.onPressed, isNotNull);
 
-      // Tap the "Cihazda Test Et" button
+      // Tap the "Test on device" button
       await tester.tap(buttonFinder);
       await tester.pump();
 
@@ -302,14 +302,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to make the button visible and tap it
-      final buttonFinder = find.widgetWithText(FilledButton, 'Cihazda Test Et');
+      final buttonFinder = find.widgetWithText(FilledButton, 'Test on device');
       await tester.ensureVisible(buttonFinder);
       await tester.pumpAndSettle();
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
       // Success SnackBar should be shown
-      expect(find.text('Preview isteği gönderildi'), findsOneWidget);
+      expect(find.text('Preview request sent'), findsOneWidget);
     });
 
     testWidgets('shows error SnackBar on connection error', (tester) async {
@@ -327,7 +327,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to make the button visible and tap it
-      final buttonFinder = find.widgetWithText(FilledButton, 'Cihazda Test Et');
+      final buttonFinder = find.widgetWithText(FilledButton, 'Test on device');
       await tester.ensureVisible(buttonFinder);
       await tester.pumpAndSettle();
       await tester.tap(buttonFinder);
@@ -336,7 +336,7 @@ void main() {
       // Error SnackBar should be shown
       expect(
         find.text(
-          'Asset sunucusuna bağlanılamadı. Sunucunun çalıştığından emin olun.',
+          'Could not reach the asset server. Make sure it is running.',
         ),
         findsOneWidget,
       );

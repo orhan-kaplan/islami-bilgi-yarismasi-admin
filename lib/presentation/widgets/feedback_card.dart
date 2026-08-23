@@ -66,6 +66,16 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
   late TextEditingController _emojiController;
   late bool _shouldRepeat;
 
+  /// Düzenleme modunda seçilen/kaldırılan Lottie, Kaydet'e kadar bekletilir.
+  /// Anında yazıldığında "İptal" değişikliği geri almıyor, kullanıcıya iptal
+  /// ettiğini söyleyip dosyaya yeni değeri yazıyordu.
+  bool _lottieStaged = false;
+  String? _stagedLottieAsset;
+
+  /// Düzenleme formunda gösterilecek Lottie — bekleyen değişiklik varsa o.
+  String? get _effectiveLottieAsset =>
+      _lottieStaged ? _stagedLottieAsset : widget.message.lottieAsset;
+
   @override
   void initState() {
     super.initState();
@@ -84,9 +94,19 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
   @override
   void didUpdateWidget(covariant FeedbackCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the message changed externally while not editing, update controllers
-    if (!_isEditing && oldWidget.message != widget.message) {
+    // Kart başka bir kayda bağlanmış olabilir: silme ve sürükleme index'leri
+    // kaydırıyor, açık düzenleme artık o mesaja ait değil. Bırakılırsa Kaydet
+    // yanlış mesajın üzerine yazıyordu.
+    final reboundToAnotherRecord = oldWidget.message != widget.message ||
+        oldWidget.index != widget.index ||
+        oldWidget.category != widget.category ||
+        oldWidget.subcategory != widget.subcategory;
+    if (reboundToAnotherRecord) {
+      _disposeControllers();
       _initControllers();
+      _lottieStaged = false;
+      _stagedLottieAsset = null;
+      _isEditing = _isEmptyMessage(widget.message);
     }
   }
 
@@ -97,11 +117,15 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
     _shouldRepeat = widget.message.shouldRepeat;
   }
 
-  @override
-  void dispose() {
+  void _disposeControllers() {
     _titleController.dispose();
     _messageController.dispose();
     _emojiController.dispose();
+  }
+
+  @override
+  void dispose() {
+    _disposeControllers();
     super.dispose();
   }
 
@@ -111,6 +135,8 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
       _messageController.text = widget.message.message;
       _emojiController.text = widget.message.emoji;
       _shouldRepeat = widget.message.shouldRepeat;
+      _lottieStaged = false;
+      _stagedLottieAsset = null;
       _isEditing = true;
     });
   }
@@ -123,17 +149,26 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
       return;
     }
     setState(() {
+      _lottieStaged = false;
+      _stagedLottieAsset = null;
       _isEditing = false;
     });
   }
 
   void _saveEdit() {
-    final updatedMessage = widget.message.copyWith(
+    var updatedMessage = widget.message.copyWith(
       title: _titleController.text,
       message: _messageController.text,
       emoji: _emojiController.text,
       shouldRepeat: _shouldRepeat,
     );
+
+    if (_lottieStaged) {
+      final staged = _stagedLottieAsset;
+      updatedMessage = staged == null || staged.isEmpty
+          ? updatedMessage.copyWith(clearLottieAsset: true)
+          : updatedMessage.copyWith(lottieAsset: staged);
+    }
 
     ref.read(feedbackContentProvider.notifier).updateMessage(
           widget.category,
@@ -143,6 +178,8 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         );
 
     setState(() {
+      _lottieStaged = false;
+      _stagedLottieAsset = null;
       _isEditing = false;
     });
   }
@@ -181,7 +218,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         widget.message.lottieAsset != null && widget.message.lottieAsset!.isNotEmpty;
 
     return Tooltip(
-      message: hasLottie ? 'Lottie değiştir' : 'Lottie ekle',
+      message: hasLottie ? 'Change Lottie' : 'Add Lottie',
       child: InkWell(
         onTap: () => _pickLottie(context),
         borderRadius: BorderRadius.circular(8),
@@ -221,10 +258,21 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
   }
 
   /// Opens the LottiePicker dialog and updates the message's lottieAsset.
+  ///
+  /// Düzenleme modunda seçim Kaydet'e kadar bekletilir; görüntüleme modunda
+  /// iptal edilecek bir form olmadığı için doğrudan yazılır.
   Future<void> _pickLottie(BuildContext context) async {
     final selectedPath = await showLottiePickerDialog(context);
     if (selectedPath == null) return;
     if (!mounted) return;
+
+    if (_isEditing) {
+      setState(() {
+        _lottieStaged = true;
+        _stagedLottieAsset = selectedPath;
+      });
+      return;
+    }
 
     final updatedMessage = widget.message.copyWith(
       lottieAsset: selectedPath,
@@ -293,7 +341,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         children: [
           // Title
           Text(
-            widget.message.title.isEmpty ? '(Başlık yok)' : widget.message.title,
+            widget.message.title.isEmpty ? '(No title)' : widget.message.title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -301,7 +349,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
           const SizedBox(height: 4),
           // Message
           Text(
-            widget.message.message.isEmpty ? '(Mesaj yok)' : widget.message.message,
+            widget.message.message.isEmpty ? '(No message)' : widget.message.message,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -344,7 +392,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
       children: [
         IconButton(
           icon: const Icon(Icons.visibility_outlined),
-          tooltip: 'Önizle',
+          tooltip: 'Preview',
           onPressed: () {
             showFeedbackPreviewDialog(
               context,
@@ -356,7 +404,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
-          tooltip: 'Düzenle',
+          tooltip: 'Edit message',
           onPressed: () {
             _enterEditMode();
             widget.onEdit?.call();
@@ -365,7 +413,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         IconButton(
           icon: const Icon(Icons.delete_outline),
           color: Theme.of(context).colorScheme.error,
-          tooltip: 'Sil',
+          tooltip: 'Delete message',
           onPressed: widget.onDelete,
         ),
       ],
@@ -377,8 +425,8 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
   // ---------------------------------------------------------------------------
 
   Widget _buildEditMode(BuildContext context) {
-    final hasLottie =
-        widget.message.lottieAsset != null && widget.message.lottieAsset!.isNotEmpty;
+    final lottieAsset = _effectiveLottieAsset;
+    final hasLottie = lottieAsset != null && lottieAsset.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,8 +445,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
               clipBehavior: Clip.antiAlias,
               child: hasLottie
                   ? Lottie.network(
-                      AssetServerConfig.fileUrl(
-                          'lottie/${widget.message.lottieAsset}'),
+                      AssetServerConfig.fileUrl('lottie/$lottieAsset'),
                       fit: BoxFit.contain,
                       repeat: true,
                       errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, size: 20),
@@ -408,9 +455,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                hasLottie
-                    ? widget.message.lottieAsset!
-                    : 'Lottie atanmamış',
+                hasLottie ? lottieAsset : 'No Lottie assigned',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: hasLottie ? null : Colors.grey,
                     ),
@@ -420,25 +465,20 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
             OutlinedButton.icon(
               onPressed: () => _pickLottie(context),
               icon: Icon(hasLottie ? Icons.swap_horiz : Icons.add, size: 16),
-              label: Text(hasLottie ? 'Değiştir' : 'Lottie Ekle'),
+              label: Text(hasLottie ? 'Change Lottie' : 'Add Lottie'),
             ),
             if (hasLottie) ...[
               const SizedBox(width: 4),
               IconButton(
                 onPressed: () {
-                  // Remove lottie
-                  final updatedMessage = widget.message.copyWith(
-                    clearLottieAsset: true,
-                  );
-                  ref.read(feedbackContentProvider.notifier).updateMessage(
-                        widget.category,
-                        widget.subcategory,
-                        widget.index,
-                        updatedMessage,
-                      );
+                  // Kaldırma da Kaydet'e kadar bekletilir; İptal geri alabilsin.
+                  setState(() {
+                    _lottieStaged = true;
+                    _stagedLottieAsset = null;
+                  });
                 },
                 icon: const Icon(Icons.close, size: 16),
-                tooltip: 'Lottie kaldır',
+                tooltip: 'Remove Lottie',
                 style: IconButton.styleFrom(
                   minimumSize: const Size(28, 28),
                   padding: EdgeInsets.zero,
@@ -452,7 +492,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         TextField(
           controller: _titleController,
           decoration: const InputDecoration(
-            labelText: 'Başlık',
+            labelText: 'Title',
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -462,7 +502,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         TextField(
           controller: _messageController,
           decoration: const InputDecoration(
-            labelText: 'Mesaj',
+            labelText: 'Message',
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -509,7 +549,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
                 }
               },
               icon: const Icon(Icons.emoji_emotions_outlined, size: 16),
-              label: const Text('Değiştir'),
+              label: const Text('Change emoji'),
             ),
           ],
         ),
@@ -517,7 +557,7 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
         // shouldRepeat switch
         Row(
           children: [
-            const Text('Tekrar (shouldRepeat)'),
+            const Text('Repeat (should_repeat)'),
             const Spacer(),
             Switch(
               value: _shouldRepeat,
@@ -537,13 +577,13 @@ class _FeedbackCardState extends ConsumerState<FeedbackCard> {
             TextButton.icon(
               onPressed: _cancelEdit,
               icon: const Icon(Icons.close),
-              label: const Text('İptal'),
+              label: const Text('Cancel'),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: _saveEdit,
               icon: const Icon(Icons.check),
-              label: const Text('Kaydet'),
+              label: const Text('Save'),
             ),
           ],
         ),

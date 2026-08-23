@@ -49,18 +49,31 @@ class _TitleCardState extends ConsumerState<TitleCard> {
   late TextEditingController _requiredBooksController;
   late TextEditingController _profileImageController;
 
+  /// "Ünvan Ekle" boş bir kayıt yaratır; kart kapalı açılırsa kullanıcı hiçbir
+  /// şey olmamış sanır ve boş ünvan diske yazılır.
+  bool get _isEmptyTitle => widget.title.title.isEmpty;
+
   @override
   void initState() {
     super.initState();
     _initControllers();
+    _isEditing = _isEmptyTitle;
   }
 
   @override
   void didUpdateWidget(covariant TitleCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the title changed externally while not editing, update controllers
-    if (!_isEditing && oldWidget.title != widget.title) {
+    // Kart başka bir kayda bağlanmış olabilir: `updateTitle` listeyi
+    // `required_books`'a göre yeniden sıralıyor ve silme index'leri kaydırıyor.
+    // Açık düzenleme artık o kayda ait değil; bırakılırsa Kaydet yanlış
+    // ünvanın üzerine yazıyordu.
+    final reboundToAnotherRecord =
+        oldWidget.title != widget.title || oldWidget.index != widget.index;
+    if (reboundToAnotherRecord) {
+      _disposeControllers();
       _initControllers();
+      _errorMessage = null;
+      _isEditing = _isEmptyTitle;
     }
   }
 
@@ -73,12 +86,16 @@ class _TitleCardState extends ConsumerState<TitleCard> {
         TextEditingController(text: widget.title.profileImage);
   }
 
-  @override
-  void dispose() {
+  void _disposeControllers() {
     _titleController.dispose();
     _iconController.dispose();
     _requiredBooksController.dispose();
     _profileImageController.dispose();
+  }
+
+  @override
+  void dispose() {
+    _disposeControllers();
     super.dispose();
   }
 
@@ -94,6 +111,12 @@ class _TitleCardState extends ConsumerState<TitleCard> {
   }
 
   void _cancelEdit() {
+    // Yeni eklenen boş ünvan iptal edilince listeden kaldırılır — aksi halde
+    // adı olmayan bir kayıt listede kalıp auto-save ile diske gidiyordu.
+    if (_isEmptyTitle &&
+        ref.read(feedbackContentProvider.notifier).deleteTitle(widget.index)) {
+      return;
+    }
     setState(() {
       _isEditing = false;
       _errorMessage = null;
@@ -113,7 +136,8 @@ class _TitleCardState extends ConsumerState<TitleCard> {
     if (isDuplicate) {
       setState(() {
         _errorMessage =
-            'Bu "Gerekli Kitap" değeri ($newRequiredBooks) başka bir ünvanda zaten kullanılıyor.';
+            'Required books $newRequiredBooks is already used by another '
+            'title.';
       });
       return;
     }
@@ -172,7 +196,7 @@ class _TitleCardState extends ConsumerState<TitleCard> {
             children: [
               Text(
                 widget.title.title.isEmpty
-                    ? '(Boş Ünvan)'
+                    ? '(Untitled)'
                     : widget.title.title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -180,13 +204,13 @@ class _TitleCardState extends ConsumerState<TitleCard> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Gerekli Kitap: ${widget.title.requiredBooks}',
+                'Required books: ${widget.title.requiredBooks}',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               if (widget.title.profileImage.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Profil: ${widget.title.profileImage}',
+                  'Profile image: ${widget.title.profileImage}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey,
                       ),
@@ -202,12 +226,12 @@ class _TitleCardState extends ConsumerState<TitleCard> {
           children: [
             IconButton(
               icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Düzenle',
+              tooltip: 'Edit title',
               onPressed: _enterEditMode,
             ),
             IconButton(
               icon: const Icon(Icons.visibility_outlined),
-              tooltip: 'Önizleme',
+              tooltip: 'Preview',
               onPressed: () => showTitlePreviewDialog(
                 context,
                 title: widget.title,
@@ -216,7 +240,7 @@ class _TitleCardState extends ConsumerState<TitleCard> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               color: Theme.of(context).colorScheme.error,
-              tooltip: 'Sil',
+              tooltip: 'Delete title',
               onPressed: widget.onDelete,
             ),
           ],
@@ -237,7 +261,7 @@ class _TitleCardState extends ConsumerState<TitleCard> {
         TextField(
           controller: _titleController,
           decoration: const InputDecoration(
-            labelText: 'Ünvan Adı',
+            labelText: 'Title name',
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -247,7 +271,7 @@ class _TitleCardState extends ConsumerState<TitleCard> {
         TextField(
           controller: _iconController,
           decoration: const InputDecoration(
-            labelText: 'İkon / Emoji',
+            labelText: 'Icon / emoji',
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -257,10 +281,13 @@ class _TitleCardState extends ConsumerState<TitleCard> {
         TextField(
           controller: _requiredBooksController,
           decoration: InputDecoration(
-            labelText: 'Gerekli Kitap Sayısı',
+            labelText: 'Required books',
             border: const OutlineInputBorder(),
             isDense: true,
             errorText: _errorMessage,
+            // Tek satıra kırpılınca kullanıcı hangi değerin çakıştığını
+            // okuyamıyordu.
+            errorMaxLines: 3,
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -270,7 +297,7 @@ class _TitleCardState extends ConsumerState<TitleCard> {
         TextField(
           controller: _profileImageController,
           decoration: const InputDecoration(
-            labelText: 'Profil Görseli Yolu',
+            labelText: 'Profile image path',
             border: OutlineInputBorder(),
             isDense: true,
             hintText: 'images/seed/profile_icon_seed.webp',
@@ -284,13 +311,13 @@ class _TitleCardState extends ConsumerState<TitleCard> {
             TextButton.icon(
               onPressed: _cancelEdit,
               icon: const Icon(Icons.close),
-              label: const Text('İptal'),
+              label: const Text('Cancel'),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: _saveEdit,
               icon: const Icon(Icons.check),
-              label: const Text('Kaydet'),
+              label: const Text('Save'),
             ),
           ],
         ),

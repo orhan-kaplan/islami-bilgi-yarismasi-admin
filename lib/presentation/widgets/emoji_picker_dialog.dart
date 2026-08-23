@@ -17,27 +17,27 @@ class _EmojiPickerDialog extends StatelessWidget {
 
   // Emojiler kategorilere ayrılmış
   static const _categories = <_EmojiCategory>[
-    _EmojiCategory('Başarı & Kutlama', [
+    _EmojiCategory('Success & celebration', [
       '🌟', '✨', '🏆', '🎉', '🎯', '👏', '💫', '⭐', '🥇', '🏅',
       '👑', '💎', '🔥', '💪', '🚀', '⚡', '🌈', '🎊', '✅', '💯',
     ]),
-    _EmojiCategory('Dini & Manevi', [
+    _EmojiCategory('Faith & spirituality', [
       '🤲', '🕊️', '🕌', '🕯️', '📿', '☪️', '🌙', '🌅', '🙏', '💚',
       '🤍', '📖', '🕋', '🌱', '🌿', '🍃', '☀️', '🌤️', '🧎', '🫶',
     ]),
-    _EmojiCategory('Eğitim & Bilgi', [
+    _EmojiCategory('Learning & knowledge', [
       '📚', '🧠', '🎓', '📝', '✏️', '📖', '💡', '🔍', '📐', '🗂️',
       '📋', '🏫', '👨‍🏫', '👩‍🎓', '🤓', '📕', '📗', '📘', '📙', '📓',
     ]),
-    _EmojiCategory('Duygular & İfadeler', [
+    _EmojiCategory('Emotions & expressions', [
       '😊', '🤗', '😇', '🥰', '😌', '🙂', '😄', '😃', '🤩', '😎',
       '🥺', '😢', '😅', '🫡', '🤔', '😮', '👋', '🫂', '❤️', '💖',
     ]),
-    _EmojiCategory('Doğa & Zaman', [
+    _EmojiCategory('Nature & time', [
       '🌙', '☀️', '🌅', '🌄', '🌃', '🌆', '🦉', '🐢', '🏃‍♂️', '🏋️',
       '☕', '🍂', '🌸', '🌺', '🏔️', '🌊', '⏰', '⌛', '🕐', '📅',
     ]),
-    _EmojiCategory('Semboller', [
+    _EmojiCategory('Symbols', [
       '🚶', '🔄', '➡️', '⬆️', '🔔', '💬', '📌', '🏷️', '🎵', '🎶',
       '❌', '⚠️', 'ℹ️', '❓', '❗', '🔑', '🛡️', '⚙️', '🧩', '🎲',
     ]),
@@ -48,11 +48,11 @@ class _EmojiPickerDialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          const Text('Emoji Seç'),
+          const Text('Select an emoji'),
           const Spacer(),
           if (currentEmoji != null && currentEmoji!.isNotEmpty)
             Chip(
-              label: Text('Mevcut: $currentEmoji'),
+              label: Text('Current: $currentEmoji'),
               visualDensity: VisualDensity.compact,
             ),
         ],
@@ -119,7 +119,7 @@ class _EmojiPickerDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('İptal'),
+          child: const Text('Cancel'),
         ),
       ],
     );

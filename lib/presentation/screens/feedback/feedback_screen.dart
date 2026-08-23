@@ -74,7 +74,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
                 controller: _searchController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Mesaj ara...',
+                  hintText: 'Search messages…',
                   border: InputBorder.none,
                 ),
                 style: Theme.of(context).textTheme.titleMedium,
@@ -84,7 +84,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
           if (loadStatus == FeedbackLoadStatus.loaded)
             IconButton(
               icon: Icon(_isSearching ? Icons.close : Icons.search),
-              tooltip: _isSearching ? 'Aramayı kapat' : 'Mesaj ara',
+              tooltip: _isSearching ? 'Close search' : 'Search messages',
               onPressed: () {
                 setState(() {
                   _isSearching = !_isSearching;
@@ -151,7 +151,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
           index: i,
           category: 'comeback',
           subcategory: null,
-          sectionLabel: 'Geri Dönüş',
+          sectionLabel: 'Comeback',
         ));
       }
     }
@@ -164,7 +164,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
             const Icon(Icons.search_off, size: 48, color: Colors.grey),
             const SizedBox(height: 12),
             Text(
-              '"$_searchQuery" için sonuç bulunamadı.',
+              'No results for "$_searchQuery".',
               style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ],
@@ -180,7 +180,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
-              '${results.length} sonuç bulundu',
+              '${results.length} results',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
             ),
           );
@@ -284,12 +284,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              const Text('Feedback verisi yüklenemedi.', style: TextStyle(fontSize: 16)),
+              const Text('Could not load feedback data.',
+                  style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () => ref.read(feedbackLoadProvider.notifier).performLoad(force: true),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Tekrar Dene'),
+                label: const Text('Retry'),
               ),
             ],
           ),
@@ -301,12 +302,12 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
             children: [
               const Icon(Icons.inbox_outlined, size: 48),
               const SizedBox(height: 16),
-              const Text('Henüz feedback verisi yok.', style: TextStyle(fontSize: 16)),
+              const Text('No feedback data yet.', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: _createInitialData,
                 icon: const Icon(Icons.add_circle_outline),
-                label: const Text('İlk Veriyi Oluştur'),
+                label: const Text('Create initial data'),
               ),
             ],
           ),
@@ -334,14 +335,14 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
       return FloatingActionButton.extended(
         onPressed: _addTitle,
         icon: const Icon(Icons.add),
-        label: const Text('Ünvan Ekle'),
+        label: const Text('Add title'),
       );
     }
     if (category == 'comeback') {
       return FloatingActionButton.extended(
         onPressed: () => _addMessage(category),
         icon: const Icon(Icons.add),
-        label: const Text('Mesaj Ekle'),
+        label: const Text('Add message'),
       );
     }
     return null;
@@ -405,6 +406,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen>
 // Subcategory Metadata
 // =============================================================================
 
+/// FloatingActionButton yüksekliği + kenar boşluğu: liste bu kadar alt boşluk
+/// bırakmazsa son satırın aksiyonları FAB'ın altında kalıyor.
+const double _fabSafeBottomInset = 96;
+
 class _SubcategoryMeta {
   final String label;
   final String condition;
@@ -417,32 +422,34 @@ Map<String, _SubcategoryMeta> _quizMetaFrom(GameConfigState cfg) {
   final q = cfg.quiz;
   return {
     'speed_demon': _SubcategoryMeta(
-      'Hız Canavarı',
-      'Soru başına ${q.speedDemonMaxSecondsPerQuestion} saniyeden kısa sürede ve %${_pct(q.speedDemonMinAccuracy)} üzeri doğrulukla bitiren kullanıcıya gösterilir.',
+      'Speed Demon',
+      'Shown when the quiz is finished in under '
+          '${q.speedDemonMaxSecondsPerQuestion}s per question with at least '
+          '${_pct(q.speedDemonMinAccuracy)}% accuracy.',
     ),
     'perfect': _SubcategoryMeta(
-      'Mükemmel Başarı',
-      'Doğruluk ≥ %${_pct(q.perfectMinAccuracy)}.',
+      'Perfect Score',
+      'Accuracy ≥ ${_pct(q.perfectMinAccuracy)}%.',
     ),
     'one_wrong': _SubcategoryMeta(
-      'Tek Yanlış',
-      'Yanlış soru sayısı = ${q.oneWrongCount}.',
+      'One Wrong',
+      'Wrong answers = ${q.oneWrongCount}.',
     ),
     'two_wrong': _SubcategoryMeta(
-      'İki Yanlış',
-      'Yanlış soru sayısı = ${q.twoWrongCount}.',
+      'Two Wrong',
+      'Wrong answers = ${q.twoWrongCount}.',
     ),
     'good': _SubcategoryMeta(
-      'İyi Performans',
-      'Doğruluk ≥ %${_pct(q.goodMinAccuracy)} (üst bantlara girmeyen). 3 canla genelde latent kalır.',
+      'Good Result',
+      'Accuracy ≥ ${_pct(q.goodMinAccuracy)}% and no higher band matched.',
     ),
     'moderate': const _SubcategoryMeta(
-      'Orta Performans',
-      'Önceki bantlara girmeyen başarılı sonuçlar (fallback).',
+      'Moderate Result',
+      'Fallback for successful runs that matched no earlier band.',
     ),
     'failure': _SubcategoryMeta(
-      'Başarısız (Can Bitti)',
-      '${q.lives} can bitince gösterilir. Routing dışı.',
+      'Failed (out of lives)',
+      'Shown when all ${q.lives} lives are gone. Outside the routing order.',
     ),
   };
 }
@@ -452,31 +459,38 @@ Map<String, _SubcategoryMeta> _speedQuizMetaFrom(GameConfigState cfg) {
   final clauses = s.highScoreAny
       .map((c) {
         final parts = <String>[];
-        if (c.minAccuracy != null) parts.add('doğruluk ≥ %${_pct(c.minAccuracy!)}');
-        if (c.minCorrect != null) parts.add('en az ${c.minCorrect} doğru');
-        return parts.join(' ve ');
+        if (c.minAccuracy != null) {
+          parts.add('accuracy ≥ ${_pct(c.minAccuracy!)}%');
+        }
+        if (c.minCorrect != null) {
+          parts.add('at least ${c.minCorrect} correct');
+        }
+        return parts.join(' and ');
       })
-      .join(', veya ');
+      .join(', or ');
   return {
     'combo_master': _SubcategoryMeta(
-      'Kombo Ustası',
-      'Kombo ≥ ${s.comboMinCombo} ve doğruluk ≥ %${_pct(s.comboMinAccuracy)}.',
+      'Combo Master',
+      'Combo ≥ ${s.comboMinCombo} and accuracy ≥ '
+          '${_pct(s.comboMinAccuracy)}%.',
     ),
     'high_score': _SubcategoryMeta(
-      'Yüksek Skor',
-      clauses.isEmpty ? 'Yüksek skor bantları.' : clauses,
+      'High Score',
+      clauses.isEmpty ? 'High score bands.' : clauses,
     ),
     'time_expired': _SubcategoryMeta(
-      'Süre Doldu / Düşük',
-      '${s.timeExpiredOnTimeout ? 'Süre bitince veya ' : ''}doğruluk < %${_pct(s.timeExpiredMaxAccuracy)}.',
+      'Time Expired / Low',
+      '${s.timeExpiredOnTimeout ? 'On timeout, or ' : ''}accuracy < '
+          '${_pct(s.timeExpiredMaxAccuracy)}%.',
     ),
     'moderate': _SubcategoryMeta(
-      'Orta Performans',
-      'Doğruluk ≥ %${_pct(s.moderateMinAccuracy)} (üst bantlara girmeyen). Mesajda {correctAnswers} kullanılabilir.',
+      'Moderate Result',
+      'Accuracy ≥ ${_pct(s.moderateMinAccuracy)}% and no higher band matched. '
+          'The message may use {correctAnswers}.',
     ),
     'low': const _SubcategoryMeta(
-      'Düşük Performans',
-      'Yukarıdaki bantlara girmeyen kalan sonuçlar.',
+      'Low Result',
+      'Everything that matched none of the bands above.',
     ),
   };
 }
@@ -497,8 +511,8 @@ Map<String, _SubcategoryMeta> _streakMetaFrom(FeedbackContentState state) {
   return {
     for (final k in keys)
       k: _SubcategoryMeta(
-        '$k gün serisi',
-        '$k gün üst üste uygulamaya giren kullanıcıya gösterilir. (streak ≥ $k)',
+        '$k-day streak',
+        'Shown after opening the app $k days in a row (streak ≥ $k).',
       ),
   };
 }
@@ -509,8 +523,8 @@ Map<String, _SubcategoryMeta> _learnedMetaFrom(GameConfigState cfg) {
       band.key: _SubcategoryMeta(
         band.key,
         band.exclusiveMin
-            ? 'doğruluk > ${band.minPercent.round()}%'
-            : 'doğruluk ≥ ${band.minPercent.round()}%',
+            ? 'accuracy > ${band.minPercent.round()}%'
+            : 'accuracy ≥ ${band.minPercent.round()}%',
       ),
   };
 }
@@ -528,15 +542,20 @@ class _ComebackTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = state.comeback;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      // Alt boşluk FAB payı: yoksa FAB son kartın Sil/Düzenle butonlarını
+      // örtüyor ve o kayıt erişilemez kalıyordu.
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, _fabSafeBottomInset),
       children: [
         _SectionHeader(
-          label: 'Geri Dönüş Mesajları',
-          condition: '$minDays gün boyunca uygulamaya girmemiş kullanıcıya gösterilir. (son giriş ≥ $minDays gün önce)',
+          label: 'Comeback messages',
+          condition: 'Shown to users who have not opened the app for '
+              '$minDays days (last visit ≥ $minDays days ago).',
           messageCount: messages.length,
         ),
         if (messages.isEmpty)
-          const Padding(padding: EdgeInsets.only(top: 32), child: Center(child: Text('Bu kategoride henüz mesaj yok.')))
+          const Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: Center(child: Text('No messages in this category yet.')))
         else
           ReorderableListView.builder(
             shrinkWrap: true,
@@ -548,7 +567,11 @@ class _ComebackTab extends ConsumerWidget {
               ref.read(feedbackContentProvider.notifier).reorderMessage('comeback', null, oldIndex, newIndex);
             },
             itemBuilder: (context, index) {
-              return ReorderableDragStartListener(
+              // Kartın tamamı anında sürükleme tutamağıydı: düzenleme modunda
+              // metin seçmek sıralamayı bozuyor, listeyi kartın üstünden
+              // kaydırmak ise hiç mümkün olmuyordu. Sürükleme artık uzun
+              // basmayla başlıyor.
+              return ReorderableDelayedDragStartListener(
                 key: ValueKey('comeback_$index'),
                 index: index,
                 child: FeedbackCard(
@@ -578,10 +601,11 @@ class _TitlesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final titles = state.titles;
     if (titles.isEmpty) {
-      return const Center(child: Text('Henüz ünvan eklenmemiş.'));
+      return const Center(child: Text('No titles yet.'));
     }
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      // Bkz. `_ComebackTab`: FAB payı.
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, _fabSafeBottomInset),
       itemCount: titles.length,
       itemBuilder: (context, index) => TitleCard(
         title: titles[index],
@@ -624,15 +648,29 @@ class _SubcategoryMessageGridState extends ConsumerState<_SubcategoryMessageGrid
   @override
   Widget build(BuildContext context) {
     if (widget.messageMap.isEmpty) {
-      return const Center(child: Text('Bu kategoride henüz mesaj yok.'));
+      return const Center(child: Text('No messages in this category yet.'));
     }
+
+    // Bölümler yalnız meta anahtarlarından üretiliyordu: feedback.json'da
+    // meta'da olmayan bir alt kategori varsa mesajları hiçbir ekranda
+    // görünmüyor, ama sekme rozetinde sayılıyor ve her kayıtta korunuyordu.
+    final sectionKeys = <String>[
+      ...widget.subcategoryMeta.keys,
+      ...widget.messageMap.keys
+          .where((key) => !widget.subcategoryMeta.containsKey(key)),
+    ];
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.subcategoryMeta.length,
+      itemCount: sectionKeys.length,
       itemBuilder: (context, sectionIndex) {
-        final key = widget.subcategoryMeta.keys.elementAt(sectionIndex);
-        final meta = widget.subcategoryMeta[key]!;
+        final key = sectionKeys[sectionIndex];
+        final meta = widget.subcategoryMeta[key] ??
+            _SubcategoryMeta(
+              key,
+              'Not described in game config — these messages are still saved '
+              'to feedback.json.',
+            );
         final messages = widget.messageMap[key] ?? [];
         final isExpanded = _expanded[key] ?? true;
 
@@ -707,7 +745,7 @@ class _SubcategoryMessageGridState extends ConsumerState<_SubcategoryMessageGrid
                         ref.read(feedbackContentProvider.notifier).addMessage(widget.category, key, newMessage);
                       },
                       icon: const Icon(Icons.add, size: 20),
-                      tooltip: '${meta.label} kategorisine mesaj ekle',
+                      tooltip: 'Add a message to ${meta.label}',
                       style: IconButton.styleFrom(minimumSize: const Size(32, 32), padding: const EdgeInsets.all(4)),
                     ),
                   ],
@@ -719,7 +757,8 @@ class _SubcategoryMessageGridState extends ConsumerState<_SubcategoryMessageGrid
               if (messages.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 16, left: 8),
-                  child: Text('Bu alt kategoride mesaj yok.', style: TextStyle(color: Colors.grey)),
+                  child: Text('No messages in this subcategory.',
+                      style: TextStyle(color: Colors.grey)),
                 )
               else
                 _ReorderableMessageList(
@@ -764,7 +803,8 @@ class _ReorderableMessageList extends ConsumerWidget {
         notifier.reorderMessage(category, subcategory, oldIndex, newIndex);
       },
       itemBuilder: (context, index) {
-        return ReorderableDragStartListener(
+        // Bkz. `_ComebackTab`: sürükleme uzun basmayla başlar.
+        return ReorderableDelayedDragStartListener(
           key: ValueKey('${category}_${subcategory}_$index'),
           index: index,
           child: FeedbackCard(
@@ -828,7 +868,7 @@ class _SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
-            child: Text('$messageCount mesaj', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600)),
+            child: Text('$messageCount messages', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -844,18 +884,24 @@ Future<void> _confirmDeleteMessage(BuildContext context, WidgetRef ref, String c
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Silme Onayı'),
-      content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+      title: const Text('Delete confirmation'),
+      content: const Text('Delete this message?'),
       actions: [
-        TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('İptal')),
-        FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Sil')),
+        TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel')),
+        FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete')),
       ],
     ),
   );
   if (confirmed != true || !context.mounted) return;
   final success = ref.read(feedbackContentProvider.notifier).deleteMessage(category, subcategory, index);
   if (!success && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Her kategoride en az bir mesaj kalmalıdır.'), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Each category must keep at least one message.'),
+        behavior: SnackBarBehavior.floating));
   }
 }
 
@@ -863,18 +909,24 @@ Future<void> _confirmDeleteTitle(BuildContext context, WidgetRef ref, int index)
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Silme Onayı'),
-      content: const Text('Bu ünvanı silmek istediğinize emin misiniz?'),
+      title: const Text('Delete confirmation'),
+      content: const Text('Delete this title?'),
       actions: [
-        TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('İptal')),
-        FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Sil')),
+        TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel')),
+        FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete')),
       ],
     ),
   );
   if (confirmed != true || !context.mounted) return;
   final success = ref.read(feedbackContentProvider.notifier).deleteTitle(index);
   if (!success && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('En az bir ünvan kalmalıdır.'), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('At least one title must remain.'),
+        behavior: SnackBarBehavior.floating));
   }
 }
 

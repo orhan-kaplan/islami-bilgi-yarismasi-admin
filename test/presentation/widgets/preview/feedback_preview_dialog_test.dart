@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -107,12 +109,14 @@ void main() {
       expect(find.byType(FeedbackPreviewDialog), findsNothing);
     });
 
-    testWidgets('dialog shows "Cihazda Test Et" button', (tester) async {
+    testWidgets('dialog shows "Test on device" button', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.tap(find.text('Önizleme'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cihazda Test Et'), findsOneWidget);
+      expect(find.text('Test on device'), findsOneWidget);
+      // Admin arayüzü İngilizce (CLAUDE.md).
+      expect(find.text('Cihazda Test Et'), findsNothing);
     });
   });
 
@@ -196,6 +200,75 @@ void main() {
       expect(find.byType(LearnedQuizResultPreview), findsOneWidget);
       expect(find.byType(QuizResultPreview), findsNothing);
       expect(find.byType(DashboardPreview), findsNothing);
+    });
+  });
+
+  /// ID20 — health check sürerken (3 saniyeye kadar) buton sebepsiz pasif
+  /// duruyordu: ne banner ne de tooltip nedenini söylüyordu.
+  group('while the asset server is being checked', () {
+    testWidgets('the device-test button explains why it is disabled',
+        (tester) async {
+      final gate = Completer<http.Response>();
+      final hangingClient =
+          http_testing.MockClient((_) => gate.future);
+      addTearDown(hangingClient.close);
+
+      await tester.pumpWidget(createTestApp(httpClient: hangingClient));
+      await tester.tap(find.text('Önizleme'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Checking server…'), findsOneWidget);
+      expect(find.text('Test on device'), findsNothing);
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Checking server…'),
+      );
+      expect(button.onPressed, isNull, reason: 'kontrol biterken pasif kalmalı');
+
+      final tooltip = tester.widget<Tooltip>(
+        find
+            .ancestor(
+              of: find.widgetWithText(FilledButton, 'Checking server…'),
+              matching: find.byType(Tooltip),
+            )
+            .first,
+      );
+      expect(tooltip.message, contains('Checking'));
+
+      gate.complete(http.Response('OK', 200));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test on device'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Test on device'))
+            .onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('a disconnected server says so in the tooltip', (tester) async {
+      final failing = http_testing.MockClient(
+        (_) async => http.Response('down', 500),
+      );
+      addTearDown(failing.close);
+
+      await tester.pumpWidget(createTestApp(httpClient: failing));
+      await tester.tap(find.text('Önizleme'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Asset server is not connected'), findsOneWidget);
+      final tooltip = tester.widget<Tooltip>(
+        find
+            .ancestor(
+              of: find.widgetWithText(FilledButton, 'Test on device'),
+              matching: find.byType(Tooltip),
+            )
+            .first,
+      );
+      expect(tooltip.message, contains('not connected'));
     });
   });
 }
