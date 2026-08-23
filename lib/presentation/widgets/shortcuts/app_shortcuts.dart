@@ -19,9 +19,17 @@ class RedoIntent extends Intent {
   const RedoIntent();
 }
 
-/// Intent to trigger export ZIP action.
+/// Intent to trigger the connectivity-aware save action (Ctrl/Cmd+S):
+/// flushes pending saves to the server when connected, exports a ZIP
+/// otherwise.
 class ExportIntent extends Intent {
   const ExportIntent();
+}
+
+/// Intent to trigger an unconditional ZIP export (Ctrl/Cmd+E), regardless
+/// of server connectivity.
+class ExportZipIntent extends Intent {
+  const ExportZipIntent();
 }
 
 /// Intent to focus the search input field.
@@ -50,14 +58,21 @@ class AppShortcuts extends ConsumerStatefulWidget {
   const AppShortcuts({
     super.key,
     required this.child,
+    required this.isSearchScreenActive,
     this.onUndo,
     this.onRedo,
     this.onExport,
+    this.onExportZip,
     this.onFocusSearch,
     this.onShowHelp,
   });
 
   final Widget child;
+
+  /// Whether the currently active screen has a search field for Ctrl/Cmd+F
+  /// to focus. When false, the browser's native "Find" is left alone instead
+  /// of being suppressed for a shortcut that would have nothing to focus.
+  final bool isSearchScreenActive;
 
   /// Called when Ctrl/Cmd+Z is pressed (and no text field is focused).
   final VoidCallback? onUndo;
@@ -65,8 +80,13 @@ class AppShortcuts extends ConsumerStatefulWidget {
   /// Called when Ctrl/Cmd+Shift+Z is pressed (and no text field is focused).
   final VoidCallback? onRedo;
 
-  /// Called when Ctrl/Cmd+S or Ctrl/Cmd+E is pressed.
+  /// Called when Ctrl/Cmd+S is pressed: save to server if connected, ZIP
+  /// export otherwise.
   final VoidCallback? onExport;
+
+  /// Called when Ctrl/Cmd+E is pressed: always a ZIP export, regardless of
+  /// server connectivity.
+  final VoidCallback? onExportZip;
 
   /// Called when Ctrl/Cmd+F is pressed.
   final VoidCallback? onFocusSearch;
@@ -101,8 +121,14 @@ class _AppShortcutsState extends ConsumerState<AppShortcuts> {
       if (!ctrlOrMeta) return;
 
       final key = event.key.toLowerCase();
-      // Prevent default for shortcuts we handle
-      if (key == 's' || key == 'e' || key == 'f') {
+      // Prevent default for shortcuts we always handle
+      if (key == 's' || key == 'e') {
+        event.preventDefault();
+      }
+      // Ctrl/Cmd+F only has something to focus on screens with a search
+      // field — elsewhere, leave the browser's native "Find" alone instead
+      // of silently swallowing it.
+      if (key == 'f' && widget.isSearchScreenActive) {
         event.preventDefault();
       }
       // Prevent default for Ctrl/Cmd+Z (undo) and Ctrl/Cmd+Shift+Z (redo)
@@ -159,11 +185,11 @@ class _AppShortcutsState extends ConsumerState<AppShortcuts> {
             const ExportIntent(),
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
             const ExportIntent(),
-        // Export: Ctrl+E / Cmd+E
+        // Export ZIP (always, regardless of connectivity): Ctrl+E / Cmd+E
         const SingleActivator(LogicalKeyboardKey.keyE, control: true):
-            const ExportIntent(),
+            const ExportZipIntent(),
         const SingleActivator(LogicalKeyboardKey.keyE, meta: true):
-            const ExportIntent(),
+            const ExportZipIntent(),
         // Focus Search: Ctrl+F / Cmd+F
         const SingleActivator(LogicalKeyboardKey.keyF, control: true):
             const FocusSearchIntent(),
@@ -188,6 +214,9 @@ class _AppShortcutsState extends ConsumerState<AppShortcuts> {
           ),
           ExportIntent: _CallbackAction<ExportIntent>(
             onInvoke: widget.onExport,
+          ),
+          ExportZipIntent: _CallbackAction<ExportZipIntent>(
+            onInvoke: widget.onExportZip,
           ),
           FocusSearchIntent: _CallbackAction<FocusSearchIntent>(
             onInvoke: widget.onFocusSearch,

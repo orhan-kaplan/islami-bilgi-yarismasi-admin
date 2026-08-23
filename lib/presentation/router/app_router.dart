@@ -173,7 +173,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                         child: Tooltip(
                           message: hasSaveError
                               ? 'Save failed — changes are still only in this '
-                                  'browser. Check the Validation screen.'
+                                  'browser. Check the Validation screen for '
+                                  'content errors; if none are listed, it is '
+                                  'a connection or server problem.'
                               : 'Unsaved changes',
                           child: Container(
                             width: 12,
@@ -223,7 +225,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               NavigationRailDestination(
                 icon: Icon(Icons.sports_esports_outlined),
                 selectedIcon: Icon(Icons.sports_esports),
-                label: Text('Oyun'),
+                label: Text('Game'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.verified_outlined),
@@ -291,8 +293,74 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) {
           return Consumer(
             builder: (context, ref, _) {
+              // Ctrl/Cmd+E must always produce a ZIP, regardless of server
+              // connectivity — Ctrl/Cmd+S is the connectivity-aware shortcut.
+              void exportZip() {
+                final contentState = ref.read(contentStateProvider);
+                final exporter = ZipExporter();
+                try {
+                  final zipBytes = exporter.exportZip(
+                    contentState,
+                    feedback: ref.read(feedbackContentProvider),
+                    gameConfig: ref.read(gameConfigProvider),
+                  );
+                  downloadFile(zipBytes, 'content_export.zip');
+                  ref.read(savedBaselineProvider.notifier).state =
+                      contentState;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Export successful — download started'),
+                    ),
+                  );
+                } on ValidationBlockedExportException catch (e) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Export Blocked'),
+                      content: SizedBox(
+                        width: 400,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Export is blocked due to validation errors:',
+                            ),
+                            const SizedBox(height: 12),
+                            ConstrainedBox(
+                              constraints:
+                                  const BoxConstraints(maxHeight: 300),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: e.errors.length,
+                                itemBuilder: (_, index) {
+                                  final error = e.errors[index];
+                                  return ListTile(
+                                    leading: const Icon(Icons.error,
+                                        color: Colors.red),
+                                    title: Text(error.sourceFile),
+                                    subtitle: Text(error.message),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+
               return BeforeUnloadGuard(
                 child: AppShortcuts(
+                  isSearchScreenActive: navigationShell.currentIndex == 1,
                   onUndo: () {
                     final current = ref.read(contentStateProvider);
                     final restored =
@@ -337,70 +405,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                       );
                     } else {
                       // Disconnected: ZIP export (existing behavior)
-                      final contentState = ref.read(contentStateProvider);
-                      final exporter = ZipExporter();
-                      try {
-                        final zipBytes = exporter.exportZip(
-                          contentState,
-                          feedback: ref.read(feedbackContentProvider),
-                          gameConfig: ref.read(gameConfigProvider),
-                        );
-                        downloadFile(zipBytes, 'content_export.zip');
-                        ref.read(savedBaselineProvider.notifier).state =
-                            contentState;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('Export successful — download started'),
-                          ),
-                        );
-                      } on ValidationBlockedExportException catch (e) {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Export Blocked'),
-                            content: SizedBox(
-                              width: 400,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Export is blocked due to validation errors:',
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                        maxHeight: 300),
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      itemCount: e.errors.length,
-                                      itemBuilder: (_, index) {
-                                        final error = e.errors[index];
-                                        return ListTile(
-                                          leading: const Icon(Icons.error,
-                                              color: Colors.red),
-                                          title: Text(error.sourceFile),
-                                          subtitle: Text(error.message),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                      exportZip();
                     }
                   },
+                  onExportZip: exportZip,
                   onFocusSearch: () {
                     ref.read(searchFocusNodeProvider).requestFocus();
                   },
