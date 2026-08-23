@@ -17,6 +17,7 @@ class EditPanel extends ConsumerWidget {
     super.key,
     required this.selectedItem,
     required this.onDeleted,
+    required this.onCreated,
   });
 
   /// The currently selected item, or null if nothing is selected.
@@ -24,6 +25,11 @@ class EditPanel extends ConsumerWidget {
 
   /// Called after the selected item is deleted so the selection can be cleared.
   final VoidCallback onDeleted;
+
+  /// Called after a create form saves, so the panel can switch to the new
+  /// record's edit form. Create modunda kalmak, aynı ID ile ikinci bir
+  /// "Create" tıklamasının kaydı bir kez daha eklemesine izin veriyordu.
+  final void Function(SelectedItem item) onCreated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,25 +47,50 @@ class EditPanel extends ConsumerWidget {
       SelectedLevel(:final contentFile, :final levelId) =>
         _buildLevelForm(ref, contentFile, levelId),
       SelectedQuestion(:final contentFile, :final levelId, :final questionIndex) =>
-        _buildQuestionForm(ref, contentFile, levelId, questionIndex),
-      CreateSeries() => const SeriesForm(key: ValueKey('create_series')),
+        _buildQuestionForm(context, ref, contentFile, levelId, questionIndex),
+      CreateSeries() => SeriesForm(
+          key: const ValueKey('create_series'),
+          onCreated: (id) => onCreated(SelectedSeries(seriesId: id)),
+        ),
       CreateBook(:final seriesId) => BookForm(
           key: ValueKey('create_book_$seriesId'),
           seriesId: seriesId,
+          onCreated: (id) => onCreated(SelectedBook(bookId: id)),
         ),
       CreateLevel(:final contentFile, :final bookId) => LevelForm(
           key: ValueKey('create_level_${contentFile}_$bookId'),
           contentFile: contentFile,
           bookId: bookId,
+          onCreated: (id) => onCreated(
+            SelectedLevel(contentFile: contentFile, levelId: id),
+          ),
         ),
       CreateQuestion(:final contentFile, :final levelId) =>
-        _buildCreateQuestionForm(ref, contentFile, levelId),
+        _buildCreateQuestionForm(context, ref, contentFile, levelId),
     };
+  }
+
+  /// Shown when the selected record disappears from the content state while
+  /// its form is open (undo, reload from server). Aynı ValueKey'i koruyan form
+  /// aksi halde silinen kaydın değerleriyle dolu bir "create" formuna dönüşüp
+  /// kaydı geri ekleyebiliyordu.
+  Widget _buildMissingNotice(String label) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'This $label is no longer available — it was deleted or the change '
+          'was undone. Select another item to edit.',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
   }
 
   Widget _buildSeriesForm(WidgetRef ref, int seriesId) {
     final state = ref.watch(contentStateProvider);
     final series = state.series.where((s) => s.id == seriesId).firstOrNull;
+    if (series == null) return _buildMissingNotice('series');
     return SeriesForm(
       key: ValueKey('series_$seriesId'),
       series: series,
@@ -70,6 +101,7 @@ class EditPanel extends ConsumerWidget {
   Widget _buildBookForm(WidgetRef ref, int bookId) {
     final state = ref.watch(contentStateProvider);
     final book = state.books.where((b) => b.id == bookId).firstOrNull;
+    if (book == null) return _buildMissingNotice('book');
     return BookForm(
       key: ValueKey('book_$bookId'),
       book: book,
@@ -81,6 +113,7 @@ class EditPanel extends ConsumerWidget {
     final state = ref.watch(contentStateProvider);
     final levels = state.contentFiles[contentFile] ?? [];
     final level = levels.where((l) => l.id == levelId).firstOrNull;
+    if (level == null) return _buildMissingNotice('level');
     return LevelForm(
       key: ValueKey('level_${contentFile}_$levelId'),
       contentFile: contentFile,
@@ -90,6 +123,7 @@ class EditPanel extends ConsumerWidget {
   }
 
   Widget _buildQuestionForm(
+    BuildContext context,
     WidgetRef ref,
     String contentFile,
     int levelId,
@@ -98,12 +132,12 @@ class EditPanel extends ConsumerWidget {
     final state = ref.watch(contentStateProvider);
     final levels = state.contentFiles[contentFile] ?? [];
     final level = levels.where((l) => l.id == levelId).firstOrNull;
-    QuestionModel? question;
-    if (level != null &&
-        questionIndex >= 0 &&
-        questionIndex < level.questions.length) {
-      question = level.questions[questionIndex];
+    if (level == null ||
+        questionIndex < 0 ||
+        questionIndex >= level.questions.length) {
+      return _buildMissingNotice('question');
     }
+    final QuestionModel question = level.questions[questionIndex];
 
     return QuestionForm(
       key: ValueKey('question_${contentFile}_${levelId}_$questionIndex'),
@@ -111,34 +145,30 @@ class EditPanel extends ConsumerWidget {
       contentFile: contentFile,
       levelId: levelId,
       questionIndex: questionIndex,
-      onDelete: question == null
-          ? null
-          : () {
-              // Push current state to history before applying the delete.
-              ref
-                  .read(historyProvider.notifier)
-                  .pushState(ref.read(contentStateProvider));
-              ref
-                  .read(contentStateProvider.notifier)
-                  .deleteQuestion(contentFile, levelId, questionIndex);
-              onDeleted();
-            },
+      onDelete: () {
+        // Push current state to history before applying the delete.
+        ref
+            .read(historyProvider.notifier)
+            .pushState(ref.read(contentStateProvider));
+        ref
+            .read(contentStateProvider.notifier)
+            .deleteQuestion(contentFile, levelId, questionIndex);
+        onDeleted();
+      },
       onSave: (updatedQuestion) {
         // Push current state to history before applying the change.
         ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
 
-        final notifier = ref.read(contentStateProvider.notifier);
-        if (question != null) {
-          notifier.updateQuestion(
-              contentFile, levelId, questionIndex, updatedQuestion);
-        } else {
-          notifier.addQuestion(contentFile, levelId, updatedQuestion);
-        }
+        ref
+            .read(contentStateProvider.notifier)
+            .updateQuestion(contentFile, levelId, questionIndex, updatedQuestion);
+        _notify(context, 'Question updated');
       },
     );
   }
 
   Widget _buildCreateQuestionForm(
+    BuildContext context,
     WidgetRef ref,
     String contentFile,
     int levelId,
@@ -152,7 +182,26 @@ class EditPanel extends ConsumerWidget {
 
         final notifier = ref.read(contentStateProvider.notifier);
         notifier.addQuestion(contentFile, levelId, newQuestion);
+        _notify(context, 'Question created');
+
+        final levels = ref.read(contentStateProvider).contentFiles[contentFile];
+        final level = levels?.where((l) => l.id == levelId).firstOrNull;
+        if (level != null && level.questions.isNotEmpty) {
+          onCreated(SelectedQuestion(
+            contentFile: contentFile,
+            levelId: levelId,
+            questionIndex: level.questions.length - 1,
+          ));
+        }
       },
+    );
+  }
+
+  /// Soru formları kayıttan sonra hiçbir geri bildirim vermiyordu; diğer
+  /// formların snackbar'ıyla aynı hale getirir.
+  void _notify(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

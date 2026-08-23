@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../data/models/question_model.dart';
@@ -68,11 +70,15 @@ class _BulkAddDialogState extends State<BulkAddDialog> {
     final errorCount = _result?.errors.length ?? 0;
     final hasPreview = _result != null;
 
+    // Sabit 700x500 içerik küçük pencerede taşıyordu: dialog'un kendi inset
+    // padding'i ve başlık/aksiyon satırları da yer kaplıyor.
+    final viewport = MediaQuery.sizeOf(context);
+
     return AlertDialog(
       title: const Text('Bulk Add Questions'),
       content: SizedBox(
-        width: 700,
-        height: 500,
+        width: math.min(700, math.max(280, viewport.width - 120)),
+        height: math.min(500, math.max(240, viewport.height - 200)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

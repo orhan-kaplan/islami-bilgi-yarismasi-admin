@@ -31,8 +31,30 @@ class JsonPreviewPanel extends ConsumerWidget {
       );
     }
 
+    // Henüz oluşturulmamış kayıt "Item not found" diyordu: öğe kaybolmuş
+    // gibi okunuyordu.
+    final item = selectedItem!;
+    if (item is CreateSeries ||
+        item is CreateBook ||
+        item is CreateLevel ||
+        item is CreateQuestion) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'Not saved yet — fill in the form and save to see its JSON.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
     final state = ref.watch(contentStateProvider);
-    final json = _resolveJson(state, selectedItem!);
+    final json = _resolveJson(state, item);
 
     if (json == null) {
       return const Center(
@@ -49,14 +71,18 @@ class JsonPreviewPanel extends ConsumerWidget {
     const encoder = JsonEncoder.withIndent('  ');
     final formatted = encoder.convert(json);
 
+    // Uzun değerler (asset yolları) panelden taşıyor ve erişilemiyordu.
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: SelectableText(
-        formatted,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-          height: 1.4,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(16),
+        child: SelectableText(
+          formatted,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 13,
+            height: 1.4,
+          ),
         ),
       ),
     );

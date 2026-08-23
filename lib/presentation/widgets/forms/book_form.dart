@@ -14,7 +14,13 @@ import 'inline_image_picker.dart';
 /// When [book] is null, the form is in "create" mode with auto-ID suggestion.
 /// When [book] is provided, the form is in "edit" mode.
 class BookForm extends ConsumerStatefulWidget {
-  const BookForm({super.key, this.book, this.seriesId, this.onDeleted});
+  const BookForm({
+    super.key,
+    this.book,
+    this.seriesId,
+    this.onDeleted,
+    this.onCreated,
+  });
 
   /// The book to edit, or null to create a new one.
   final BookModel? book;
@@ -24,6 +30,11 @@ class BookForm extends ConsumerStatefulWidget {
 
   /// Called after the book is deleted so the caller can clear its selection.
   final VoidCallback? onDeleted;
+
+  /// Called with the new ID after a create, so the caller can switch to the
+  /// record's edit form instead of leaving a create form that would add the
+  /// same ID again on a second tap.
+  final ValueChanged<int>? onCreated;
 
   @override
   ConsumerState<BookForm> createState() => _BookFormState();
@@ -39,6 +50,7 @@ class _BookFormState extends ConsumerState<BookForm> {
   late final TextEditingController _bookOrderController;
   late final TextEditingController _contentFileController;
   late int? _selectedSeriesId;
+  bool _showAssetImageError = false;
 
   bool get _isEditing => widget.book != null;
 
@@ -81,13 +93,14 @@ class _BookFormState extends ConsumerState<BookForm> {
   }
 
   void _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_assetImage.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Asset image is required')),
-      );
-      return;
+    // Zorunlu görselin eksikliği yalnızca snackbar'da görünüyordu: kaydırılmış
+    // uzun formda hangi alanın eksik olduğu anlaşılmıyordu.
+    final formValid = _formKey.currentState!.validate();
+    final imageMissing = _assetImage.isEmpty;
+    if (_showAssetImageError != imageMissing) {
+      setState(() => _showAssetImageError = imageMissing);
     }
+    if (!formValid || imageMissing) return;
 
     // Push current state to history before applying the change.
     ref.read(historyProvider.notifier).pushState(ref.read(contentStateProvider));
@@ -124,14 +137,39 @@ class _BookFormState extends ConsumerState<BookForm> {
     messenger.showSnackBar(
       SnackBar(content: Text(_isEditing ? 'Book updated' : 'Book created')),
     );
+
+    if (!_isEditing) widget.onCreated?.call(book.id);
   }
 
   Future<void> _delete() async {
+    // Engel önceden biliniyorsa yıkıcı işlem için onay istemek anlamsız:
+    // kullanıcı onaylıyor ve hiçbir şey olmuyordu.
+    final state = ref.read(contentStateProvider);
+    final levels = state.contentFiles[widget.book!.contentFile];
+    final hasLevels = levels != null && levels.isNotEmpty;
+    final isRewarded =
+        state.rewards.any((r) => r.unlockBookId == widget.book!.id);
+    if (hasLevels || isRewarded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            hasLevels
+                ? 'Cannot delete: this book still has levels. Delete them '
+                    'first.'
+                : 'Cannot delete: a reward still unlocks this book. Remove '
+                    'that reward first.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final confirmed = await ConfirmDialog.show(
       context: context,
       title: 'Delete Book',
       message: 'Are you sure you want to delete this book?',
       confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
     if (!confirmed || !mounted) return;
@@ -249,7 +287,10 @@ class _BookFormState extends ConsumerState<BookForm> {
                   defaultDirectory: 'images/book_${_idController.text}/',
                   targetFileName: 'book_${_idController.text}',
                   onPathChanged: (newPath) {
-                    setState(() => _assetImage = newPath);
+                    setState(() {
+                      _assetImage = newPath;
+                      _showAssetImageError = false;
+                    });
                     // Also update ContentState immediately if editing.
                     // Validasyondan geçmeden commit etmek boş bir zorunlu
                     // alanı diske yazıp dosyanın kaydını bloklardı.
@@ -284,11 +325,34 @@ class _BookFormState extends ConsumerState<BookForm> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _assetImage.isEmpty ? 'No image selected' : _assetImage,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _assetImage.isEmpty
+                            ? 'No image selected'
+                            : _assetImage,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                      if (_showAssetImageError)
+                        Padding(
+                          key: const Key('book_asset_image_error'),
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Asset image is required',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -298,7 +362,7 @@ class _BookFormState extends ConsumerState<BookForm> {
               controller: _bookOrderController,
               decoration: const InputDecoration(
                 labelText: 'Book Order',
-                helperText: 'Drag-drop ile ayarlanır',
+                helperText: 'Set via drag & drop',
               ),
               keyboardType: TextInputType.number,
               enabled: false,

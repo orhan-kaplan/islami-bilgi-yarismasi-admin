@@ -11,6 +11,7 @@ class ConfirmDialog extends StatelessWidget {
     required this.message,
     this.confirmLabel = 'Confirm',
     this.onConfirm,
+    this.isDestructive = false,
   });
 
   final String title;
@@ -18,12 +19,17 @@ class ConfirmDialog extends StatelessWidget {
   final String confirmLabel;
   final VoidCallback? onConfirm;
 
+  /// Renders the confirm button in the theme's error color. Silme gibi geri
+  /// alınamayan işlemlerde onay butonu, iptalden renkle ayrışmalı.
+  final bool isDestructive;
+
   /// Shows the dialog and returns true if confirmed, false otherwise.
   static Future<bool> show({
     required BuildContext context,
     required String title,
     required String message,
     String confirmLabel = 'Confirm',
+    bool isDestructive = false,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -31,6 +37,7 @@ class ConfirmDialog extends StatelessWidget {
         title: title,
         message: message,
         confirmLabel: confirmLabel,
+        isDestructive: isDestructive,
       ),
     );
     return result ?? false;
@@ -47,6 +54,12 @@ class ConfirmDialog extends StatelessWidget {
           child: const Text('Cancel'),
         ),
         FilledButton(
+          style: isDestructive
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                )
+              : null,
           onPressed: () {
             onConfirm?.call();
             Navigator.of(context).pop(true);

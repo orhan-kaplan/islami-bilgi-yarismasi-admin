@@ -7,10 +7,17 @@ import 'content_explorer_screen.dart';
 
 /// Left panel of the Content Explorer that wraps the content tree widget.
 class TreePanel extends ConsumerStatefulWidget {
-  const TreePanel({super.key, required this.onItemSelected});
+  const TreePanel({
+    super.key,
+    required this.onItemSelected,
+    this.selectedItem,
+  });
 
   /// Callback invoked when a tree item is tapped.
   final void Function(SelectedItem item) onItemSelected;
+
+  /// The item currently open in the edit panel, highlighted in the tree.
+  final SelectedItem? selectedItem;
 
   @override
   ConsumerState<TreePanel> createState() => _TreePanelState();
@@ -86,7 +93,10 @@ class _TreePanelState extends ConsumerState<TreePanel> {
         const SizedBox(height: 8.0),
         const Divider(height: 1),
         Expanded(
-          child: ContentTree(onItemSelected: widget.onItemSelected),
+          child: ContentTree(
+            onItemSelected: widget.onItemSelected,
+            selectedItem: widget.selectedItem,
+          ),
         ),
       ],
     );

@@ -72,12 +72,33 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
     }
   }
 
+  /// Tip değişimi alt formu sıfırlıyor: yazılmış içerik uyarısız gidiyordu.
+  Future<void> _changeType(String value) async {
+    if (_currentQuestionText.trim().isNotEmpty) {
+      final confirmed = await ConfirmDialog.show(
+        context: context,
+        title: 'Change question type?',
+        message: 'Switching the type clears the fields you filled in for the '
+            'current type. Unsaved changes will be lost.',
+        confirmLabel: 'Change type',
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    setState(() {
+      _selectedType = value;
+      _currentQuestionText =
+          (widget.question?.type == value) ? widget.question!.questionText : '';
+    });
+  }
+
   Future<void> _delete() async {
     final confirmed = await ConfirmDialog.show(
       context: context,
       title: 'Delete Question',
       message: 'Are you sure you want to delete this question?',
       confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
     if (!confirmed || !mounted) return;
@@ -134,7 +155,7 @@ class _QuestionFormState extends ConsumerState<QuestionForm> {
                 .toList(),
             onChanged: (value) {
               if (value != null && value != _selectedType) {
-                setState(() => _selectedType = value);
+                _changeType(value);
               }
             },
           ),
@@ -239,7 +260,7 @@ class _DuplicateWarningBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bu soru başka bir yerde de mevcut:',
+                  'This question already exists elsewhere:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.amber.shade300,

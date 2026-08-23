@@ -118,7 +118,7 @@ void main() {
       expect(c.read(contentStateProvider).series, [series]);
     });
 
-    testWidgets('kitabı olan seri silinmez ve gerekçe gösterilir',
+    testWidgets('kitabı olan seri silinmez, onay bile sorulmaz',
         (tester) async {
       final c = await pump(
         tester,
@@ -126,11 +126,17 @@ void main() {
         stateWith(series: const [series], books: const [book]),
       );
 
-      await confirmDelete(tester, 'Delete series');
+      await tester.tap(find.byTooltip('Delete series'));
+      await tester.pumpAndSettle();
 
+      // Sonucu baştan belli olan yıkıcı işlem için onay istenmemeli.
+      expect(find.byType(AlertDialog), findsNothing,
+          reason: 'engellenmiş silme için onay dialogu açılmamalı');
       expect(c.read(contentStateProvider).series, [series]);
       expect(find.textContaining('book'), findsWidgets,
           reason: 'engelin nedeni kullanıcıya söylenmeli');
+      expect(c.read(canUndoProvider), isFalse,
+          reason: 'engellenen silme undo yığınını kirletmemeli');
     });
 
     testWidgets('create modunda silme butonu yok', (tester) async {
@@ -158,7 +164,8 @@ void main() {
       expect(c.read(canUndoProvider), isTrue);
     });
 
-    testWidgets('level içeren kitap silinmez', (tester) async {
+    testWidgets('level içeren kitap silinmez, onay bile sorulmaz',
+        (tester) async {
       final c = await pump(
         tester,
         const BookForm(book: book),
@@ -171,12 +178,19 @@ void main() {
         ),
       );
 
-      await confirmDelete(tester, 'Delete book');
+      await tester.tap(find.byTooltip('Delete book'));
+      await tester.pumpAndSettle();
 
+      expect(find.byType(AlertDialog), findsNothing,
+          reason: 'engellenmiş silme için onay dialogu açılmamalı');
       expect(c.read(contentStateProvider).books, [book]);
+      expect(find.textContaining('level'), findsWidgets,
+          reason: 'engelin nedeni kullanıcıya söylenmeli');
+      expect(c.read(canUndoProvider), isFalse);
     });
 
-    testWidgets('ödül referansı olan kitap silinmez', (tester) async {
+    testWidgets('ödül referansı olan kitap silinmez, onay bile sorulmaz',
+        (tester) async {
       final c = await pump(
         tester,
         const BookForm(book: book),
@@ -188,9 +202,12 @@ void main() {
         ),
       );
 
-      await confirmDelete(tester, 'Delete book');
+      await tester.tap(find.byTooltip('Delete book'));
+      await tester.pumpAndSettle();
 
+      expect(find.byType(AlertDialog), findsNothing);
       expect(c.read(contentStateProvider).books, [book]);
+      expect(c.read(canUndoProvider), isFalse);
     });
 
     testWidgets('create modunda silme butonu yok', (tester) async {

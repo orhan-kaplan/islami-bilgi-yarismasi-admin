@@ -5,41 +5,77 @@ import '../../../data/models/book_model.dart';
 import '../../../data/models/level_model.dart';
 import '../../../data/models/series_model.dart';
 import '../../../data/services/search_engine.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/history_providers.dart';
 import '../../providers/search_providers.dart';
 import '../../screens/explorer/content_explorer_screen.dart';
 
+// =============================================================================
+// Selection helpers
+// =============================================================================
+
+bool _isSeriesSelected(SelectedItem? item, int seriesId) =>
+    item is SelectedSeries && item.seriesId == seriesId;
+
+bool _isBookSelected(SelectedItem? item, int bookId) =>
+    item is SelectedBook && item.bookId == bookId;
+
+bool _isLevelSelected(SelectedItem? item, String contentFile, int levelId) =>
+    item is SelectedLevel &&
+    item.contentFile == contentFile &&
+    item.levelId == levelId;
+
+bool _isQuestionSelected(
+  SelectedItem? item,
+  String contentFile,
+  int levelId,
+  int questionIndex,
+) =>
+    item is SelectedQuestion &&
+    item.contentFile == contentFile &&
+    item.levelId == levelId &&
+    item.questionIndex == questionIndex;
+
+/// Background for the node currently open in the edit panel. Seçili düğüm
+/// hiçbir şekilde işaretlenmiyordu; hangi kaydın düzenlendiği görünmüyordu.
+Color? _selectionColor(BuildContext context, bool isSelected) => isSelected
+    ? Theme.of(context).colorScheme.secondaryContainer
+    : null;
+
+Color? _matchColor(BuildContext context, bool isMatching) => isMatching
+    ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+    : null;
+
 /// Expandable tree showing Series → Books → Levels → Questions hierarchy.
 ///
 /// Uses [ExpansionTile] for each level of nesting. Items are sorted by their
-/// respective order fields. On item tap, calls [onItemSelected].
+/// respective order fields. On item tap, calls [onItemSelected]; the node
+/// matching [selectedItem] is highlighted.
 ///
 /// When a search is active (searchResultProvider is non-null), the tree filters
 /// to show only visible items and highlights matching ones. Drag-and-drop
-/// reordering is disabled during search.
+/// reordering is disabled during search, but the add buttons stay available.
 ///
 /// When search is NOT active, drag handles are shown for series, books, and
 /// levels, allowing reordering via drag-and-drop.
 class ContentTree extends ConsumerWidget {
-  const ContentTree({super.key, required this.onItemSelected});
+  const ContentTree({
+    super.key,
+    required this.onItemSelected,
+    this.selectedItem,
+  });
 
   /// Callback invoked when a tree item is tapped.
   final void Function(SelectedItem item) onItemSelected;
+
+  /// The item currently open in the edit panel, highlighted in the tree.
+  final SelectedItem? selectedItem;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final seriesList = ref.watch(allSeriesProvider);
     final searchResult = ref.watch(searchResultProvider);
-
-    if (seriesList.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('No content loaded. Import a ZIP to get started.'),
-        ),
-      );
-    }
 
     // Filter series when search is active
     final displayedSeries = searchResult != null
@@ -47,6 +83,56 @@ class ContentTree extends ConsumerWidget {
             .where((s) => searchResult.visibleSeriesIds.contains(s.id))
             .toList()
         : seriesList;
+
+    return Column(
+      children: [
+        // "Add Series" içerik boşken de, arama açıkken de erişilebilir
+        // olmalı: tek giriş noktası buydu ve her iki durumda da kayboluyordu.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => onItemSelected(CreateSeries()),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add Series'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: _buildBody(context, ref, seriesList, displayedSeries,
+              searchResult),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    List<SeriesModel> seriesList,
+    List<SeriesModel> displayedSeries,
+    SearchResult? searchResult,
+  ) {
+    if (seriesList.isEmpty) {
+      final isConnected = ref.watch(isServerConnectedProvider);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            isConnected
+                ? 'No content yet. Use "Add Series" to create the first one.'
+                : 'No content loaded. Start the asset server, or import a ZIP.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
     if (searchResult != null && displayedSeries.isEmpty) {
       return const Center(
@@ -59,31 +145,10 @@ class ContentTree extends ConsumerWidget {
 
     // When search is NOT active, use ReorderableListView for drag-and-drop
     if (searchResult == null) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => onItemSelected(CreateSeries()),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Series'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  textStyle: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: _ReorderableSeriesTree(
-              seriesList: displayedSeries,
-              onItemSelected: onItemSelected,
-            ),
-          ),
-        ],
+      return _ReorderableSeriesTree(
+        seriesList: displayedSeries,
+        onItemSelected: onItemSelected,
+        selectedItem: selectedItem,
       );
     }
 
@@ -95,6 +160,7 @@ class ContentTree extends ConsumerWidget {
         return _SeriesTile(
           series: series,
           onItemSelected: onItemSelected,
+          selectedItem: selectedItem,
           searchResult: searchResult,
           reorderable: false,
           index: index,
@@ -114,10 +180,12 @@ class _ReorderableSeriesTree extends ConsumerWidget {
   const _ReorderableSeriesTree({
     required this.seriesList,
     required this.onItemSelected,
+    required this.selectedItem,
   });
 
   final List<SeriesModel> seriesList;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -146,6 +214,7 @@ class _ReorderableSeriesTree extends ConsumerWidget {
           key: ValueKey('reorderable_series_${series.id}'),
           series: series,
           onItemSelected: onItemSelected,
+          selectedItem: selectedItem,
           searchResult: null,
           reorderable: true,
           index: index,
@@ -161,6 +230,7 @@ class _SeriesTile extends ConsumerWidget {
     super.key,
     required this.series,
     required this.onItemSelected,
+    required this.selectedItem,
     this.searchResult,
     required this.reorderable,
     required this.index,
@@ -168,6 +238,7 @@ class _SeriesTile extends ConsumerWidget {
 
   final SeriesModel series;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
   final SearchResult? searchResult;
   final bool reorderable;
   final int index;
@@ -185,6 +256,7 @@ class _SeriesTile extends ConsumerWidget {
 
     final isMatching = searchResult != null &&
         searchResult!.matchingSeriesIds.contains(series.id);
+    final isSelected = _isSeriesSelected(selectedItem, series.id);
 
     // Auto-expand when search is active and this series has visible children
     final shouldExpand = searchResult != null;
@@ -203,21 +275,18 @@ class _SeriesTile extends ConsumerWidget {
               series.iconEmoji,
               style: const TextStyle(fontSize: 20),
             ),
-      trailing: reorderable
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add, size: 18),
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Add Book',
-                  onPressed: () =>
-                      onItemSelected(CreateBook(seriesId: series.id)),
-                ),
-                const Icon(Icons.expand_more),
-              ],
-            )
-          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.add, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Add Book',
+            onPressed: () => onItemSelected(CreateBook(seriesId: series.id)),
+          ),
+          const Icon(Icons.expand_more),
+        ],
+      ),
       title: GestureDetector(
         onTap: () => onItemSelected(SelectedSeries(seriesId: series.id)),
         child: Row(
@@ -244,24 +313,23 @@ class _SeriesTile extends ConsumerWidget {
           ],
         ),
       ),
-      backgroundColor: isMatching
-          ? Theme.of(context)
-              .colorScheme
-              .primaryContainer
-              .withValues(alpha: 0.3)
-          : null,
+      backgroundColor: _selectionColor(context, isSelected) ??
+          _matchColor(context, isMatching),
+      collapsedBackgroundColor: _selectionColor(context, isSelected),
       children: reorderable
           ? [
               _ReorderableBookTree(
                 seriesId: series.id,
                 books: displayedBooks,
                 onItemSelected: onItemSelected,
+                selectedItem: selectedItem,
               ),
             ]
           : displayedBooks.map((book) {
               return _BookTile(
                 book: book,
                 onItemSelected: onItemSelected,
+                selectedItem: selectedItem,
                 searchResult: searchResult,
                 reorderable: false,
                 index: 0,
@@ -282,11 +350,13 @@ class _ReorderableBookTree extends ConsumerWidget {
     required this.seriesId,
     required this.books,
     required this.onItemSelected,
+    required this.selectedItem,
   });
 
   final int seriesId;
   final List<BookModel> books;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -321,6 +391,7 @@ class _ReorderableBookTree extends ConsumerWidget {
           key: ValueKey('reorderable_book_${book.id}'),
           book: book,
           onItemSelected: onItemSelected,
+          selectedItem: selectedItem,
           searchResult: null,
           reorderable: true,
           index: index,
@@ -336,6 +407,7 @@ class _BookTile extends ConsumerWidget {
     super.key,
     required this.book,
     required this.onItemSelected,
+    required this.selectedItem,
     this.searchResult,
     required this.reorderable,
     required this.index,
@@ -343,6 +415,7 @@ class _BookTile extends ConsumerWidget {
 
   final BookModel book;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
   final SearchResult? searchResult;
   final bool reorderable;
   final int index;
@@ -360,6 +433,7 @@ class _BookTile extends ConsumerWidget {
 
     final isMatching = searchResult != null &&
         searchResult!.matchingBookIds.contains(book.id);
+    final isSelected = _isBookSelected(selectedItem, book.id);
 
     // Auto-expand when search is active and this book has visible children
     final shouldExpand = searchResult != null;
@@ -377,23 +451,20 @@ class _BookTile extends ConsumerWidget {
                 child: const Icon(Icons.drag_handle),
               )
             : const Icon(Icons.book_outlined, size: 18),
-        trailing: reorderable
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Add Level',
-                    onPressed: () => onItemSelected(
-                      CreateLevel(
-                          contentFile: book.contentFile, bookId: book.id),
-                    ),
-                  ),
-                  const Icon(Icons.expand_more),
-                ],
-              )
-            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add, size: 18),
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Add Level',
+              onPressed: () => onItemSelected(
+                CreateLevel(contentFile: book.contentFile, bookId: book.id),
+              ),
+            ),
+            const Icon(Icons.expand_more),
+          ],
+        ),
         title: GestureDetector(
           onTap: () => onItemSelected(SelectedBook(bookId: book.id)),
           child: Row(
@@ -417,18 +488,16 @@ class _BookTile extends ConsumerWidget {
             ],
           ),
         ),
-        backgroundColor: isMatching
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.3)
-            : null,
+        backgroundColor: _selectionColor(context, isSelected) ??
+            _matchColor(context, isMatching),
+        collapsedBackgroundColor: _selectionColor(context, isSelected),
         children: reorderable
             ? [
                 _ReorderableLevelTree(
                   contentFile: book.contentFile,
                   levels: displayedLevels,
                   onItemSelected: onItemSelected,
+                  selectedItem: selectedItem,
                 ),
               ]
             : displayedLevels.map((level) {
@@ -436,6 +505,7 @@ class _BookTile extends ConsumerWidget {
                   level: level,
                   contentFile: book.contentFile,
                   onItemSelected: onItemSelected,
+                  selectedItem: selectedItem,
                   searchResult: searchResult,
                 );
               }).toList(),
@@ -455,11 +525,13 @@ class _ReorderableLevelTree extends ConsumerWidget {
     required this.contentFile,
     required this.levels,
     required this.onItemSelected,
+    required this.selectedItem,
   });
 
   final String contentFile;
   final List<LevelModel> levels;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -496,6 +568,7 @@ class _ReorderableLevelTree extends ConsumerWidget {
           contentFile: contentFile,
           index: index,
           onItemSelected: onItemSelected,
+          selectedItem: selectedItem,
         );
       },
     );
@@ -511,15 +584,19 @@ class _ReorderableLevelTile extends StatelessWidget {
     required this.contentFile,
     required this.index,
     required this.onItemSelected,
+    required this.selectedItem,
   });
 
   final LevelModel level;
   final String contentFile;
   final int index;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = _isLevelSelected(selectedItem, contentFile, level.id);
+
     return ExpansionTile(
       leading: ReorderableDragStartListener(
         index: index,
@@ -539,22 +616,31 @@ class _ReorderableLevelTile extends StatelessWidget {
           const Icon(Icons.expand_more),
         ],
       ),
+      // Tıklama alanı yalnızca başlık metni kadardı: kısa başlıklı bir
+      // level'da metnin sağına tıklamak seçmek yerine açıp kapatıyordu.
       title: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => onItemSelected(
           SelectedLevel(contentFile: contentFile, levelId: level.id),
         ),
-        child: Text(level.title),
+        child: Row(
+          children: [Expanded(child: Text(level.title))],
+        ),
       ),
       subtitle: Text(
         '${level.questions.length} questions',
         style: Theme.of(context).textTheme.bodySmall,
       ),
+      backgroundColor: _selectionColor(context, isSelected),
+      collapsedBackgroundColor: _selectionColor(context, isSelected),
       children: List.generate(level.questions.length, (qi) {
         final question = level.questions[qi];
 
         return ListTile(
           contentPadding: const EdgeInsets.only(left: 48.0),
           leading: const Icon(Icons.quiz_outlined, size: 16),
+          selected: _isQuestionSelected(selectedItem, contentFile, level.id, qi),
+          selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
           title: Text(
             question.questionText,
             style: Theme.of(context).textTheme.bodySmall,
@@ -578,18 +664,21 @@ class _LevelTile extends StatelessWidget {
     required this.level,
     required this.contentFile,
     required this.onItemSelected,
+    required this.selectedItem,
     this.searchResult,
   });
 
   final LevelModel level;
   final String contentFile;
   final void Function(SelectedItem item) onItemSelected;
+  final SelectedItem? selectedItem;
   final SearchResult? searchResult;
 
   @override
   Widget build(BuildContext context) {
     final isMatching = searchResult != null &&
         searchResult!.matchingLevelIds.contains(level.id);
+    final isSelected = _isLevelSelected(selectedItem, contentFile, level.id);
 
     // Auto-expand when search is active AND this level has matching questions
     final hasMatchingQuestions = searchResult != null &&
@@ -607,26 +696,44 @@ class _LevelTile extends StatelessWidget {
             : ValueKey('level_${level.id}'),
         initiallyExpanded: shouldExpand,
         leading: const Icon(Icons.layers_outlined, size: 18),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add, size: 18),
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Add Question',
+              onPressed: () => onItemSelected(
+                CreateQuestion(contentFile: contentFile, levelId: level.id),
+              ),
+            ),
+            const Icon(Icons.expand_more),
+          ],
+        ),
         title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () => onItemSelected(
             SelectedLevel(contentFile: contentFile, levelId: level.id),
           ),
-          child: Text(
-            level.title,
-            style: isMatching
-                ? TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  )
-                : null,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  level.title,
+                  style: isMatching
+                      ? TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
+                ),
+              ),
+            ],
           ),
         ),
-        backgroundColor: isMatching
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.3)
-            : null,
+        backgroundColor: _selectionColor(context, isSelected) ??
+            _matchColor(context, isMatching),
+        collapsedBackgroundColor: _selectionColor(context, isSelected),
         children: List.generate(level.questions.length, (qi) {
           final question = level.questions[qi];
 
@@ -642,6 +749,9 @@ class _LevelTile extends StatelessWidget {
           return ListTile(
             contentPadding: const EdgeInsets.only(left: 48.0),
             leading: const Icon(Icons.quiz_outlined, size: 16),
+            selected:
+                _isQuestionSelected(selectedItem, contentFile, level.id, qi),
+            selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
             title: Text(
               question.questionText,
               style: isQuestionMatching
@@ -653,12 +763,7 @@ class _LevelTile extends StatelessWidget {
                     )
                   : Theme.of(context).textTheme.bodySmall,
             ),
-            tileColor: isQuestionMatching
-                ? Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.3)
-                : null,
+            tileColor: _matchColor(context, isQuestionMatching),
             onTap: () => onItemSelected(
               SelectedQuestion(
                 contentFile: contentFile,

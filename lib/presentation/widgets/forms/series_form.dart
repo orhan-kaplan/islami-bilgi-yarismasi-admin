@@ -12,13 +12,18 @@ import '../shared/confirm_dialog.dart';
 /// When [series] is null, the form is in "create" mode with auto-ID suggestion.
 /// When [series] is provided, the form is in "edit" mode.
 class SeriesForm extends ConsumerStatefulWidget {
-  const SeriesForm({super.key, this.series, this.onDeleted});
+  const SeriesForm({super.key, this.series, this.onDeleted, this.onCreated});
 
   /// The series to edit, or null to create a new one.
   final SeriesModel? series;
 
   /// Called after the series is deleted so the caller can clear its selection.
   final VoidCallback? onDeleted;
+
+  /// Called with the new ID after a create, so the caller can switch to the
+  /// record's edit form instead of leaving a create form that would add the
+  /// same ID again on a second tap.
+  final ValueChanged<int>? onCreated;
 
   @override
   ConsumerState<SeriesForm> createState() => _SeriesFormState();
@@ -94,14 +99,34 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_isEditing ? 'Series updated' : 'Series created')),
     );
+
+    if (!_isEditing) widget.onCreated?.call(series.id);
   }
 
   Future<void> _delete() async {
+    // Engel önceden biliniyorsa yıkıcı işlem için onay istemek anlamsız:
+    // kullanıcı onaylıyor ve hiçbir şey olmuyordu.
+    final hasBooks = ref
+        .read(contentStateProvider)
+        .books
+        .any((b) => b.seriesId == widget.series!.id);
+    if (hasBooks) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot delete: this series still has books. Delete them first.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final confirmed = await ConfirmDialog.show(
       context: context,
       title: 'Delete Series',
       message: 'Are you sure you want to delete this series?',
       confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
     if (!confirmed || !mounted) return;
@@ -192,7 +217,7 @@ class _SeriesFormState extends ConsumerState<SeriesForm> {
               controller: _sortOrderController,
               decoration: const InputDecoration(
                 labelText: 'Sort Order',
-                helperText: 'Drag-drop ile ayarlanır',
+                helperText: 'Set via drag & drop',
               ),
               keyboardType: TextInputType.number,
               enabled: false,

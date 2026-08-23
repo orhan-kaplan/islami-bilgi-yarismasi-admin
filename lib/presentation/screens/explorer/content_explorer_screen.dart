@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -89,6 +91,12 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
 
   static const double _minTreeWidth = 200;
   static const double _maxTreeWidth = 600;
+  static const double _jsonPreviewWidth = 300;
+  static const double _minJsonPreviewWidth = 180;
+
+  /// Dar pencerede tree + sabit JSON paneli EditPanel'i birkaç piksele
+  /// indiriyordu — formun kendi yatay padding'i tek başına 32px.
+  static const double _minEditPanelWidth = 300;
 
   void _onItemSelected(SelectedItem item) {
     setState(() {
@@ -143,6 +151,16 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
         question,
       );
     }
+
+    if (!mounted) return;
+    // Toplu ekleme sessizce bitiyordu: kaç sorunun eklendiği hiçbir yerde
+    // yazmıyordu.
+    final count = questions.length;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$count question${count == 1 ? '' : 's'} added'),
+      ),
+    );
   }
 
   void _showChangelogDialog(BuildContext context, WidgetRef ref) {
@@ -150,11 +168,11 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Değişiklikler'),
+        title: const Text('Changes'),
         content: SizedBox(
           width: 400,
           child: entries.isEmpty
-              ? const Text('Değişiklik yok')
+              ? const Text('No changes yet')
               : ListView.builder(
                   shrinkWrap: true,
                   itemCount: entries.length,
@@ -188,11 +206,42 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Kapat'),
+            child: const Text('Close'),
           ),
         ],
       ),
     );
+  }
+
+  /// Resolves the side panel widths for [available] pixels, keeping the edit
+  /// form usable: the tree gives way first, then the JSON preview.
+  (double, double) _panelWidths({
+    required double available,
+    required bool jsonPreviewVisible,
+  }) {
+    final dividers = 6.0 + (jsonPreviewVisible ? 1.0 : 0.0);
+    var tree = _treeWidth.clamp(_minTreeWidth, _maxTreeWidth);
+    var json = jsonPreviewVisible ? _jsonPreviewWidth : 0.0;
+    var edit = available - dividers - tree - json;
+
+    if (edit < _minEditPanelWidth) {
+      final shrink =
+          math.min(tree - _minTreeWidth, _minEditPanelWidth - edit);
+      if (shrink > 0) {
+        tree -= shrink;
+        edit += shrink;
+      }
+    }
+    if (edit < _minEditPanelWidth && json > 0) {
+      final shrink =
+          math.min(json - _minJsonPreviewWidth, _minEditPanelWidth - edit);
+      if (shrink > 0) {
+        json -= shrink;
+        edit += shrink;
+      }
+    }
+
+    return (tree, json);
   }
 
   @override
@@ -259,7 +308,7 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
                     child: TextButton.icon(
                       onPressed: () => _showChangelogDialog(context, ref),
                       icon: const Icon(Icons.history, size: 16),
-                      label: const Text('Değişiklikler'),
+                      label: const Text('Changes'),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.orange,
                         textStyle: const TextStyle(fontSize: 12),
@@ -295,41 +344,54 @@ class _ContentExplorerScreenState extends ConsumerState<ContentExplorerScreen> {
         ),
         // Main content area
         Expanded(
-          child: Row(
-            children: [
-              SizedBox(
-                width: _treeWidth,
-                child: TreePanel(onItemSelected: _onItemSelected),
-              ),
-              MouseRegion(
-                cursor: SystemMouseCursors.resizeColumn,
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      _treeWidth = (_treeWidth + details.delta.dx)
-                          .clamp(_minTreeWidth, _maxTreeWidth);
-                    });
-                  },
-                  child: Container(
-                    width: 6,
-                    color: Theme.of(context).dividerColor,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final (treeWidth, jsonWidth) = _panelWidths(
+                available: constraints.maxWidth,
+                jsonPreviewVisible: jsonPreviewVisible,
+              );
+
+              return Row(
+                children: [
+                  SizedBox(
+                    width: treeWidth,
+                    child: TreePanel(
+                      onItemSelected: _onItemSelected,
+                      selectedItem: _selectedItem,
+                    ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: EditPanel(
-                  selectedItem: _selectedItem,
-                  onDeleted: _onItemDeleted,
-                ),
-              ),
-              if (jsonPreviewVisible) ...[
-                const VerticalDivider(thickness: 1, width: 1),
-                SizedBox(
-                  width: 300,
-                  child: JsonPreviewPanel(selectedItem: _selectedItem),
-                ),
-              ],
-            ],
+                  MouseRegion(
+                    cursor: SystemMouseCursors.resizeColumn,
+                    child: GestureDetector(
+                      onHorizontalDragUpdate: (details) {
+                        setState(() {
+                          _treeWidth = (treeWidth + details.delta.dx)
+                              .clamp(_minTreeWidth, _maxTreeWidth);
+                        });
+                      },
+                      child: Container(
+                        width: 6,
+                        color: Theme.of(context).dividerColor,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: EditPanel(
+                      selectedItem: _selectedItem,
+                      onDeleted: _onItemDeleted,
+                      onCreated: _onItemSelected,
+                    ),
+                  ),
+                  if (jsonPreviewVisible) ...[
+                    const VerticalDivider(thickness: 1, width: 1),
+                    SizedBox(
+                      width: jsonWidth,
+                      child: JsonPreviewPanel(selectedItem: _selectedItem),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ],

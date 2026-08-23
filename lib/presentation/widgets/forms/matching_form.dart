@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../data/models/question_model.dart';
 
@@ -146,6 +147,11 @@ class _MatchingFormState extends State<MatchingForm> {
             'Matching Pairs',
             style: Theme.of(context).textTheme.titleSmall,
           ),
+          Text(
+            'The "|" character separates the two sides and cannot be typed '
+            'into a field.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           _buildPairRow('Pair A', _leftAController, _rightAController, required: true),
           const SizedBox(height: 8),
@@ -194,6 +200,7 @@ class _MatchingFormState extends State<MatchingForm> {
         Expanded(
           child: TextFormField(
             controller: leftController,
+            inputFormatters: _pairFormatters,
             decoration: InputDecoration(
               labelText: '$label - Left',
               isDense: true,
@@ -215,6 +222,7 @@ class _MatchingFormState extends State<MatchingForm> {
         Expanded(
           child: TextFormField(
             controller: rightController,
+            inputFormatters: _pairFormatters,
             decoration: InputDecoration(
               labelText: '$label - Right',
               isDense: true,
@@ -232,4 +240,10 @@ class _MatchingFormState extends State<MatchingForm> {
       ],
     );
   }
+
+  /// `|` sol/sağ ayırıcısı: değerin içinde geçerse kayıt round-trip'te
+  /// bölünme noktasını kaydırıp içeriği bozuyordu.
+  static final _pairFormatters = [
+    FilteringTextInputFormatter.deny('|'),
+  ];
 }

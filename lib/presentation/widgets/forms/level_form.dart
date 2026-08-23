@@ -19,6 +19,7 @@ class LevelForm extends ConsumerStatefulWidget {
     this.level,
     this.bookId,
     this.onDeleted,
+    this.onCreated,
   });
 
   /// The content file this level belongs to.
@@ -32,6 +33,11 @@ class LevelForm extends ConsumerStatefulWidget {
 
   /// Called after the level is deleted so the caller can clear its selection.
   final VoidCallback? onDeleted;
+
+  /// Called with the new ID after a create, so the caller can switch to the
+  /// record's edit form instead of leaving a create form that would add the
+  /// same ID again on a second tap.
+  final ValueChanged<int>? onCreated;
 
   @override
   ConsumerState<LevelForm> createState() => _LevelFormState();
@@ -113,6 +119,8 @@ class _LevelFormState extends ConsumerState<LevelForm> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_isEditing ? 'Level updated' : 'Level created')),
     );
+
+    if (!_isEditing) widget.onCreated?.call(level.id);
   }
 
   Future<void> _delete() async {
@@ -122,6 +130,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
       message:
           'Are you sure you want to delete this level? All questions within it will be removed.',
       confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
     if (confirmed && mounted) {
@@ -198,7 +207,7 @@ class _LevelFormState extends ConsumerState<LevelForm> {
               controller: _levelOrderController,
               decoration: const InputDecoration(
                 labelText: 'Level Order',
-                helperText: 'Drag-drop ile ayarlanır',
+                helperText: 'Set via drag & drop',
               ),
               keyboardType: TextInputType.number,
               enabled: false,

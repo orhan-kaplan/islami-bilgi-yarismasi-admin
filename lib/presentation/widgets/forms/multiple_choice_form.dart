@@ -51,6 +51,14 @@ class _MultipleChoiceFormState extends State<MultipleChoiceForm> {
     _correctOption = q?.correctOption ?? 'A';
 
     _questionTextController.addListener(_notifyQuestionTextChanged);
+    // Boş bir şık doğru cevap menüsünde seçilemez; doldurulur doldurulmaz
+    // seçilebilir hale gelmeli.
+    _optionCController.addListener(_refreshOptionAvailability);
+    _optionDController.addListener(_refreshOptionAvailability);
+  }
+
+  void _refreshOptionAvailability() {
+    if (mounted) setState(() {});
   }
 
   void _notifyQuestionTextChanged() {
@@ -60,6 +68,8 @@ class _MultipleChoiceFormState extends State<MultipleChoiceForm> {
   @override
   void dispose() {
     _questionTextController.removeListener(_notifyQuestionTextChanged);
+    _optionCController.removeListener(_refreshOptionAvailability);
+    _optionDController.removeListener(_refreshOptionAvailability);
     _questionTextController.dispose();
     _optionAController.dispose();
     _optionBController.dispose();
@@ -86,6 +96,27 @@ class _MultipleChoiceFormState extends State<MultipleChoiceForm> {
     );
 
     widget.onSave(question);
+  }
+
+  /// Boş bir şık doğru cevap olamaz (ContentValidator 10.18 ERROR üretir ve
+  /// content dosyasının kaydını bloklar) — menüde de seçilebilir görünmemeli.
+  /// A ve B zaten zorunlu alanlar; kısıt yalnızca opsiyonel C/D için geçerli.
+  DropdownMenuItem<String> _optionItem(
+    String value,
+    TextEditingController controller, {
+    required bool optional,
+  }) {
+    final isEmpty = optional && controller.text.trim().isEmpty;
+    return DropdownMenuItem(
+      value: value,
+      enabled: !isEmpty,
+      child: Text(
+        isEmpty ? '$value (empty)' : value,
+        style: isEmpty
+            ? TextStyle(color: Theme.of(context).disabledColor)
+            : null,
+      ),
+    );
   }
 
   @override
@@ -154,11 +185,11 @@ class _MultipleChoiceFormState extends State<MultipleChoiceForm> {
             decoration: const InputDecoration(
               labelText: 'Correct Option *',
             ),
-            items: const [
-              DropdownMenuItem(value: 'A', child: Text('A')),
-              DropdownMenuItem(value: 'B', child: Text('B')),
-              DropdownMenuItem(value: 'C', child: Text('C')),
-              DropdownMenuItem(value: 'D', child: Text('D')),
+            items: [
+              _optionItem('A', _optionAController, optional: false),
+              _optionItem('B', _optionBController, optional: false),
+              _optionItem('C', _optionCController, optional: true),
+              _optionItem('D', _optionDController, optional: true),
             ],
             onChanged: (value) {
               if (value != null) setState(() => _correctOption = value);

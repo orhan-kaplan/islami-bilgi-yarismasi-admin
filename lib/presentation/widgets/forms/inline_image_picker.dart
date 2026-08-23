@@ -97,12 +97,17 @@ class _InlineImagePickerState extends ConsumerState<InlineImagePicker> {
 
   Widget _buildDisconnectedView() {
     final path = widget.currentAppPath;
+    // Seçicinin neden ölü olduğu hiçbir yerde yazmıyordu.
+    const offlineReason = 'Asset server is offline — image upload unavailable.';
     if (path == null || path.isEmpty) {
       return const SizedBox(
         width: 80,
         height: 80,
-        child: Center(
-          child: Icon(Icons.cloud_off, size: 24, color: Colors.grey),
+        child: Tooltip(
+          message: offlineReason,
+          child: Center(
+            child: Icon(Icons.cloud_off, size: 24, color: Colors.grey),
+          ),
         ),
       );
     }
@@ -110,7 +115,7 @@ class _InlineImagePickerState extends ConsumerState<InlineImagePicker> {
       width: 80,
       height: 80,
       child: Tooltip(
-        message: path,
+        message: '$path\n$offlineReason',
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(4.0),
