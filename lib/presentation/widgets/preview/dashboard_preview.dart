@@ -331,12 +331,19 @@ class DashboardPreview extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Gün Serisi',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: 14,
-                      color: Color(0xB3FFFFFF),
+                  // İki (veya daha fazla) haneli seri sayısında Row'un
+                  // sabit 320px çerçeveyi yatay aşmaması için etiket
+                  // daralabilir ve gerekirse tek satırda kırpılır.
+                  const Flexible(
+                    child: Text(
+                      'Gün Serisi',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 14,
+                        color: Color(0xB3FFFFFF),
+                      ),
                     ),
                   ),
                 ],

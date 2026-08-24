@@ -517,5 +517,28 @@ void main() {
       // sabit 693px'i aşıp RenderFlex overflow fırlatır.
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        'two-digit streak count does not overflow the top summary row',
+        (tester) async {
+      // Kısa başlık/mesaj kasıtlı — bu senaryo yalnızca üst özet satırındaki
+      // (emoji + seri sayısı + "Gün Serisi") yatay taşmayı hedefliyor.
+      const message = FeedbackMessageModel(
+        title: 'Harika Seri!',
+        message: 'Devam et!',
+        emoji: '🔥',
+      );
+
+      await tester.pumpWidget(createFramedTestWidget(
+        message: message,
+        category: 'streak',
+        subcategory: '14',
+      ));
+      await tester.pumpAndSettle();
+
+      // Bug varken burada üst özet satırı (Row) sabit 320px genişliği aşıp
+      // yatay RenderFlex overflow fırlatır.
+      expect(tester.takeException(), isNull);
+    });
   });
 }
