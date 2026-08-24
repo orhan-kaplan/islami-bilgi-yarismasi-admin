@@ -30,13 +30,16 @@ lib/
         ├── explorer/       ← Content Explorer (master-detail)
         ├── rewards/        ← Ödül yönetimi
         ├── hadiths/        ← Hadis yönetimi
+        ├── assets/         ← Asset yönetimi (görsel/ses/lottie yükleme)
+        ├── feedback/       ← Geri bildirim mesajı yönetimi
+        ├── game_config/    ← Oyun mekaniği (game_config.json) yönetimi
         └── validation/     ← Validasyon raporu
 ```
 
 ## Kod Dili
 
 - **Kod yorumları**: Türkçe (/// doc comments İngilizce)
-- **UI metinleri**: İngilizce (admin aracı)
+- **UI metinleri**: İngilizce hedeflenir; pratikte bazı ekranlarda (ör. Explorer, Feedback preview) Türkçe metinler de var — ağırlıklı olarak İngilizce ama tutarlı biçimde uygulanmamış
 - **Değişken/fonksiyon adları**: İngilizce (Dart konvansiyonu)
 - **Sınıf adları**: İngilizce, PascalCase
 - **Dosya adları**: İngilizce, snake_case

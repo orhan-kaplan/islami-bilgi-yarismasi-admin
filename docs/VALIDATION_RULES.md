@@ -1,6 +1,8 @@
 # Validasyon Kuralları (Validation Rules)
 
-`ContentValidator` sınıfı (`lib/data/services/content_validator.dart`) tüm yapısal ve semantik kuralları kontrol eder.
+`ContentValidator` sınıfı (`lib/data/services/content_validator.dart`) quiz içeriğinin (series/books/rewards/hadiths/content) tüm yapısal ve semantik kurallarını kontrol eder.
+
+> `game_config.json` için ayrı bir validator vardır: `GameConfigValidator.validateGameConfigData()` (`lib/data/services/game_config_validator.dart`), Game Config ekranını ve `gameConfigAutoSaveProvider`'ı aynı error/warning + save-gating modeliyle korur — bkz. `docs/SERVICES.md`.
 
 ## Error-Level Kurallar
 

@@ -37,7 +37,7 @@ Veri modelleri ve iş mantığı servislerini barındırır.
 | Dizin | İçerik |
 |-------|--------|
 | `models/` | İmmutable veri modelleri: `SeriesModel`, `BookModel`, `LevelModel`, `QuestionModel`, `RewardModel`, `HadithModel`, `ContentState` |
-| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `AssetServerClient`, `AssetPathUtils`, `AssetReferenceDetector`, `UploadValidator`, `ContentFileMapping`, `SaveGating`, `downloadFile` |
+| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `GameConfigValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `AssetServerClient`, `AssetPathUtils`, `AssetReferenceDetector`, `UploadValidator`, `DevicePreviewService`, `ContentFileMapping`, `SaveGating`, `downloadFile` |
 
 ### 3. Presentation Katmanı (`lib/presentation/`)
 
@@ -45,8 +45,8 @@ Kullanıcı arayüzü, state yönetimi ve navigasyon.
 
 | Dizin | İçerik |
 |-------|--------|
-| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart`, `asset_server_providers.dart`, `connectivity_providers.dart`, `auto_load_providers.dart`, `auto_save_providers.dart`, `asset_providers.dart` |
-| `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `assets/`, `validation/` |
+| `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart`, `asset_server_providers.dart`, `connectivity_providers.dart`, `auto_load_providers.dart`, `auto_save_providers.dart`, `asset_providers.dart`, `feedback_content_providers.dart`, `feedback_auto_save_providers.dart`, `game_config_providers.dart`, `game_config_auto_save_providers.dart`, `changelog_provider.dart`, `duplicate_check_provider.dart` |
+| `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `assets/`, `feedback/`, `game_config/`, `validation/` |
 | `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/` (InlineImagePicker dahil), `shared/`, `shortcuts/` |
 | `router/` | `go_router` yapılandırması ve `AppShell` (NavigationRail) |
 

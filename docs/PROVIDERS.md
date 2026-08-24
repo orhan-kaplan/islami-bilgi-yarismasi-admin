@@ -43,9 +43,10 @@ contentStateProvider (StateNotifierProvider)
     ├── changelogProvider (← savedBaselineProvider)
     ├── duplicateCheckProvider(params)
     └── validationResultsProvider
-            ├── validationErrorsProvider
-            ├── validationWarningsProvider
-            └── healthScoreProvider
+            └── allValidationResultsProvider (← + missingAssetValidationProvider)
+                    ├── validationErrorsProvider
+                    ├── validationWarningsProvider
+                    └── healthScoreProvider
 
 historyProvider (StateNotifierProvider)
     ├── canUndoProvider
@@ -139,20 +140,20 @@ autoSaveControllerProvider + feedbackAutoSaveProvider + gameConfigAutoSaveProvid
 #### `validationErrorsProvider`
 - **Tip**: `Provider<List<ValidationIssue>>`
 - **Dosya**: `validation_providers.dart`
-- **Bağımlılık**: `validationResultsProvider`
+- **Bağımlılık**: `allValidationResultsProvider` (senkron `validationResultsProvider` + async `missingAssetValidationProvider`'ın birleşimi — bkz. aşağıdaki "Missing Asset Validation Provider" bölümü)
 - **Açıklama**: Sadece `ValidationSeverity.error` olanları filtreler
 
 #### `validationWarningsProvider`
 - **Tip**: `Provider<List<ValidationIssue>>`
 - **Dosya**: `validation_providers.dart`
-- **Bağımlılık**: `validationResultsProvider`
-- **Açıklama**: Sadece `ValidationSeverity.warning` olanları filtreler
+- **Bağımlılık**: `allValidationResultsProvider`
+- **Açıklama**: Sadece `ValidationSeverity.warning` olanları filtreler (eksik asset uyarıları dahil)
 
 #### `healthScoreProvider`
 - **Tip**: `Provider<double>`
 - **Dosya**: `validation_providers.dart`
-- **Bağımlılık**: `validationResultsProvider`
-- **Açıklama**: `max(0, 100 - (errorCount * 10 + warningCount * 2))` formülü ile 0–100 arası skor
+- **Bağımlılık**: `allValidationResultsProvider`
+- **Açıklama**: `max(0, 100 - (errorCount * 10 + warningCount * 2))` formülü ile 0–100 arası skor; eksik asset uyarıları da hesaba katılır
 
 ---
 
@@ -172,7 +173,7 @@ autoSaveControllerProvider + feedbackAutoSaveProvider + gameConfigAutoSaveProvid
 - **Tip**: `Provider<GoRouter>`
 - **Dosya**: `router/app_router.dart`
 - **Bağımlılık**: Yok
-- **Açıklama**: `GoRouter` instance'ı, `StatefulShellRoute` ile 5 branch tanımlar
+- **Açıklama**: `GoRouter` instance'ı, `StatefulShellRoute` ile 8 branch tanımlar (Dashboard, Explorer, Rewards, Hadiths, Assets, Feedback, Oyun, Validation)
 
 ## Kullanım Kalıpları
 

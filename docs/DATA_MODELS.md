@@ -2,6 +2,8 @@
 
 Tüm modeller `lib/data/models/` altında tanımlıdır. Hepsi **immutable** olarak tasarlanmıştır — `copyWith` ile güncelleme yapılır.
 
+> **Kapsam notu**: Bu dosya yalnızca `ContentState`'in kapsadığı quiz-içerik modellerini (series/book/level/question/reward/hadith) detaylandırır. `feedback.json` ve `game_config.json`'u besleyen modeller ayrı state kaynaklarıdır (`feedbackContentProvider`, `gameConfigProvider` — bkz. `docs/PROVIDERS.md`) ve aşağıda özet olarak listelenir.
+
 ## SeriesModel
 
 **Dosya**: `series_model.dart`
@@ -277,3 +279,35 @@ Validasyon kontrollerinde bulunan sorunları temsil eder.
 | `sourceFile` | `String` | İlgili JSON dosyası (ör: "series.json") |
 | `jsonPath` | `String` | JSON-path lokator (ör: "$.levels[0].id") |
 | `message` | `String` | İnsan-okunabilir açıklama |
+
+---
+
+## Feedback Modelleri (`feedback_models.dart`)
+
+**JSON Dosyası**: `feedback.json` — `feedbackContentProvider` üzerinden `ContentState`'ten ayrı yönetilir.
+
+| Sınıf | Alanlar | Açıklama |
+|-------|---------|----------|
+| `FeedbackMessageModel` | `title`, `message`, `emoji`, `shouldRepeat` | Kategori/alt kategori altında gruplu tek bir geri bildirim mesajı |
+| `PlayerTitleModel` | `title`, `icon`, `requiredBooks`, `profileImage` | Kitap sayısına göre kazanılan oyuncu ünvanı |
+| `FeedbackContentState` | mesaj/ünvan koleksiyonları | `feedback.json`'un tamamının aggregate state'i |
+
+Detaylı CRUD ve ekran davranışı için `docs/PROVIDERS.md` ("Feedback İçerik Provider'ları") ve `docs/SCREENS.md`'ye bakınız.
+
+## Game Config Modelleri (`game_config_models.dart`)
+
+**JSON Dosyası**: `game_config.json` — `gameConfigProvider` üzerinden `ContentState`'ten ayrı yönetilir; `GameConfigValidator` (bkz. `docs/SERVICES.md`) tarafından kayıt öncesi doğrulanır.
+
+| Sınıf | Açıklama |
+|-------|----------|
+| `ScoreClause` | Min doğruluk/min doğru sayısı koşulu |
+| `LearnedBand` | Öğrenme yüzdesi bandı (key + eşik) |
+| `TimeSlotConfig` | Gün içi zaman dilimi persona tanımı |
+| `QuizGameConfig` | Normal quiz kuralları (can, puan, süre) |
+| `SpeedQuizGameConfig` | Hız modu skorlama/süre kuralları |
+| `DailyGoalGameConfig` | Günlük hedef eşikleri |
+| `LottieGameConfig` | Feedback Lottie animasyon yolları |
+| `CopyGameConfig` | Yapılandırılabilir metin/kopya |
+| `GameConfigState` | Tüm game_config.json'un aggregate state'i |
+
+Bu sınıflar mobil uygulamanın `lib/core/services/game_config.dart` dosyasındaki karşılıklarıyla bire bir eşleşir (bkz. mobil app `docs/SERVICES.md`).

@@ -65,7 +65,7 @@ Veri modellerini JSON string'lerine dönüştürür. Ana uygulamanın beklediği
 List<ValidationIssue> validateAll(ContentState state)
 ```
 
-### Error-Level Kurallar (17 kural)
+### Error-Level Kurallar (20 kural)
 
 | # | Kural | Açıklama |
 |---|-------|----------|
@@ -86,6 +86,9 @@ List<ValidationIssue> validateAll(ContentState state)
 | 15 | content_file existence | Kitabın `content_file`'ı contentFiles map'inde bulunmalı |
 | 16 | asset_image prefix | `asset_image` yolları "assets/" ile başlamalı |
 | 17 | Required fields non-empty | Zorunlu alanlar boş string olmamalı |
+| 18 | correct_option non-empty option | `correct_option`'ın işaret ettiği option boş string olamaz (uygulama harfi index'e çevirip o option'ı doğru cevap olarak gösterir) |
+| 19 | Question type whitelist | `type`, uygulamanın render edebildiği 4 tipten biri olmalı; aksi halde diğer tüm tip-bazlı kurallar atlanır |
+| 20 | sorting: dört öğe de dolu | `sorting` sorularında `option_c`/`option_d` boş olamaz (uygulama tüm 4 option'ı karıştırıp karşılaştırır) |
 
 ### Warning-Level Kurallar (2 kural)
 
@@ -497,7 +500,7 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 
 | Fonksiyon | Açıklama |
 |-----------|----------|
-| `getApiPathForChange(ContentChangeType, {String? key})` | Değişiklik türü → API_Path |
+| `getApiPathForChange(ContentChangeType, {String? contentFileKey})` | Değişiklik türü → API_Path |
 | `getChangedFiles(ContentState, ContentState)` | İki state karşılaştırır, değişen dosyaları döndürür |
 | `mergeSavedFileIntoBaseline(baseline, saved, apiPath)` | Kaydedilen dosyanın dilimini baseline'a kopyalar; diğer dosyaları dirty bırakır |
 
@@ -510,6 +513,26 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 | `rewards` | `data/rewards.json` |
 | `hadiths` | `data/hadiths.json` |
 | `contentFile` (key) | `data/content/{key}` |
+
+---
+
+## GameConfigValidator
+
+**Dosya**: `game_config_validator.dart`
+**Pattern**: Pure-function validator
+
+`GameConfigState` üzerinde yapısal/semantik kuralları kontrol eder — `ContentValidator`'ın game_config.json karşılığı. Game Config ekranında ve `gameConfigAutoSaveProvider` tarafından kayıt öncesi gate olarak kullanılır (`game_config_auto_save_providers.dart:66`).
+
+### Ana Metot
+
+```dart
+List<ValidationIssue> validateGameConfigData(GameConfigState state)
+```
+
+### Kullanım Yeri
+
+- `game_config_screen.dart` — ekran içi validasyon göstergesi
+- `game_config_auto_save_providers.dart` — ERROR-level issue varsa auto-save'i bloklar (bkz. `SaveGating`)
 
 ---
 
