@@ -44,6 +44,21 @@ Warning-level kurallar **export'u bloklamaz**. Tavsiye niteliğindedir.
 |---|-----------|----------|------------|-----------------|
 | 1 | Empty explanation | Sorunun `explanation` alanı null veya boş string | `content/book_1.json` | `$.levels[0].questions[1].explanation` |
 | 2 | Duplicate question_text | Whitespace normalize edildikten sonra (trim + collapse) aynı soru metni birden fazla yerde bulunuyor | `content/book_2.json` | `$.levels[1].questions[0].question_text` |
+| 3 | Missing asset file | `asset_image` (books/levels/rewards) sunucudaki dosya sisteminde bulunamıyor | ilgili dosya (`books.json`/`content/*.json`/`rewards.json`) | `$[0].asset_image` |
+
+### Missing asset file kontrolü — `ContentValidator`'ın dışında
+
+Kural 3, `ContentValidator`'da değil ayrı bir provider'da yaşar:
+`missingAssetValidationProvider` (`lib/presentation/providers/validation_providers.dart`,
+`FutureProvider`). Yalnızca asset sunucusu bağlıyken çalışır — bağlantı yoksa
+(veya kontrol hata verirse) hiç sonuç üretmez ve Validation ekranı "Asset checks
+skipped" uyarısı gösterir; bu durumda health score de yalnızca senkron kuralları
+yansıtır. Klasörleri bir kez listeleyip bir var-olma indeksi kurar, sonra tüm
+`asset_image` referanslarını bu indekse karşı kontrol eder. `allValidationResultsProvider`,
+senkron `ContentValidator` sonuçlarıyla bu async sonucu birleştirir; async provider
+her içerik değişiminde yeniden çalıştığından, `skipLoadingOnReload: true` ile
+yeniden yüklenirken önceki sonuç korunur — aksi halde her düzenlemede health score
+geçici olarak zıplardı.
 
 ## Health Score Formülü
 

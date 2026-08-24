@@ -3,7 +3,7 @@
 ## Genel Yaklaşım
 
 - **flutter_riverpod 2.6.1** kullanılır
-- Tek bir `StateNotifierProvider` tüm mutable state'i yönetir
+- İçerik state'i tek bir `StateNotifierProvider` (`contentStateProvider`) üzerinden yönetilir; feedback, game-config, history, auto-save/auto-load ve connectivity gibi bağımsız kanalların da kendi `StateNotifierProvider`'ları vardır — "tüm mutable state tek notifier'da" değil, her biri kendi state dilimini yönetir
 - Derived `Provider`'lar ile hesaplanmış değerler reaktif olarak türetilir
 - `autoDispose` kullanılmaz — tüm state uygulama boyunca bellekte kalır
 - `family` parametrik derived provider'lar için kullanılır
@@ -165,6 +165,11 @@ autoSaveControllerProvider + feedbackAutoSaveProvider + gameConfigAutoSaveProvid
 - **Bağımlılık**: `contentStateProvider`
 - **Döndürdüğü**: `{'series': n, 'books': n, 'levels': n, 'questions': n}`
 
+#### `zipExporterProvider`
+- **Tip**: `Provider<ZipExporter>`
+- **Dosya**: `dashboard_providers.dart`
+- **Açıklama**: `ZipExporter` instance'ı. Dashboard'ın export butonu bunu doğrudan `ZipExporter()` yerine buradan okur — tek seam, hata yolunu test edilebilir kılar.
+
 ---
 
 ### Router Provider
@@ -323,6 +328,11 @@ if (restored != null) {
 - **Bağımlılık**: `autoLoadProvider`
 - **Açıklama**: Auto-load başarıyla tamamlandıysa `true`. Auto-save'i gate'lemek için kullanılır.
 
+### `autoLoadErrorProvider`
+- **Tip**: `StateProvider<AutoLoadFailure?>`
+- **Dosya**: `auto_load_providers.dart`
+- **Açıklama**: Son auto-load denemesinin hata detayını tutar (`serverReachable` + `message`), başarıda `null`. `serverReachable` ayrımı, banner'ın her hatayı "sunucu kapalı" diye göstermesini engeller — sorun sunucu değil okunan dosyalardan biri olabilir.
+
 ---
 
 ## Auto-Save Provider'ları
@@ -353,6 +363,11 @@ if (restored != null) {
 - **Parametre**: API_Path (dizin yolu, ör. `images`, `audio`, `icons`)
 - **Bağımlılık**: `assetServerClientProvider`
 - **Açıklama**: Server'dan dizin içeriğini listeler. Assets sayfasındaki tüm tab'lar tarafından kullanılır.
+
+### `audioPlaybackProvider`
+- **Tip**: `Provider<AudioPlayback>`
+- **Dosya**: `asset_providers.dart`
+- **Açıklama**: Ses önizlemesini çalan `WebAudioPlayback` (`HTMLAudioElement` sarmalayıcısı, `lib/data/services/audio_playback.dart`) instance'ı. Testlerin gerçek tarayıcı sesi olmadan oynatma durumunu doğrulayabilmesi için provider üzerinden verilir.
 
 ---
 
@@ -413,6 +428,18 @@ if (restored != null) {
 - **Dosya**: `auto_load_providers.dart`
 - **Açıklama**: Auto-load durumunu (`idle`/`loading`/`loaded`/`failed`) notifier'a dokunmadan okumak için kolaylık provider'ı
 
+### `hasUnsavedWorkProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `auto_save_providers.dart`
+- **Bağımlılık**: `isDirtyProvider`, `hasSaveErrorProvider`, `savedBaselineProvider`, `contentStateProvider`, üç auto-save controller'ın `hasPendingChange`/`hasPendingSaves`'i
+- **Açıklama**: Kaybedilmemesi gereken herhangi bir iş var mı — sayfadan ayrılma uyarısı (`beforeunload`) ve reconnect dialogu bunu kullanır. `isDirtyProvider` yalnızca içerik state'ini baseline'a karşı kıyaslar; feedback/game-config'teki bekleyen yazımlar ve hiç baseline almamış (ZIP/local) bir oturum bu olmadan görünmez kalırdı.
+
+### `hasUnsyncedLocalSessionProvider`
+- **Tip**: `Provider<bool>`
+- **Dosya**: `auto_save_providers.dart`
+- **Bağımlılık**: `autoLoadProvider`
+- **Açıklama**: ZIP import'tan gelen veya sunucudan hiç `GET` ile yüklenmemiş bir oturum varsa `true` (`hasLoadedOnce && !loadedFromServer`)
+
 ---
 
 ## Feedback İçerik Provider'ları
@@ -423,7 +450,7 @@ if (restored != null) {
 - **Açıklama**: `feedback.json` içeriğinin tek kaynağı. Kategori/alt kategori bazlı mesaj ve ünvan CRUD'u. ContentState'ten ayrıdır.
 
 ### `feedbackLoadProvider`
-- **Tip**: `StateNotifierProvider`
+- **Tip**: `StateNotifierProvider<FeedbackLoadNotifier, FeedbackLoadStatus>`
 - **Dosya**: `feedback_content_providers.dart`
 - **Açıklama**: `feedback.json`'ı asset sunucudan yükler
 

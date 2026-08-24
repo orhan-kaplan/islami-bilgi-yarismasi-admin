@@ -279,6 +279,10 @@ Scaffold
 - Canlı animasyon önizleme kartları (`Lottie.network()`)
 - Kart tıklama → büyük önizleme dialogu (Replace/Delete)
 - Upload öncesi Lottie yapı doğrulama (v, layers, w, h alanları)
+- Delete referans kontrolü Images Tab'dan farklı: `contentStateProvider` yerine
+  `feedbackContentProvider` (feedback mesajlarının `lottieAsset` alanı) ve
+  `gameConfigProvider` (lottie slotları) taranır — quiz içeriği Lottie'ye
+  referans vermez
 
 **Icons Tab (`icons_tab.dart`):**
 - İkon grid (thumbnail, dosya adı, Replace/Delete)
@@ -287,7 +291,8 @@ Scaffold
 **Kullandığı provider'lar:**
 - `assetListProvider(path)` — Dizin listeleme (FutureProvider.family)
 - `assetServerClientProvider` — HTTP işlemleri
-- `contentStateProvider` — Referans kontrolü için
+- `contentStateProvider` — Images Tab'ın referans kontrolü için (book/level/reward `asset_image`)
+- `feedbackContentProvider`, `gameConfigProvider` — Lottie Tab'ın referans kontrolü için
 - `isServerConnectedProvider` — Bağlantı durumu
 
 ---
@@ -330,9 +335,13 @@ Scaffold
 - Meta'da tanımlı olmayan alt kategori anahtarları da bölüm olarak listelenir (gizli içerik kalmaz)
 
 **Kullandığı provider'lar:**
+- `feedbackLoadProvider` — Yükleme durumu (retry butonu için)
 - `feedbackContentProvider` — Feedback CRUD işlemleri
-- `feedbackAutoSaveProvider` — Otomatik kaydetme
 - `gameConfigProvider` — Eşik / saat dilimi etiketleri (salt okunur)
+
+Not: `feedbackAutoSaveProvider` bu ekranda hiç izlenmez/okunmaz — otomatik
+kaydetme kendi provider'ında arka planda çalışır; ekran yalnızca export/reconnect
+sırasında `app_router.dart`'ın `flushPendingSave()` çağrısı üzerinden dolaylı etkilenir.
 
 Streak sekmeleri `feedback.json` anahtarlarından üretilir (`3 gün serisi`); 3/7/30 zorunlu değildir. Bant ekleme FAB'ı yoktur.
 
@@ -352,6 +361,7 @@ Sayısal alanlar parse edilemeyen veya boş girişi sessizce yutmaz — alan alt
 - `gameConfigProvider`
 - `gameConfigLoadProvider`
 - `gameConfigAutoSaveProvider`
+- `isServerConnectedProvider` — AppBar chip'inin "Saved" / "Offline — not saved" ayrımı için
 
 ---
 
@@ -363,13 +373,24 @@ Tüm validasyon sonuçlarını detaylı gösterir.
 - Error bölümü: Kırmızı ikonlu error listesi
 - Warning bölümü: Turuncu ikonlu warning listesi
 - Her issue: sourceFile, jsonPath, message
-- Toplam error/warning sayıları
+- Toplam error/warning sayıları (AppBar chip'leri)
+- Sunucu bağlı değilse veya asset kontrolü hata verdiyse "Asset checks skipped"
+  banner'ı — hem liste boşken (standalone, ortada) hem doluyken (üstte kart
+  olarak) gösterilir; bu durumda eksik görsel uyarıları rapora hiç girmemiştir
 
 **Kullanıcı etkileşimleri:**
 - Hata detaylarını inceleme
 - JSON path ile sorunlu alanı bulma
+- Satırdaki kopyala ikonu → `jsonPath`'i panoya kopyalar (Explorer'da elle arama
+  gerekmez)
+- AppBar'daki "Re-run asset checks" (refresh) ikonu → `missingAssetValidationProvider`'ı
+  invalidate eder — bu provider içerik değişmeden kendiliğinden yeniden çalışmadığı
+  için, bir görsel yüklendikten sonra eski "eksik" uyarısı elle tazelenmeden düşmez
 
 **Kullandığı provider'lar:**
-- `validationErrorsProvider` — Error-level issue'lar
+- `validationErrorsProvider` — Error-level issue'lar (`ContentValidator` + eksik asset uyarıları)
 - `validationWarningsProvider` — Warning-level issue'lar
-- `healthScoreProvider` — Genel sağlık skoru
+- `isServerConnectedProvider` — Asset kontrolünün atlanıp atlanmadığını belirlemek için
+- `missingAssetValidationProvider` — Asset kontrolünün kendisi (hata/loading durumu banner'ı tetikler)
+
+`healthScoreProvider` bu ekranda kullanılmaz — sağlık skoru yalnızca DashboardScreen'de gösterilir.

@@ -288,7 +288,7 @@ Validasyon kontrollerinde bulunan sorunları temsil eder.
 
 | Sınıf | Alanlar | Açıklama |
 |-------|---------|----------|
-| `FeedbackMessageModel` | `title`, `message`, `emoji`, `shouldRepeat` | Kategori/alt kategori altında gruplu tek bir geri bildirim mesajı |
+| `FeedbackMessageModel` | `title`, `message`, `emoji`, `lottieAsset` (opsiyonel, ör. `"feedback/masallah.json"`), `shouldRepeat` | Kategori/alt kategori altında gruplu tek bir geri bildirim mesajı |
 | `PlayerTitleModel` | `title`, `icon`, `requiredBooks`, `profileImage` | Kitap sayısına göre kazanılan oyuncu ünvanı |
 | `FeedbackContentState` | mesaj/ünvan koleksiyonları | `feedback.json`'un tamamının aggregate state'i |
 

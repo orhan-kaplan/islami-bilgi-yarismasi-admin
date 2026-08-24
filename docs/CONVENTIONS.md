@@ -5,12 +5,12 @@
 | Tip | Format | Örnek |
 |-----|--------|-------|
 | Model | `{entity}_model.dart` | `series_model.dart` |
-| Servis | `{feature}_service.dart` veya `{action}er.dart` | `json_parser.dart`, `zip_exporter.dart` |
+| Servis | Sabit bir kalıp yok — `{action}er.dart` (`zip_exporter.dart`, `bulk_importer.dart`), `{şey}_validator.dart` (`content_validator.dart`, `feedback_validator.dart`), `{şey}_client.dart` (`asset_server_client.dart`), veya sade betimleyici ad (`save_gating.dart`, `search_engine.dart`, `audio_playback.dart`) — hepsi anlamlı, öz İngilizce isimler | `json_parser.dart`, `zip_exporter.dart`, `content_validator.dart` |
 | Provider | `{scope}_providers.dart` | `content_providers.dart` |
 | Ekran | `{feature}_screen.dart` | `dashboard_screen.dart` |
 | Widget | `{role}_panel.dart` veya `{role}_card.dart` | `tree_panel.dart`, `edit_panel.dart` |
 | Form | `{entity}_form.dart` | `question_form.dart` |
-| Sabitler | `{scope}_rules.dart` | `validation_rules.dart` |
+| Sabitler | betimleyici ad, `_rules`/`_config` gibi sonekler yaygın ama zorunlu değil | `validation_rules.dart`, `asset_server_config.dart` |
 
 ## Dizin Yapısı
 

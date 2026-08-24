@@ -27,7 +27,7 @@ Uygulamanın temel altyapısını sağlar. Hiçbir katmana bağımlı değildir.
 
 | Dizin | İçerik |
 |-------|--------|
-| `constants/` | Validasyon sabitleri (`ValidationRules`) |
+| `constants/` | Validasyon sabitleri (`ValidationRules`) ve asset server adresi (`AssetServerConfig` — `--dart-define=ASSET_SERVER_URL` ile değiştirilebilir, varsayılan `http://localhost:8080`) |
 | `theme/` | Material 3 tema tanımı (light + dark) |
 
 ### 2. Data Katmanı (`lib/data/`)
@@ -37,7 +37,7 @@ Veri modelleri ve iş mantığı servislerini barındırır.
 | Dizin | İçerik |
 |-------|--------|
 | `models/` | İmmutable veri modelleri: `SeriesModel`, `BookModel`, `LevelModel`, `QuestionModel`, `RewardModel`, `HadithModel`, `ContentState` |
-| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `GameConfigValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `AssetServerClient`, `AssetPathUtils`, `AssetReferenceDetector`, `UploadValidator`, `DevicePreviewService`, `ContentFileMapping`, `SaveGating`, `downloadFile` |
+| `services/` | Stateless servisler: `JsonParser`, `JsonSerializer`, `ContentValidator`, `GameConfigValidator`, `FeedbackValidator`, `ZipImporter`, `ZipExporter`, `SearchEngine`, `BulkImporter`, `AssetServerClient`, `AssetPathUtils`, `AssetReferenceDetector`, `UploadValidator`, `DevicePreviewService`, `ContentFileMapping`, `SaveGating`, `AudioPlayback`, `downloadFile` |
 
 ### 3. Presentation Katmanı (`lib/presentation/`)
 
@@ -47,7 +47,7 @@ Kullanıcı arayüzü, state yönetimi ve navigasyon.
 |-------|--------|
 | `providers/` | Riverpod provider tanımları: `content_providers.dart`, `validation_providers.dart`, `dashboard_providers.dart`, `history_providers.dart`, `search_providers.dart`, `asset_server_providers.dart`, `connectivity_providers.dart`, `auto_load_providers.dart`, `auto_save_providers.dart`, `asset_providers.dart`, `feedback_content_providers.dart`, `feedback_auto_save_providers.dart`, `game_config_providers.dart`, `game_config_auto_save_providers.dart`, `changelog_provider.dart`, `duplicate_check_provider.dart` |
 | `screens/` | Ekran widget'ları (özellik bazlı alt dizinler): `dashboard/`, `explorer/`, `rewards/`, `hadiths/`, `assets/`, `feedback/`, `game_config/`, `validation/` |
-| `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/` (InlineImagePicker dahil), `shared/`, `shortcuts/` |
+| `widgets/` | Paylaşılan widget'lar: `tree/`, `forms/` (InlineImagePicker dahil), `preview/` (telefon mockup içinde dashboard/hadis/ödül/soru/geri bildirim önizlemeleri), `shared/`, `shortcuts/` |
 | `router/` | `go_router` yapılandırması ve `AppShell` (NavigationRail) |
 
 ## Bağımlılık Yönü
@@ -151,8 +151,9 @@ server/
 │   ├── asset_server.dart    ← Barrel export
 │   └── src/
 │       ├── server_app.dart  ← Pipeline: CORS → Path Security → Extension Guard → Router
-│       ├── handlers/        ← health, file, list, folder endpoint'leri
+│       ├── handlers/        ← health, file, list, folder, pubspec_sync, preview endpoint'leri
 │       ├── middleware/      ← cors, path_security, extension_guard
+│       ├── models/          ← preview_data.dart (PreviewData payload)
 │       └── utils/           ← mime_types
 ├── test/                    ← Unit + property-based testler
 └── pubspec.yaml
@@ -173,6 +174,9 @@ cd server && dart run bin/server.dart --assets-root ../assets
 | DELETE | `/api/files/{path}` | Dosya sil |
 | GET | `/api/list/{path}` | Dizin listele |
 | POST | `/api/folders/{path}` | Klasör oluştur |
+| POST | `/api/sync-pubspec` | Mobil app'in `pubspec.yaml`'ını her `images/` alt dizinini kaydedecek şekilde yeniden yazar (klasör oluşturulduğunda admin tetikler) |
+| POST | `/api/preview` | Admin'den cihaz önizleme payload'ı (`PreviewData`) gönderir |
+| GET | `/api/preview` | Mobil app (debug/profile'da, 3sn'de bir) bekleyen önizlemeyi çeker |
 
 ## Giriş Noktası (`main.dart`)
 

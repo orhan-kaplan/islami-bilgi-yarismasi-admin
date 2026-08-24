@@ -1,6 +1,6 @@
 # Servisler (Services)
 
-Tüm servisler `lib/data/services/` altında tanımlıdır. Hepsi **stateless** olarak tasarlanmıştır — instance state tutmazlar, aynı girdi için her zaman aynı çıktıyı üretirler.
+Servisler `lib/data/services/` altında tanımlıdır. Çoğu **stateless** olarak tasarlanmıştır — instance state tutmazlar, aynı girdi için her zaman aynı çıktıyı üretirler; `AssetServerClient` ve `DevicePreviewService` (HTTP client sarar) ve `WebAudioPlayback` (oynatma pozisyonu tutar) bu kuralın istisnalarıdır. `duplicateCheckProvider` ve `changelogProvider` Riverpod provider'larıdır (`lib/presentation/providers/`), servis değildir — bkz. `docs/PROVIDERS.md`.
 
 ## JsonParser
 
@@ -228,6 +228,24 @@ void downloadFile(Uint8List bytes, String filename)
 4. `anchor.click()` tetiklenir → tarayıcı indirme başlar
 5. Element kaldırılır ve URL revoke edilir (bellek temizliği)
 
+
+---
+
+## AudioPlayback
+
+**Dosya**: `audio_playback.dart`
+**Pattern**: Interface (`AudioPlayback`) + tarayıcı implementasyonu (`WebAudioPlayback`), stateful (çalan elementi tutar)
+
+Ses önizlemesi için `HTMLAudioElement`'in ince bir sarmalayıcısı. Doğrudan `HTMLAudioElement` kullanmak, oynatmanın başarısız oluşunu (404, desteklenmeyen format, tarayıcının autoplay engeli) görünmez kılıyordu — `play()`'in döndürdüğü promise dinlenmediği için buton kalıcı olarak "Pause" durumunda kalıyordu. Provider (`audioPlaybackProvider`, bkz. `docs/PROVIDERS.md`) üzerinden verilir; testler gerçek tarayıcı sesi olmadan durumu doğrulayabilir.
+
+### Metotlar
+
+| Metot | Açıklama |
+|-------|----------|
+| `play(url, {onEnded, onError})` | `url`'i baştan çalar; çalan başka bir şey varsa önce durdurur |
+| `resume()` | Duraklatılmış sesi bulunduğu yerden devam ettirir |
+| `pause()` | Konumu koruyarak duraklatır |
+| `stop()` | Oynatmayı bitirir ve elementi bırakır |
 
 ---
 
@@ -491,6 +509,10 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 
 `FeedbackPreviewDialog` → "Cihazda Test Et" butonu
 
+---
+
+## ContentFileMapping
+
 **Dosya**: `content_file_mapping.dart`
 **Pattern**: Pure functions
 
@@ -516,6 +538,37 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 
 ---
 
+## FeedbackValidator
+
+**Dosya**: `feedback_validator.dart`
+**Pattern**: Pure functions
+
+`FeedbackContentState` (feedback.json) üzerinde senkron şema kontrolleri yapar — sunucuya hiç istek atmaz. Tam validasyon (lottie dosyalarının sunucuda var olup olmadığı dahil) `feedback_content_providers.dart` içindeki async `validateFeedbackData(state, {client})` sarmalayıcısında yapılır; `client` verilmezse yalnızca bu senkron şema kontrolü çalışır — ZIP export gibi sunucusuz akışlar bunu kullanır.
+
+### Fonksiyonlar
+
+| Fonksiyon | Açıklama |
+|-----------|----------|
+| `validateFeedbackSchema(FeedbackContentState)` → `List<String>` | Zorunlu üst kategorilerin (`quiz`, `speed_quiz`, `time`, `comeback`, `streak`, `titles`, `learned`) ve her birinin zorunlu alt kategorilerinin dolu olduğunu, `streak` anahtarlarının pozitif tamsayı olduğunu ve tüm `lottie_asset` yollarının geçerli olduğunu kontrol eder |
+| `isValidLottieShortPath(String?)` → `bool` | `null`/boş → geçerli; `assets/` ile başlıyorsa, `/` ile başlıyorsa veya `..` içeriyorsa geçersiz. `game_config_validator.dart` tarafından da paylaşılır |
+
+### Zorunlu Alt Kategoriler (`kRequiredFeedbackSubcategories`)
+
+| Kategori | Alt Kategoriler |
+|----------|-----------------|
+| `quiz` | speed_demon, perfect, one_wrong, two_wrong, good, moderate, failure |
+| `speed_quiz` | combo_master, high_score, time_expired, moderate, low |
+| `time` | seher, morning, noon, afternoon, evening, night, teheccud |
+| `learned` | 100, 75, 50, 25, 0 |
+
+`streak` için sabit bir liste yoktur — her anahtar pozitif tamsayı olmalıdır (gün sayısı). `comeback` düz bir mesaj listesidir, alt kategorisi yoktur, yalnızca lottie yolları kontrol edilir.
+
+### Hata Yönetimi
+
+`ContentValidator`'dan farklı olarak `ValidationIssue`/severity üretmez — dönen her string bloklayıcıdır, warning ayrımı yoktur. `validationResultsProvider`/`healthScoreProvider`'a dahil değildir.
+
+---
+
 ## GameConfigValidator
 
 **Dosya**: `game_config_validator.dart`
@@ -523,16 +576,18 @@ class PreviewResultServerError extends PreviewResult { final String message; }
 
 `GameConfigState` üzerinde yapısal/semantik kuralları kontrol eder — `ContentValidator`'ın game_config.json karşılığı. Game Config ekranında ve `gameConfigAutoSaveProvider` tarafından kayıt öncesi gate olarak kullanılır (`game_config_auto_save_providers.dart:66`).
 
+`ContentValidator.validateAll`'dan farklı olarak `ValidationIssue`/severity üretmez: dönen her string bloklayıcıdır, warning-level bir ayrım yoktur. `SaveGating` de kullanmaz — auto-save controller listenin boş olup olmadığına doğrudan bakar. Bu kanal `validationResultsProvider`/`healthScoreProvider`'a dahil değildir; içerik health score'unu etkilemez, yalnızca kendi ekranını ve kendi auto-save'ini gate'ler. Lottie kısa-yol kontrolü için `feedback_validator.dart`'taki `isValidLottieShortPath`'i paylaşır.
+
 ### Ana Metot
 
 ```dart
-List<ValidationIssue> validateGameConfigData(GameConfigState state)
+List<String> validateGameConfigData(GameConfigState state)
 ```
 
 ### Kullanım Yeri
 
 - `game_config_screen.dart` — ekran içi validasyon göstergesi
-- `game_config_auto_save_providers.dart` — ERROR-level issue varsa auto-save'i bloklar (bkz. `SaveGating`)
+- `game_config_auto_save_providers.dart` — liste boş değilse auto-save'i bloklar
 
 ---
 
@@ -552,64 +607,6 @@ bool isSaveAllowedForFile(String apiPath, List<ValidationIssue> issues)
 - `true`: Hedef dosya için sıfır ERROR-level issue varsa
 - WARNING-level issue'lar kayıt bloklamaz
 
----
+Yalnızca `contentStateProvider`'ın (`series`/`books`/`rewards`/`hadiths`/`content/*`) auto-save kanalında kullanılır — feedback ve game-config auto-save'leri kendi `List<String>` hata listelerinin boş olup olmadığına doğrudan bakar, bu fonksiyonu çağırmaz.
 
-## duplicateCheckProvider
-
-**Dosya**: `lib/presentation/providers/duplicate_check_provider.dart`
-**Pattern**: Riverpod Provider.family
-
-Soru formlarında anlık duplicate tespiti yapar.
-
-### Provider
-
-```dart
-final duplicateCheckProvider = Provider.family<List<String>, DuplicateCheckParams>((ref, params) { ... });
-```
-
-### DuplicateCheckParams
-
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| `questionText` | String | Kontrol edilecek soru metni |
-| `excludeContentFile` | String? | Mevcut sorunun dosyası (hariç tutulur) |
-| `excludeLevelId` | int? | Mevcut sorunun level'ı |
-| `excludeQuestionIndex` | int? | Mevcut sorunun index'i |
-
-### Çalışma Mekanizması
-
-- Soru metni normalize edilir (trim, lowercase, whitespace collapse)
-- Tüm content dosyalarındaki tüm sorularla karşılaştırılır
-- Mevcut soru hariç tutulur (false positive önlenir)
-- Eşleşen konumlar döndürülür: "Kitap Adı > Level Adı > Soru N"
-
----
-
-## changelogProvider
-
-**Dosya**: `lib/presentation/providers/changelog_provider.dart`
-**Pattern**: Riverpod Provider
-
-Son kaydetmeden bu yana yapılan değişikliklerin detaylı özetini hesaplar.
-
-### Provider
-
-```dart
-final changelogProvider = Provider<List<ChangeEntry>>((ref) { ... });
-```
-
-### ChangeEntry
-
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| `description` | String | Değişiklik açıklaması (ör: "3 soru eklendi") |
-| `file` | String | Etkilenen dosya (ör: "content/book_1.json") |
-| `type` | ChangeType | added, modified, removed |
-
-### Karşılaştırma Kapsamı
-
-- Series: sayı farkı (eklendi/silindi/düzenlendi)
-- Books: sayı farkı
-- Rewards: sayı farkı
-- Hadiths: sayı farkı
-- Content files: level ve soru sayısı farkları (kitap adıyla birlikte)
+Not: `duplicateCheckProvider` ve `changelogProvider` — bu servis dosyalarını (`content_file_mapping.dart` gibi) kullanan ama kendileri Riverpod provider'ı olan iki yardımcı — `docs/PROVIDERS.md`'deki "Changelog / Duplicate Provider'ları" bölümünde belgelenir, burada tekrar edilmez.
