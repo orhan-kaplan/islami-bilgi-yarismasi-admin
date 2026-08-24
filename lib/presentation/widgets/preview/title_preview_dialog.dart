@@ -200,14 +200,18 @@ class TitlePreviewDialog extends StatelessWidget {
             style: const TextStyle(fontSize: 13),
           ),
           const SizedBox(width: 6),
-          Text(
-            title.title.isNotEmpty ? title.title : '(Ünvan)',
-            style: const TextStyle(
-              fontFamily: 'PlayfairDisplay',
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: PreviewTokens.goldEnd,
-              letterSpacing: 0.3,
+          Flexible(
+            child: Text(
+              title.title.isNotEmpty ? title.title : '(Ünvan)',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: const TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: PreviewTokens.goldEnd,
+                letterSpacing: 0.3,
+              ),
             ),
           ),
         ],

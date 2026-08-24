@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/feedback_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/dashboard_preview.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/phone_mockup_frame.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/preview_tokens.dart';
 
 void main() {
@@ -443,6 +444,78 @@ void main() {
       expect(find.text('(Mesaj girilmemiş)'), findsNothing);
       expect(find.text('Gerçek Başlık'), findsOneWidget);
       expect(find.text('Gerçek Mesaj'), findsOneWidget);
+    });
+  });
+
+  group('DashboardPreview — sabit çerçevede taşma koruması', () {
+    // Önceki testler 400x900 gibi geniş bir kutu kullandığı için gerçek
+    // önizlemede kullanılan 320x693 PhoneMockupFrame'in taşma riskini hiç
+    // yakalamıyordu — bu testler asıl çerçeve boyutuyla çalışır.
+    Widget createFramedTestWidget({
+      required FeedbackMessageModel message,
+      required String category,
+      String? subcategory,
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: PhoneMockupFrame(
+              child: DashboardPreview(
+                message: message,
+                category: category,
+                subcategory: subcategory,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+        'long comeback title and message do not overflow the fixed frame',
+        (tester) async {
+      const message = FeedbackMessageModel(
+        title: 'Seni Tekrar Aramızda Görmek Gerçekten Çok Güzel Bir His!',
+        message:
+            'Bir süredir seni burada göremiyorduk, umarız her şey '
+            'yolundadır. Kaldığın yerden devam edebilir, biriken '
+            'quizlerini tamamlayarak serine tekrar kaldığın yerden '
+            'devam edebilirsin. Seni tekrar aramızda görmek güzel!',
+        emoji: '👋',
+      );
+
+      await tester.pumpWidget(createFramedTestWidget(
+        message: message,
+        category: 'comeback',
+      ));
+      await tester.pumpAndSettle();
+
+      // Bug varken burada comeback dialog kartı sabit 693px'i aşıp
+      // RenderFlex overflow fırlatır.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('long streak title and message do not overflow the fixed frame',
+        (tester) async {
+      const message = FeedbackMessageModel(
+        title: 'On Dört Gün Boyunca Ara Vermeden Devam Ettin, Harikasın!',
+        message:
+            'Bu disiplin gerçekten takdire şayan, her gün düzenli olarak '
+            'quiz çözerek serini bozmadan sürdürdün. Bu şekilde devam '
+            'edersen çok yakında yeni bir ünvan kazanacaksın!',
+        emoji: '🔥',
+      );
+
+      await tester.pumpWidget(createFramedTestWidget(
+        message: message,
+        category: 'streak',
+        subcategory: '7',
+      ));
+      await tester.pumpAndSettle();
+
+      // Bug varken burada streak kartı + mesaj kutusu + placeholder'lar
+      // sabit 693px'i aşıp RenderFlex overflow fırlatır.
+      expect(tester.takeException(), isNull);
     });
   });
 }

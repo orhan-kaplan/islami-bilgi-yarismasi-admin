@@ -30,19 +30,25 @@ class _QuestionPreviewDialog extends StatelessWidget {
           decoration: const BoxDecoration(
             gradient: PreviewTokens.bgGradient,
           ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              _buildHeader(),
-              const SizedBox(height: 16),
-              _buildQuestionCard(),
-              const SizedBox(height: 16),
-              Expanded(child: _buildOptionsArea()),
-              if (question.explanation != null &&
-                  question.explanation!.isNotEmpty)
-                _buildExplanationBox(),
-              const SizedBox(height: 12),
-            ],
+          // Soru metni ve seçenekler serbest uzunlukta olabildiğinden sabit
+          // 693px çerçeveyi aşabilir; SingleChildScrollView ile sarılmazsa
+          // taşan kısım ClipRRect tarafından sessizce gizlenir.
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                _buildHeader(),
+                const SizedBox(height: 16),
+                _buildQuestionCard(),
+                const SizedBox(height: 16),
+                _buildOptionsArea(),
+                if (question.explanation != null &&
+                    question.explanation!.isNotEmpty)
+                  _buildExplanationBox(),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),

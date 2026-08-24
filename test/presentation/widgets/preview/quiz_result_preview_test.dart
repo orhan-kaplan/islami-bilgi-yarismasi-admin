@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/feedback_models.dart';
+import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/phone_mockup_frame.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/preview_tokens.dart';
 import 'package:islami_bilgi_yarismasi_admin/presentation/widgets/preview/quiz_result_preview.dart';
 import 'package:lottie/lottie.dart';
@@ -308,6 +309,44 @@ void main() {
 
       // Default trophy emoji when no lottie and empty emoji
       expect(find.text('🏆'), findsOneWidget);
+    });
+  });
+
+  group('QuizResultPreview — sabit çerçevede taşma koruması', () {
+    testWidgets(
+        'long title and message do not overflow the fixed PhoneMockupFrame',
+        (tester) async {
+      // Önceki testler 500x900 gibi geniş bir kutu kullandığı için gerçek
+      // önizlemede kullanılan 320x693 PhoneMockupFrame'in taşma riskini hiç
+      // yakalamıyordu — bu test asıl çerçeve boyutuyla çalışır.
+      const message = FeedbackMessageModel(
+        title: 'Maşallah, Gerçekten Muhteşem Bir Performans Sergiledin!',
+        message:
+            'Bu quizde gösterdiğin bilgi birikimi ve dikkat gerçekten '
+            'takdire şayan. Bu şekilde devam edersen çok kısa sürede '
+            'hedeflediğin seviyeye ulaşacağına inanıyoruz. Tebrikler!',
+        emoji: '🏆',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: PhoneMockupFrame(
+                child: QuizResultPreview(
+                  message: message,
+                  subcategory: 'perfect',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Bug varken burada glass card sabit 693px'i aşıp RenderFlex overflow
+      // fırlatır ve içerik ClipRRect tarafından sessizce gizlenirdi.
+      expect(tester.takeException(), isNull);
     });
   });
 }

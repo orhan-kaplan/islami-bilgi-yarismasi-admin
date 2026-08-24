@@ -44,11 +44,25 @@ class QuizResultPreview extends StatelessWidget {
       decoration: const BoxDecoration(
         gradient: PreviewTokens.bgGradient,
       ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: _buildGlassCard(isSuccess),
-        ),
+      // Uzun başlık/mesaj metni sabit 693px çerçeveyi aşabilir; LayoutBuilder
+      // + ConstrainedBox(minHeight) kısa içerikte mevcut ortalanmış görünümü
+      // korurken, taşan içerikte sessizce kırpılmak yerine kaydırılabilir hale
+      // getirir.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: _buildGlassCard(isSuccess),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

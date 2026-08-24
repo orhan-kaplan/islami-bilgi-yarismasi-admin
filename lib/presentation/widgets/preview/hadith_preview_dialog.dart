@@ -178,7 +178,10 @@ class HadithPreviewDialog extends StatelessWidget {
                       Text(
                         hadith.text,
                         textAlign: TextAlign.center,
-                        maxLines: 5,
+                        // Mobildeki dashboard_hadith.dart aynı kartı maxLines: 3
+                        // ile kırpıyor — önizleme fazla satır gösterirse editör
+                        // mobilde kesilecek metni "sığıyor" sanabilir.
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'PlayfairDisplay',
