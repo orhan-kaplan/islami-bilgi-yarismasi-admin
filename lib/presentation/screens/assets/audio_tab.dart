@@ -1,12 +1,14 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web/web.dart' as web;
 
 import '../../../data/services/asset_server_client.dart';
+import '../../../data/services/audio_playback.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../../core/constants/asset_server_config.dart';
+import 'asset_error_view.dart';
 
 /// Audio tab for the Assets screen.
 ///
@@ -19,55 +21,89 @@ class AudioTab extends ConsumerStatefulWidget {
   ConsumerState<AudioTab> createState() => _AudioTabState();
 }
 
-class _AudioTabState extends ConsumerState<AudioTab> {
+class _AudioTabState extends ConsumerState<AudioTab>
+    with AutomaticKeepAliveClientMixin {
   static const _allowedExtensions = ['mp3', 'wav', 'm4a', 'ogg'];
 
   /// Currently playing audio file path (null if nothing is playing).
   String? _playingPath;
 
-  /// The HTML audio element used for browser playback.
-  web.HTMLAudioElement? _audioElement;
+  /// Duraklatılmış dosya — tekrar Play'e basınca baştan değil kaldığı
+  /// yerden devam etmesi için tutuluyor.
+  String? _pausedPath;
+
+  /// `dispose` sırasında `ref` okunamıyor; oynatıcıya baştan tutunuyoruz.
+  late final AudioPlayback _player;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = ref.read(audioPlaybackProvider);
+  }
 
   @override
   void dispose() {
-    _stopAudio();
+    _player.stop();
     super.dispose();
   }
 
-  void _stopAudio() {
-    _audioElement?.pause();
-    _audioElement = null;
+  void _resetPlayback() {
+    _player.stop();
     _playingPath = null;
+    _pausedPath = null;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   void _playAudio(FileEntry entry) {
-    // Stop any currently playing audio
-    _audioElement?.pause();
+    if (_pausedPath == entry.path) {
+      _player.resume();
+      setState(() {
+        _playingPath = entry.path;
+        _pausedPath = null;
+      });
+      return;
+    }
 
-    final url = AssetServerConfig.fileUrl(entry.path);
-    final audio = web.HTMLAudioElement()..src = url;
-
-    audio.onEnded.listen((_) {
-      if (mounted) {
+    _player.play(
+      AssetServerConfig.fileUrl(entry.path),
+      onEnded: () {
+        if (!mounted) return;
         setState(() {
           _playingPath = null;
-          _audioElement = null;
+          _pausedPath = null;
         });
-      }
-    });
+      },
+      // Oynatma başarısız olduğunda buton kalıcı olarak Pause'da kalıyordu.
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _playingPath = null;
+          _pausedPath = null;
+        });
+        _showMessage('Could not play ${entry.name}.');
+      },
+    );
 
-    audio.play();
     setState(() {
       _playingPath = entry.path;
-      _audioElement = audio;
+      _pausedPath = null;
     });
   }
 
   void _pauseAudio() {
-    _audioElement?.pause();
+    _player.pause();
     setState(() {
+      _pausedPath = _playingPath;
       _playingPath = null;
-      _audioElement = null;
     });
   }
 
@@ -77,7 +113,9 @@ class _AudioTabState extends ConsumerState<AudioTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final filesAsync = ref.watch(assetListProvider('audio'));
+    final isConnected = ref.watch(isServerConnectedProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,10 +129,13 @@ class _AudioTabState extends ConsumerState<AudioTab> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: _addNewAudio,
-                icon: const Icon(Icons.add),
-                label: const Text('Add New Audio'),
+              OfflineTooltip(
+                isConnected: isConnected,
+                child: FilledButton.icon(
+                  onPressed: isConnected ? _addNewAudio : null,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add New Audio'),
+                ),
               ),
             ],
           ),
@@ -130,8 +171,9 @@ class _AudioTabState extends ConsumerState<AudioTab> {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('Error: $error'),
+            error: (error, _) => AssetErrorView(
+              error: error,
+              onRetry: () => ref.invalidate(assetListProvider),
             ),
           ),
         ),
@@ -157,16 +199,10 @@ class _AudioTabState extends ConsumerState<AudioTab> {
       await client.createFile(apiPath, file.bytes!);
       if (mounted) {
         _invalidateList();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Added ${file.name}')),
-        );
+        _showMessage('Added ${file.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -187,21 +223,14 @@ class _AudioTabState extends ConsumerState<AudioTab> {
       await client.putFile(entry.path, file.bytes!);
       if (mounted) {
         // Stop playback if replacing the currently playing file
-        if (_playingPath == entry.path) {
-          _stopAudio();
-          setState(() {});
+        if (_playingPath == entry.path || _pausedPath == entry.path) {
+          setState(_resetPlayback);
         }
         _invalidateList();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replaced ${entry.name}')),
-        );
+        _showMessage('Replaced ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -230,23 +259,16 @@ class _AudioTabState extends ConsumerState<AudioTab> {
     final client = ref.read(assetServerClientProvider);
     try {
       // Stop playback if deleting the currently playing file
-      if (_playingPath == entry.path) {
-        _stopAudio();
-        setState(() {});
+      if (_playingPath == entry.path || _pausedPath == entry.path) {
+        setState(_resetPlayback);
       }
       await client.deleteFile(entry.path);
       if (mounted) {
         _invalidateList();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted ${entry.name}')),
-        );
+        _showMessage('Deleted ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 }

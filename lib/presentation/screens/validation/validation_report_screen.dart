@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/admin_theme.dart';
 import '../../../data/services/content_validator.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../providers/validation_providers.dart';
 
 /// Screen displaying the full validation report.
@@ -17,9 +20,26 @@ class ValidationReportScreen extends ConsumerWidget {
     final errors = ref.watch(validationErrorsProvider);
     final warnings = ref.watch(validationWarningsProvider);
 
+    // Asset varlık kontrolü bağlantı yokken sessizce boş dönüyor, hata
+    // verdiğinde de yutuluyordu; rapor hiç yapılmamış bir kontrolü "temiz"
+    // diye göstermemeli.
+    final isConnected = ref.watch(isServerConnectedProvider);
+    final assetCheck = ref.watch(missingAssetValidationProvider);
+    final assetChecksSkipped = !isConnected || assetCheck.hasError;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Validation Report'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Re-run asset checks',
+            // Eksik asset uyarısı, dosya yüklendikten sonra da duruyordu:
+            // bu provider içerik değişmeden yeniden çalışmıyor.
+            onPressed: () => ref.invalidate(missingAssetValidationProvider),
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
           child: Padding(
@@ -34,7 +54,7 @@ class ValidationReportScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 _CountChip(
                   icon: Icons.warning,
-                  color: Colors.orange,
+                  color: context.adminColors.warning,
                   label: '${warnings.length} Warnings',
                 ),
               ],
@@ -43,22 +63,35 @@ class ValidationReportScreen extends ConsumerWidget {
         ),
       ),
       body: (errors.isEmpty && warnings.isEmpty)
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle, size: 64, color: Colors.green),
-                  SizedBox(height: 16),
-                  Text(
-                    'No validation issues found!',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: assetChecksSkipped
+                    ? const _SkippedAssetChecksNotice(standalone: true)
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 64,
+                            color: context.adminColors.success,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No validation issues found!',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      ),
               ),
             )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (assetChecksSkipped) ...[
+                  const _SkippedAssetChecksNotice(),
+                  const SizedBox(height: 16),
+                ],
                 if (errors.isNotEmpty) ...[
                   _SectionHeader(
                     title: 'Errors (${errors.length})',
@@ -70,12 +103,57 @@ class ValidationReportScreen extends ConsumerWidget {
                 if (warnings.isNotEmpty) ...[
                   _SectionHeader(
                     title: 'Warnings (${warnings.length})',
-                    color: Colors.orange,
+                    color: context.adminColors.warning,
                   ),
                   ...warnings.map((issue) => _IssueTile(issue: issue)),
                 ],
               ],
             ),
+    );
+  }
+}
+
+/// Banner telling the user that the asset existence check did not run.
+class _SkippedAssetChecksNotice extends StatelessWidget {
+  const _SkippedAssetChecksNotice({this.standalone = false});
+
+  /// Boş rapor ortasında tek başına mı duruyor.
+  final bool standalone;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.adminColors.warning;
+    final text = Text(
+      'Asset checks skipped — the asset server could not be reached, so '
+      'missing images are not included in this report.',
+      textAlign: standalone ? TextAlign.center : TextAlign.start,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+    );
+
+    if (standalone) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cloud_off_outlined, size: 48, color: color),
+          const SizedBox(height: 16),
+          text,
+        ],
+      );
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.cloud_off_outlined, color: color),
+            const SizedBox(width: 12),
+            Expanded(child: text),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -137,7 +215,7 @@ class _IssueTile extends StatelessWidget {
     final isError = issue.severity == ValidationSeverity.error;
     final color = isError
         ? Theme.of(context).colorScheme.error
-        : Colors.orange;
+        : context.adminColors.warning;
     final icon = isError ? Icons.error : Icons.warning;
 
     return Card(
@@ -160,6 +238,18 @@ class _IssueTile extends StatelessWidget {
                   ),
             ),
           ],
+        ),
+        // Yol elle okunup Explorer'a taşınıyordu; satırdan alınabilmeli.
+        trailing: IconButton(
+          icon: const Icon(Icons.copy_outlined, size: 18),
+          tooltip: 'Copy path',
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: issue.jsonPath));
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Path copied')),
+            );
+          },
         ),
         isThreeLine: true,
       ),

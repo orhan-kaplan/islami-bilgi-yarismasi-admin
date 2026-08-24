@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../../core/constants/asset_server_config.dart';
+import 'asset_error_view.dart';
 
 /// Icons tab for the Assets screen.
 ///
@@ -18,10 +20,21 @@ class IconsTab extends ConsumerStatefulWidget {
   ConsumerState<IconsTab> createState() => _IconsTabState();
 }
 
-class _IconsTabState extends ConsumerState<IconsTab> {
+class _IconsTabState extends ConsumerState<IconsTab>
+    with AutomaticKeepAliveClientMixin {
   int _cacheBuster = DateTime.now().millisecondsSinceEpoch;
 
   static const _allowedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'ico'];
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   void _invalidateAndRefresh() {
     ref.invalidate(assetListProvider);
@@ -32,7 +45,9 @@ class _IconsTabState extends ConsumerState<IconsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final filesAsync = ref.watch(assetListProvider('icons'));
+    final isConnected = ref.watch(isServerConnectedProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,10 +61,13 @@ class _IconsTabState extends ConsumerState<IconsTab> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: _addNewIcon,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Add New Icon'),
+              OfflineTooltip(
+                isConnected: isConnected,
+                child: FilledButton.icon(
+                  onPressed: isConnected ? _addNewIcon : null,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: const Text('Add New Icon'),
+                ),
               ),
             ],
           ),
@@ -87,8 +105,9 @@ class _IconsTabState extends ConsumerState<IconsTab> {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('Error: $error'),
+            error: (error, _) => AssetErrorView(
+              error: error,
+              onRetry: () => ref.invalidate(assetListProvider),
             ),
           ),
         ),
@@ -114,16 +133,10 @@ class _IconsTabState extends ConsumerState<IconsTab> {
       await client.createFile(apiPath, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Added ${file.name}')),
-        );
+        _showMessage('Added ${file.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -144,16 +157,10 @@ class _IconsTabState extends ConsumerState<IconsTab> {
       await client.putFile(entry.path, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replaced ${entry.name}')),
-        );
+        _showMessage('Replaced ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -184,16 +191,10 @@ class _IconsTabState extends ConsumerState<IconsTab> {
       await client.deleteFile(entry.path);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted ${entry.name}')),
-        );
+        _showMessage('Deleted ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 }
@@ -226,9 +227,8 @@ class _IconCard extends StatelessWidget {
             child: Image.network(
               _thumbnailUrl,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Center(
-                child: Icon(Icons.broken_image_outlined, size: 48),
-              ),
+              errorBuilder: (context, error, stackTrace) =>
+                  const AssetThumbnailError(),
             ),
           ),
           Padding(

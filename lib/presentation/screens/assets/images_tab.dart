@@ -7,8 +7,10 @@ import '../../../data/services/asset_reference_detector.dart';
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../providers/connectivity_providers.dart';
 import '../../providers/content_providers.dart';
 import '../../../core/constants/asset_server_config.dart';
+import 'asset_error_view.dart';
 
 /// Natural sort comparison that handles numeric segments correctly.
 /// e.g. "level_2" < "level_10" (instead of alphabetic "level_10" < "level_2")
@@ -48,9 +50,15 @@ class ImagesTab extends ConsumerStatefulWidget {
   ConsumerState<ImagesTab> createState() => _ImagesTabState();
 }
 
-class _ImagesTabState extends ConsumerState<ImagesTab> {
+class _ImagesTabState extends ConsumerState<ImagesTab>
+    with AutomaticKeepAliveClientMixin {
   String? _selectedFolder;
   int _cacheBuster = DateTime.now().millisecondsSinceEpoch;
+
+  // Sekme değişiminde state atılırsa seçili klasör kayboluyor ve editör
+  // her dönüşte klasörü yeniden seçmek zorunda kalıyor.
+  @override
+  bool get wantKeepAlive => true;
 
   void _invalidateAndRefresh(String path) {
     ref.invalidate(assetListProvider);
@@ -59,9 +67,19 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
     });
   }
 
+  /// Bir yazma işleminin sonucunu kullanıcıya bildirir.
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final foldersAsync = ref.watch(assetListProvider('images'));
+    final isConnected = ref.watch(isServerConnectedProvider);
 
     return Row(
       children: [
@@ -73,10 +91,13 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: FilledButton.icon(
-                  onPressed: _createNewFolder,
-                  icon: const Icon(Icons.create_new_folder_outlined),
-                  label: const Text('New Folder'),
+                child: OfflineTooltip(
+                  isConnected: isConnected,
+                  child: FilledButton.icon(
+                    onPressed: isConnected ? _createNewFolder : null,
+                    icon: const Icon(Icons.create_new_folder_outlined),
+                    label: const Text('New Folder'),
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -113,8 +134,9 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
                   },
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(
-                    child: Text('Error: $error'),
+                  error: (error, _) => AssetErrorView(
+                    error: error,
+                    onRetry: () => ref.invalidate(assetListProvider),
                   ),
                 ),
               ),
@@ -137,6 +159,7 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
   Widget _buildImageGrid() {
     final path = 'images/$_selectedFolder';
     final filesAsync = ref.watch(assetListProvider(path));
+    final isConnected = ref.watch(isServerConnectedProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -150,10 +173,13 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: _addNewImage,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Add New Image'),
+              OfflineTooltip(
+                isConnected: isConnected,
+                child: FilledButton.icon(
+                  onPressed: isConnected ? _addNewImage : null,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: const Text('Add New Image'),
+                ),
               ),
             ],
           ),
@@ -193,8 +219,9 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('Error: $error'),
+            error: (error, _) => AssetErrorView(
+              error: error,
+              onRetry: () => ref.invalidate(assetListProvider),
             ),
           ),
         ),
@@ -220,16 +247,10 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
       await client.createFile(apiPath, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh('images/$_selectedFolder');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Added ${file.name}')),
-        );
+        _showMessage('Added ${file.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -251,16 +272,10 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
       await client.putFile(apiPath, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh('images/$_selectedFolder');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replaced ${entry.name}')),
-        );
+        _showMessage('Replaced ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -332,16 +347,10 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
       await client.deleteFile(entry.path);
       if (mounted) {
         _invalidateAndRefresh('images/$_selectedFolder');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted ${entry.name}')),
-        );
+        _showMessage('Deleted ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -351,14 +360,36 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Create New Folder'),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Folder name',
-            hintText: 'e.g. book_4',
-          ),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Folder name',
+                hintText: 'e.g. book_4',
+              ),
+              onSubmitted: (value) => Navigator.of(context).pop(value),
+            ),
+            const SizedBox(height: 8),
+            // Ad sessizce sanitize ediliyordu; kullanıcı sonucu ancak klasör
+            // oluştuktan sonra görüyordu.
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: nameController,
+              builder: (context, value, _) {
+                final typed = value.text.trim();
+                if (typed.isEmpty) return const SizedBox.shrink();
+                final sanitized = AssetPathUtils.sanitizeFilename(typed);
+                if (sanitized == typed) return const SizedBox.shrink();
+                return Text(
+                  'Will be created as: $sanitized',
+                  style: Theme.of(context).textTheme.bodySmall,
+                );
+              },
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -382,25 +413,31 @@ class _ImagesTabState extends ConsumerState<ImagesTab> {
 
     try {
       await client.createFolder('images/$sanitized');
-      if (mounted) {
-        // Invalidate the images root listing to refresh sidebar
-        ref.invalidate(assetListProvider);
-        setState(() {
-          _selectedFolder = sanitized;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created folder: $sanitized')),
-        );
-      }
-      // Bir dizin pubspec.yaml'a yazılmazsa içindeki görseller uygulama
-      // bundle'ına girmez; kullanıcı bunu ancak uygulamada fark eder.
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
+      return;
+    }
+
+    if (mounted) {
+      // Invalidate the images root listing to refresh sidebar
+      ref.invalidate(assetListProvider);
+      setState(() {
+        _selectedFolder = sanitized;
+      });
+    }
+
+    // Bir dizin pubspec.yaml'a yazılmazsa içindeki görseller uygulama
+    // bundle'ına girmez; kullanıcı bunu ancak uygulamada fark eder — o yüzden
+    // sonucu klasör mesajıyla birlikte söylüyoruz.
+    try {
       await client.syncPubspec();
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+      _showMessage('Created folder: $sanitized');
+    } catch (e) {
+      _showMessage(
+        'Created folder: $sanitized, but pubspec.yaml could not be updated — '
+        'images in this folder will not be bundled into the app. '
+        '${assetErrorMessage(e)}',
+      );
     }
   }
 }
@@ -442,9 +479,8 @@ class _ImageCard extends StatelessWidget {
             child: Image.network(
               _thumbnailUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Center(
-                child: Icon(Icons.broken_image_outlined, size: 48),
-              ),
+              errorBuilder: (context, error, stackTrace) =>
+                  const AssetThumbnailError(),
             ),
           ),
           Padding(

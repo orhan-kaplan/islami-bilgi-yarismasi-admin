@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide expect, group, test;
 import 'package:islami_bilgi_yarismasi_admin/data/models/book_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/content_state.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/feedback_models.dart';
+import 'package:islami_bilgi_yarismasi_admin/data/models/game_config_models.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/level_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/models/reward_model.dart';
 import 'package:islami_bilgi_yarismasi_admin/data/services/asset_reference_detector.dart';
@@ -403,6 +405,70 @@ void main() {
 
       expect(AssetReferenceDetector.isReferenced(state, path), isFalse);
       expect(AssetReferenceDetector.findReferences(state, path), isEmpty);
+    });
+  });
+
+  group('Lottie references', () {
+    const usedByFeedback = FeedbackMessageModel(
+      title: 'Maşallah',
+      message: 'Harika gidiyorsun',
+      emoji: '🎉',
+      lottieAsset: 'feedback/masallah.json',
+    );
+
+    const feedbackState = FeedbackContentState(
+      quiz: {},
+      speedQuiz: {},
+      time: {},
+      comeback: [usedByFeedback],
+      streak: {},
+      titles: [],
+      learned: {},
+    );
+
+    test('finds the feedback message that uses a lottie file', () {
+      final refs = AssetReferenceDetector.findLottieReferences(
+        feedbackState,
+        GameConfigState.defaults,
+        'lottie/feedback/masallah.json',
+      );
+
+      expect(refs.length, equals(1));
+      expect(refs.single.type, AssetReferenceType.feedback);
+      expect(refs.single.name, 'Maşallah');
+    });
+
+    test('finds the game_config slot that uses a lottie file', () {
+      final refs = AssetReferenceDetector.findLottieReferences(
+        FeedbackContentState.empty(),
+        GameConfigState.defaults,
+        'lottie/${GameConfigState.defaults.lottie.confetti}',
+      );
+
+      expect(refs.length, equals(1));
+      expect(refs.single.type, AssetReferenceType.gameConfig);
+      expect(refs.single.name, 'confetti');
+    });
+
+    test('reports nothing for a lottie file no one uses', () {
+      final refs = AssetReferenceDetector.findLottieReferences(
+        feedbackState,
+        GameConfigState.defaults,
+        'lottie/unused.json',
+      );
+
+      expect(refs, isEmpty);
+    });
+
+    test('a feedback lottie is not confused with a same-named root file', () {
+      // feedback/masallah.json ile masallah.json farklı dosyalar.
+      final refs = AssetReferenceDetector.findLottieReferences(
+        feedbackState,
+        GameConfigState.defaults,
+        'lottie/masallah.json',
+      );
+
+      expect(refs, isEmpty);
     });
   });
 }

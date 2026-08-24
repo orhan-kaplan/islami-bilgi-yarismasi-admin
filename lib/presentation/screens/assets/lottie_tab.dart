@@ -5,10 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../data/services/asset_reference_detector.dart';
 import '../../../data/services/asset_server_client.dart';
 import '../../providers/asset_providers.dart';
 import '../../providers/asset_server_providers.dart';
+import '../../providers/connectivity_providers.dart';
+import '../../providers/feedback_content_providers.dart';
+import '../../providers/game_config_providers.dart';
 import '../../../core/constants/asset_server_config.dart';
+import 'asset_error_view.dart';
 
 /// Lottie tab for the Assets screen.
 ///
@@ -23,8 +28,19 @@ class LottieTab extends ConsumerStatefulWidget {
   ConsumerState<LottieTab> createState() => _LottieTabState();
 }
 
-class _LottieTabState extends ConsumerState<LottieTab> {
+class _LottieTabState extends ConsumerState<LottieTab>
+    with AutomaticKeepAliveClientMixin {
   int _cacheBuster = DateTime.now().millisecondsSinceEpoch;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   void _invalidateAndRefresh() {
     ref.invalidate(assetListProvider);
@@ -35,8 +51,10 @@ class _LottieTabState extends ConsumerState<LottieTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final rootAsync = ref.watch(assetListProvider('lottie'));
     final feedbackAsync = ref.watch(assetListProvider('lottie/feedback'));
+    final isConnected = ref.watch(isServerConnectedProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,10 +68,14 @@ class _LottieTabState extends ConsumerState<LottieTab> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: () => _addNewLottie('lottie'),
-                icon: const Icon(Icons.add),
-                label: const Text('Add New Lottie'),
+              OfflineTooltip(
+                isConnected: isConnected,
+                child: FilledButton.icon(
+                  onPressed:
+                      isConnected ? () => _addNewLottie('lottie') : null,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add New Lottie'),
+                ),
               ),
             ],
           ),
@@ -72,6 +94,7 @@ class _LottieTabState extends ConsumerState<LottieTab> {
                   subtitle: 'lottie/',
                   asyncValue: rootAsync,
                   directory: 'lottie',
+                  isConnected: isConnected,
                 ),
                 const SizedBox(height: 24),
                 // Feedback section
@@ -81,6 +104,7 @@ class _LottieTabState extends ConsumerState<LottieTab> {
                   subtitle: 'lottie/feedback/',
                   asyncValue: feedbackAsync,
                   directory: 'lottie/feedback',
+                  isConnected: isConnected,
                 ),
               ],
             ),
@@ -96,6 +120,7 @@ class _LottieTabState extends ConsumerState<LottieTab> {
     required String subtitle,
     required AsyncValue<List<FileEntry>> asyncValue,
     required String directory,
+    required bool isConnected,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,10 +137,14 @@ class _LottieTabState extends ConsumerState<LottieTab> {
             ),
             const Spacer(),
             if (directory == 'lottie/feedback')
-              TextButton.icon(
-                onPressed: () => _addNewLottie(directory),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add to Feedback'),
+              OfflineTooltip(
+                isConnected: isConnected,
+                child: TextButton.icon(
+                  onPressed:
+                      isConnected ? () => _addNewLottie(directory) : null,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add to Feedback'),
+                ),
               ),
           ],
         ),
@@ -148,7 +177,10 @@ class _LottieTabState extends ConsumerState<LottieTab> {
           ),
           error: (error, _) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: Text('Error: $error')),
+            child: AssetErrorView(
+              error: error,
+              onRetry: () => ref.invalidate(assetListProvider),
+            ),
           ),
         ),
       ],
@@ -230,16 +262,10 @@ class _LottieTabState extends ConsumerState<LottieTab> {
       await client.createFile(apiPath, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Added ${file.name}')),
-        );
+        _showMessage('Added ${file.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
@@ -268,20 +294,53 @@ class _LottieTabState extends ConsumerState<LottieTab> {
       await client.putFile(entry.path, file.bytes!);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replaced ${entry.name}')),
-        );
+        _showMessage('Replaced ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
   Future<void> _deleteLottie(FileEntry entry) async {
+    if (!mounted) return;
+
+    // Feedback mesajları ve game_config slotları bu dosyayı adıyla çağırıyor;
+    // silinirse uygulama çalışırken eksik animasyonla patlar.
+    final references = AssetReferenceDetector.findLottieReferences(
+      ref.read(feedbackContentProvider),
+      ref.read(gameConfigProvider),
+      entry.path,
+    );
+    if (references.isNotEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cannot Delete'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${entry.name} is referenced by the following items:'),
+              const SizedBox(height: 8),
+              ...references.map(
+                (r) => Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                  child: Text('• ${r.type.name}: ${r.name}'),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -308,16 +367,10 @@ class _LottieTabState extends ConsumerState<LottieTab> {
       await client.deleteFile(entry.path);
       if (mounted) {
         _invalidateAndRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted ${entry.name}')),
-        );
+        _showMessage('Deleted ${entry.name}');
       }
-    } on AssetServerException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+    } catch (e) {
+      _showMessage(assetErrorMessage(e));
     }
   }
 
